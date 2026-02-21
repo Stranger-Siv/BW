@@ -72,15 +72,15 @@ export async function PATCH(
       teamName: inv.teamName,
     }).lean();
     if (existingIncompleteTeam) {
-      const existing = existingIncompleteTeam as unknown as { players: { userId?: mongoose.Types.ObjectId }[]; rewardReceiverIGN?: string };
-      const currentSize = existing.players?.length ?? 0;
+      const teamDoc = existingIncompleteTeam as { _id: mongoose.Types.ObjectId; players: { userId?: mongoose.Types.ObjectId }[] };
+      const currentSize = teamDoc.players?.length ?? 0;
       if (currentSize === t.teamSize - 1) {
         const newUserId = new mongoose.Types.ObjectId(session.user!.id);
-        const alreadyOnTeam = existing.players?.some((p) => p.userId?.toString() === newUserId.toString());
+        const alreadyOnTeam = teamDoc.players?.some((p) => p.userId?.toString() === newUserId.toString());
         if (!alreadyOnTeam) {
           const newUser = await User.findById(newUserId).select("minecraftIGN discordUsername").lean();
           const nu = newUser as { minecraftIGN?: string; discordUsername?: string } | null;
-          await Team.findByIdAndUpdate(existingIncompleteTeam._id, {
+          await Team.findByIdAndUpdate(teamDoc._id, {
             $push: {
               players: {
                 userId: newUserId,
