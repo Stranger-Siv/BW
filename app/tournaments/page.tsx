@@ -1,0 +1,705 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { SITE } from "@/lib/site";
+import { PlayerRow } from "@/components/registration/PlayerRow";
+import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
+import { formatDateLabel, formatRegistrationCountdown } from "@/lib/formatDate";
+import type { IPlayer } from "@/models/Team";
+
+type TournamentOption = {
+  _id: string;
+  name: string;
+  type: string;
+  date: string;
+  startTime: string;
+  registrationDeadline: string;
+  maxTeams: number;
+  teamSize: number;
+  registeredTeams: number;
+};
+
+function getInitialPlayers(count: number): IPlayer[] {
+  return Array.from({ length: count }, () => ({
+    minecraftIGN: "",
+    discordUsername: "",
+  }));
+}
+
+function validateForm(
+  teamName: string,
+  players: IPlayer[],
+  rewardReceiverIGN: string,
+  requiredCount: number
+): string | null {
+  if (!teamName.trim()) return "Team name is required.";
+  if (players.length !== requiredCount) return "Player count does not match tournament.";
+  for (let i = 0; i < players.length; i++) {
+    if (!players[i].minecraftIGN.trim()) return `Player ${i + 1}: Minecraft IGN is required.`;
+    if (!players[i].discordUsername.trim()) return `Player ${i + 1}: Discord username is required.`;
+  }
+  const igns = players.map((p) => p.minecraftIGN.trim()).filter(Boolean);
+  if (igns.length !== requiredCount) return `All ${requiredCount} player(s) must have a Minecraft IGN.`;
+  if (!rewardReceiverIGN.trim()) return "Please select the reward receiver.";
+  if (!igns.includes(rewardReceiverIGN.trim())) return "Reward receiver must be one of the players.";
+  return null;
+}
+
+const TYPE_LABEL: Record<string, string> = {
+  solo: "Solo",
+  duo: "Duo",
+  squad: "Squad",
+};
+
+export default function TournamentsPage() {
+  const { data: session, status } = useSession();
+  const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
+  const [fetchLoading, setFetchLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const [selectedTournament, setSelectedTournament] = useState<TournamentOption | null>(null);
+  const [teamName, setTeamName] = useState("");
+  const [players, setPlayers] = useState<IPlayer[]>([]);
+  const [rewardReceiverIGN, setRewardReceiverIGN] = useState("");
+
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [meDisplayName, setMeDisplayName] = useState<string | null>(null);
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<{ id: string; name: string; image?: string | null; minecraftIGN?: string; discordUsername?: string }[]>([]);
+  const [selectedInvitees, setSelectedInvitees] = useState<{ id: string; name: string; image?: string | null }[]>([]);
+  const [inviteSending, setInviteSending] = useState(false);
+  const [teamNameAvailable, setTeamNameAvailable] = useState<boolean | null>(null);
+  const [teamNameCheckLoading, setTeamNameCheckLoading] = useState(false);
+  const [teamNameSuggestions, setTeamNameSuggestions] = useState<string[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<{
+    tournamentName: string;
+    teamName: string;
+    pendingCount: number;
+    names: string[];
+  }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setFetchLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch("/api/tournaments");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Failed to load tournaments");
+        }
+        const data = await res.json();
+        if (!cancelled) setTournaments(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!cancelled) setFetchError(e instanceof Error ? e.message : "Failed to load tournaments");
+      } finally {
+        if (!cancelled) setFetchLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedTournament) {
+      setPlayers(getInitialPlayers(selectedTournament.teamSize));
+      setRewardReceiverIGN("");
+      setSubmitError(null);
+      setSuccessMessage(null);
+      setSelectedInvitees([]);
+      setSearchResults([]);
+      setMeDisplayName(null);
+      setTeamNameAvailable(null);
+    }
+  }, [selectedTournament]);
+
+  useEffect(() => {
+    if (!selectedTournament || !teamName.trim()) {
+      setTeamNameAvailable(null);
+      return;
+    }
+    const t = teamName.trim();
+    const timer = setTimeout(() => {
+      setTeamNameCheckLoading(true);
+      fetch(`/api/tournaments/${selectedTournament._id}/check-name?name=${encodeURIComponent(t)}`)
+        .then((r) => r.json())
+        .then((data: { available?: boolean }) => {
+          setTeamNameAvailable(data.available === true);
+        })
+        .catch(() => setTeamNameAvailable(null))
+        .finally(() => setTeamNameCheckLoading(false));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [selectedTournament?._id, teamName]);
+
+  useEffect(() => {
+    if (!selectedTournament || !session?.user?.id) return;
+    let cancelled = false;
+    fetch("/api/users/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((p: { displayName?: string; name?: string; minecraftIGN?: string; discordUsername?: string }) => {
+        if (cancelled || !selectedTournament) return;
+        setMeDisplayName(p.displayName || p.name || null);
+        if (selectedTournament.teamSize === 1) {
+          setPlayers([{ minecraftIGN: p.minecraftIGN ?? "", discordUsername: p.discordUsername ?? "" }]);
+          setRewardReceiverIGN((p.minecraftIGN ?? "").trim());
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTournament?.teamSize, selectedTournament?._id, session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setPendingInvites([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/invites?type=sent", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((list: { status?: string; teamName?: string; tournamentId?: { name?: string }; toUserId?: { displayName?: string; name?: string } }[]) => {
+        if (cancelled || !Array.isArray(list)) return;
+        const pending = list.filter((inv) => inv.status === "pending");
+        const byKey = new Map<string, { tournamentName: string; teamName: string; names: string[] }>();
+        for (const inv of pending) {
+          const tName = (inv.tournamentId as { name?: string } | undefined)?.name ?? "Tournament";
+          const teamName = inv.teamName ?? "";
+          const key = `${(inv as { tournamentId?: { _id?: string } }).tournamentId?._id ?? ""}:${teamName}`;
+          if (!byKey.has(key)) byKey.set(key, { tournamentName: tName, teamName, names: [] });
+          const u = inv.toUserId as { displayName?: string; name?: string } | undefined;
+          const name = (u?.displayName && u.displayName.trim()) || u?.name || "Someone";
+          byKey.get(key)!.names.push(name);
+        }
+        setPendingInvites(
+          Array.from(byKey.entries()).map(([, v]) => ({
+            tournamentName: v.tournamentName,
+            teamName: v.teamName,
+            pendingCount: v.names.length,
+            names: v.names,
+          }))
+        );
+      })
+      .catch(() => setPendingInvites([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!selectedTournament || selectedTournament.teamSize === 1) {
+      setTeamNameSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/tournaments/${selectedTournament._id}/suggest-names?limit=5`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { suggestions?: string[] }) => {
+        if (!cancelled && Array.isArray(data.suggestions)) setTeamNameSuggestions(data.suggestions);
+      })
+      .catch(() => setTeamNameSuggestions([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTournament?._id, selectedTournament?.teamSize]);
+
+  const searchUsers = useCallback(async () => {
+    const q = inviteSearch.trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json().catch(() => []);
+    setSearchResults(Array.isArray(data) ? data : []);
+  }, [inviteSearch]);
+
+  const addInvitee = useCallback((user: { id: string; name: string; image?: string | null }) => {
+    setSelectedInvitees((prev) => {
+      if (prev.some((u) => u.id === user.id)) return prev;
+      const need = (selectedTournament?.teamSize ?? 4) - 1;
+      if (prev.length >= need) return prev;
+      return [...prev, user];
+    });
+  }, [selectedTournament?.teamSize]);
+
+  const removeInvitee = useCallback((id: string) => {
+    setSelectedInvitees((prev) => prev.filter((u) => u.id !== id));
+  }, []);
+
+  const sendInvites = useCallback(async () => {
+    if (!selectedTournament || !teamName.trim()) return;
+    const need = selectedTournament.teamSize - 1;
+    if (selectedInvitees.length !== need) {
+      setSubmitError(`Please select exactly ${need} teammate(s).`);
+      return;
+    }
+    setInviteSending(true);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    try {
+      const res = await fetch("/api/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tournamentId: selectedTournament._id,
+          teamName: teamName.trim(),
+          toUserIds: selectedInvitees.map((u) => u.id),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSubmitError(data.error ?? "Failed to send invites");
+        return;
+      }
+      setSuccessMessage("Invites sent! Teammates can accept from their Profile.");
+      setTeamName("");
+      setSelectedInvitees([]);
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : "Request failed");
+    } finally {
+      setInviteSending(false);
+    }
+  }, [selectedTournament, teamName, selectedInvitees]);
+
+  const rewardReceiverOptions = useMemo(
+    () => players.map((p) => p.minecraftIGN.trim()).filter(Boolean),
+    [players]
+  );
+
+  const updatePlayer = useCallback((index: number, field: "minecraftIGN" | "discordUsername", value: string) => {
+    setPlayers((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedTournament(null);
+    setTeamName("");
+    setPlayers([]);
+    setRewardReceiverIGN("");
+    setSubmitError(null);
+    setSuccessMessage(null);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedTournament) return;
+      setSubmitError(null);
+      setSuccessMessage(null);
+
+      if (teamNameAvailable === false) {
+        setSubmitError("This team name is already taken for this tournament. Choose another.");
+        return;
+      }
+      const err = validateForm(teamName, players, rewardReceiverIGN, selectedTournament.teamSize);
+      if (err) {
+        setSubmitError(err);
+        return;
+      }
+
+      setSubmitLoading(true);
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamName: teamName.trim(),
+            tournamentId: selectedTournament._id,
+            players: players.map((p) => ({
+              minecraftIGN: p.minecraftIGN.trim(),
+              discordUsername: p.discordUsername.trim(),
+            })),
+            rewardReceiverIGN: rewardReceiverIGN.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setSubmitError(data.error ?? "Registration failed");
+          if (res.status === 401) setSubmitError("You must be signed in to register. Sign in or create an account above.");
+          return;
+        }
+        setSuccessMessage(data.message ?? "Registered successfully!");
+        setTeamName("");
+        setPlayers(getInitialPlayers(selectedTournament.teamSize));
+        setRewardReceiverIGN("");
+      } catch (e) {
+        setSubmitError(e instanceof Error ? e.message : "Request failed");
+      } finally {
+        setSubmitLoading(false);
+      }
+    },
+    [selectedTournament, teamName, players, rewardReceiverIGN, teamNameAvailable]
+  );
+
+  return (
+    <main className="min-h-screen">
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-8 lg:py-16">
+        <h1 className="mb-6 text-2xl font-bold tracking-tight text-white md:text-3xl">
+          Tournaments
+        </h1>
+        <div className="card-glass mb-6 flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <img
+              src={SITE.hostedByLogo}
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-xl object-cover ring-2 ring-white/10"
+            />
+            <div>
+              <p className="text-sm font-medium text-slate-200">
+                All matches on <strong>{SITE.serverName}</strong> · <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Hosted by <strong className="text-slate-300">{SITE.hostedBy}</strong> · Full rules &amp; updates on Discord
+              </p>
+            </div>
+          </div>
+          <a
+            href={SITE.discordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+          >
+            Join Discord
+          </a>
+        </div>
+        <section>
+          <div className="card-glass mx-auto max-w-5xl p-6 sm:p-8 md:p-10">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={SITE.hostedByLogo}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-xl object-cover ring-2 ring-white/10 md:h-14 md:w-14"
+                />
+                <div>
+                  <h2 className="text-2xl font-semibold text-white md:text-3xl">
+                    Tournament Registration
+                  </h2>
+                  <p className="mt-0.5 text-sm text-slate-400">
+                    Hosted by {SITE.hostedBy}
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+                {selectedTournament ? "Open" : "Choose tournament"}
+              </span>
+            </div>
+
+            {fetchLoading && (
+              <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                Loading tournaments…
+              </p>
+            )}
+            {fetchError && (
+              <div className="mb-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+                {fetchError}
+              </div>
+            )}
+
+            {status !== "loading" && !session && (
+              <div className="mb-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                Sign in with Google to register your team.{" "}
+                <Link href="/login" className="font-medium underline hover:no-underline">
+                  Sign in
+                </Link>
+              </div>
+            )}
+
+            {session?.user && pendingInvites.length > 0 && (
+              <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <p className="font-medium">You haven’t completed your team</p>
+                {pendingInvites.map((item, i) => (
+                  <p key={i} className="mt-1">
+                    {item.tournamentName} – <strong>{item.teamName}</strong>: {item.pendingCount} slot{item.pendingCount !== 1 ? "s" : ""} left
+                    {item.names.length > 0 && (
+                      <span>
+                        {" "}– waiting for {item.names.length === 1 ? item.names[0] : item.names.join(", ")} to accept.
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {!selectedTournament ? (
+              <div id="tournaments" className="space-y-4 scroll-mt-8">
+                <p className="text-slate-600 dark:text-slate-400">
+                  Choose a tournament to register. Then fill in your team details on the next screen.
+                </p>
+                {tournaments.length === 0 && !fetchLoading && (
+                  <div className="card-glass rounded-2xl p-6 text-center">
+                    <p className="text-slate-500 dark:text-slate-400">
+                      No tournaments open for registration right now. Check back later or ask an admin to open registration.
+                    </p>
+                  </div>
+                )}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {tournaments.map((t) => {
+                    const remaining = Math.max(0, t.maxTeams - t.registeredTeams);
+                    const typeLabel = TYPE_LABEL[t.type ?? "squad"] ?? (t.type ?? "Squad");
+                    return (
+                      <div
+                        key={t._id}
+                        className="card-glass transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTournament(t)}
+                          className="w-full p-5 text-left"
+                        >
+                          <span className="block font-semibold text-slate-800 dark:text-slate-100">
+                            {t.name}
+                          </span>
+                          <span className="mt-1 inline-block rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">
+                            {typeLabel}
+                          </span>
+                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                            {formatDateLabel(t.date)} · {t.startTime}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            {remaining} slot{remaining !== 1 ? "s" : ""} left
+                          </p>
+                          {t.registrationDeadline && (
+                            <p className="mt-1 text-xs font-medium text-emerald-400/90 dark:text-emerald-300">
+                              {formatRegistrationCountdown(t.registrationDeadline).text}
+                            </p>
+                          )}
+                        </button>
+                        <Link
+                          href={`/tournaments/${t._id}/rounds`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mx-5 mb-4 block text-center text-sm font-medium text-emerald-400 transition hover:text-emerald-300 dark:text-emerald-300 dark:hover:text-emerald-200"
+                        >
+                          View rounds & who advanced
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+            <div className="flex-1 min-w-0">
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-sm text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                >
+                  ← Choose another tournament
+                </button>
+                <span className="text-slate-400 dark:text-slate-500">|</span>
+                <span className="font-medium text-slate-800 dark:text-slate-100">
+                  {selectedTournament.name}
+                </span>
+                <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">
+                  {TYPE_LABEL[selectedTournament.type ?? "squad"] ?? (selectedTournament.type ?? "Squad")}
+                </span>
+                {selectedTournament.registrationDeadline && (
+                  <span className="text-sm font-medium text-emerald-400/90 dark:text-emerald-300">
+                    {formatRegistrationCountdown(selectedTournament.registrationDeadline).text}
+                  </span>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/5 sm:p-6 md:p-8">
+                <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 md:text-2xl">
+                  {selectedTournament.teamSize === 1 ? "Register your entry" : "Invite teammates"}
+                </h2>
+                {session?.user && meDisplayName && (
+                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                    Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
+                  </p>
+                )}
+
+                <div className="space-y-5 sm:space-y-6">
+                  <div>
+                    <label htmlFor="team-name" className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">
+                      {selectedTournament.teamSize === 1 ? "Display name" : "Team name"}
+                    </label>
+                    <input
+                      id="team-name"
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder={selectedTournament.teamSize === 1 ? "e.g. Your IGN or nickname" : "e.g. Dragon Slayers"}
+                      className={`w-full rounded-xl border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:py-2.5 ${
+                        teamNameAvailable === false
+                          ? "border-red-400 dark:border-red-500"
+                          : "border-white/10 dark:border-white/10 focus:border-emerald-400/50"
+                      }`}
+                      aria-required
+                    />
+                    {teamNameCheckLoading && teamName.trim() && (
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Checking name…</p>
+                    )}
+                    {!teamNameCheckLoading && teamName.trim() && teamNameAvailable === true && (
+                      <p className="mt-1 text-xs text-emerald-400">Name available</p>
+                    )}
+                    {!teamNameCheckLoading && teamName.trim() && teamNameAvailable === false && (
+                      <p className="mt-1 text-xs text-red-400">This name is already taken for this tournament</p>
+                    )}
+                    {selectedTournament.teamSize > 1 && teamNameSuggestions.length > 0 && (
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Suggestions:{" "}
+                        {teamNameSuggestions.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => setTeamName(name)}
+                            className="mr-1.5 mt-0.5 inline-block rounded-full border border-white/10 bg-white/10 px-2.5 py-0.5 text-slate-600 transition hover:bg-emerald-500/20 hover:text-emerald-400 dark:text-slate-300 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-300"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedTournament.teamSize === 1 ? (
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-300">Your details</h3>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <PlayerRow
+                            index={0}
+                            minecraftIGN={players[0]?.minecraftIGN ?? ""}
+                            discordUsername={players[0]?.discordUsername ?? ""}
+                            onIGNChange={(v) => updatePlayer(0, "minecraftIGN", v)}
+                            onDiscordChange={(v) => updatePlayer(0, "discordUsername", v)}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="reward-receiver" className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
+                        <RewardReceiverSelect
+                          id="reward-receiver"
+                          igns={rewardReceiverOptions}
+                          value={rewardReceiverIGN}
+                          onChange={setRewardReceiverIGN}
+                          disabled={rewardReceiverOptions.length === 0}
+                        />
+                      </div>
+                      {submitError && (
+                        <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
+                      )}
+                      {successMessage && (
+                        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
+                      )}
+                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full sm:w-auto sm:min-w-[200px]">
+                        {submitLoading ? "Registering…" : "Register"}
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Search for {selectedTournament.teamSize - 1} teammate(s). They must have signed in with Google at least once to appear.
+                      </p>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Search by name, email, or IGN</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={inviteSearch}
+                            onChange={(e) => setInviteSearch(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchUsers())}
+                            placeholder="Type to search…"
+                            className="input-glass flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-slate-800 placeholder-slate-500 focus:ring-emerald-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500"
+                          />
+                          <button type="button" onClick={searchUsers} className="btn-gradient shrink-0 py-2.5 px-4">
+                            Search
+                          </button>
+                        </div>
+                        {searchResults.length > 0 && (
+                          <ul className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-white/5 dark:border-white/10 dark:bg-white/5">
+                            {searchResults.map((u) => (
+                              <li key={u.id} className="flex items-center justify-between border-b border-white/10 px-3 py-2 last:border-0 dark:border-white/10">
+                                <span className="font-medium text-slate-800 dark:text-slate-200">{u.name}</span>
+                                <button type="button" onClick={() => addInvitee(u)} className="rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-1 text-xs font-medium text-slate-900 transition hover:opacity-90">
+                                  Add
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">Selected ({selectedInvitees.length} / {selectedTournament.teamSize - 1})</h3>
+                        {selectedInvitees.length === 0 ? (
+                          <p className="text-sm text-slate-500 dark:text-slate-400">No one selected yet.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {selectedInvitees.map((u) => (
+                              <li key={u.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                                <span className="font-medium text-slate-800 dark:text-slate-200">{u.name}</span>
+                                <button type="button" onClick={() => removeInvitee(u.id)} className="text-sm text-red-400 transition hover:text-red-300 dark:text-red-400 dark:hover:text-red-300">Remove</button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      {submitError && (
+                        <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
+                      )}
+                      {successMessage && (
+                        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={sendInvites}
+                        disabled={inviteSending || selectedInvitees.length !== selectedTournament.teamSize - 1}
+                        className="btn-gradient w-full sm:w-auto sm:min-w-[200px]"
+                      >
+                        {inviteSending ? "Sending…" : "Send invites"}
+                      </button>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Teammates will see the invite in their Profile and can Accept or Decline.</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <aside className="w-full shrink-0 lg:w-72 lg:sticky lg:top-6">
+              <div className="card-glass p-4 sm:p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Slots & info
+                </h3>
+                <div className="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                  <p>
+                    <span className="font-medium">Remaining slots:</span>{" "}
+                    {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} / {selectedTournament.maxTeams}
+                  </p>
+                </div>
+                <div className="mt-4 border-t border-white/10 pt-4 dark:border-white/10">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Rules
+                  </p>
+                  <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600 dark:text-slate-400">
+                    <li>{(selectedTournament.teamSize === 1 ? "Your" : "Team")} name must be unique for this tournament.</li>
+                    <li>Each player needs Minecraft IGN and Discord.</li>
+                    <li>One player is the reward receiver.</li>
+                  </ul>
+                </div>
+              </div>
+            </aside>
+          </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
