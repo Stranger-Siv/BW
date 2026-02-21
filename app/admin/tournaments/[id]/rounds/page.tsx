@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+
+type MovePayload = {
+  fromRoundId: string;
+  newFromIds: string[];
+  toRoundId: string;
+  newToIds: string[];
+};
 
 type RoundDoc = {
   _id: string;
@@ -28,7 +35,10 @@ export default function AdminTournamentRoundsPage() {
   const [newRoundName, setNewRoundName] = useState("");
   const [addRoundLoading, setAddRoundLoading] = useState(false);
   const [dragged, setDragged] = useState<{ teamId: string; roundId: string } | null>(null);
-  const [patchLoading, setPatchLoading] = useState<string | null>(null);
+  const [patchLoadingRounds, setPatchLoadingRounds] = useState<string[]>([]);
+  const moveQueueRef = useRef<MovePayload[]>([]);
+  const processingMoveRef = useRef(false);
+  const processMoveQueueRef = useRef<() => void>(() => {});
   const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
   const [scheduleValue, setScheduleValue] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -147,7 +157,7 @@ export default function AdminTournamentRoundsPage() {
 
   const updateRoundTeamIds = useCallback(
     async (roundId: string, teamIds: string[]) => {
-      setPatchLoading(roundId);
+      setPatchLoadingRounds((prev) => [...prev, roundId]);
       try {
         const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
           method: "PATCH",
@@ -160,11 +170,39 @@ export default function AdminTournamentRoundsPage() {
       } catch (e) {
         setError(e instanceof Error ? e.message : "Update failed");
       } finally {
-        setPatchLoading(null);
+        setPatchLoadingRounds((prev) => prev.filter((id) => id !== roundId));
       }
     },
     [id, fetchRounds]
   );
+
+  const processMoveQueue = useCallback(() => {
+    if (processingMoveRef.current || moveQueueRef.current.length === 0) return;
+    const item = moveQueueRef.current.shift()!;
+    processingMoveRef.current = true;
+    setPatchLoadingRounds([item.fromRoundId, item.toRoundId]);
+    const doPatch = (roundId: string, teamIds: string[]) =>
+      fetch(`/api/admin/tournaments/${id}/rounds`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roundId, teamIds }),
+      }).then(async (res) => {
+        await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error("Update failed");
+      });
+    doPatch(item.fromRoundId, item.newFromIds)
+      .then(() => doPatch(item.toRoundId, item.newToIds))
+      .then(() => fetchRounds())
+      .catch((e) => setError(e instanceof Error ? e.message : "Update failed"))
+      .finally(() => {
+        setPatchLoadingRounds((prev) =>
+          prev.filter((id) => id !== item.fromRoundId && id !== item.toRoundId)
+        );
+        processingMoveRef.current = false;
+        processMoveQueueRef.current();
+      });
+  }, [id, fetchRounds]);
+  processMoveQueueRef.current = processMoveQueue;
 
   const moveTeam = useCallback(
     (teamId: string, fromRoundId: string, toRoundId: string) => {
@@ -173,16 +211,22 @@ export default function AdminTournamentRoundsPage() {
       if (!fromRound || !toRound) return;
       const newFromIds = fromRound.teamIds.filter((tid) => tid !== teamId);
       const newToIds = toRound.teamIds.includes(teamId) ? toRound.teamIds : [...toRound.teamIds, teamId];
-      updateRoundTeamIds(fromRoundId, newFromIds).then(() => {
-        updateRoundTeamIds(toRoundId, newToIds);
-      });
+      setRounds((prev) =>
+        prev.map((r) => {
+          if (r._id === fromRoundId) return { ...r, teamIds: newFromIds };
+          if (r._id === toRoundId) return { ...r, teamIds: newToIds };
+          return r;
+        })
+      );
+      moveQueueRef.current.push({ fromRoundId, newFromIds, toRoundId, newToIds });
+      processMoveQueue();
     },
-    [rounds, updateRoundTeamIds]
+    [rounds, processMoveQueue]
   );
 
   const saveRoundSchedule = useCallback(
     async (roundId: string) => {
-      setPatchLoading(roundId);
+      setPatchLoadingRounds((prev) => [...prev, roundId]);
       try {
         const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
           method: "PATCH",
@@ -199,7 +243,7 @@ export default function AdminTournamentRoundsPage() {
       } catch {
         setError("Failed to update schedule");
       } finally {
-        setPatchLoading(null);
+        setPatchLoadingRounds((prev) => prev.filter((id) => id !== roundId));
       }
     },
     [id, scheduleValue, fetchRounds]
@@ -404,7 +448,7 @@ export default function AdminTournamentRoundsPage() {
                       {round.name}
                     </h2>
                     <div className="flex items-center gap-1">
-                      {patchLoading === round._id && (
+                      {patchLoadingRounds.includes(round._id) && (
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
                       )}
                       <button
