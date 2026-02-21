@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 type Profile = {
   displayName?: string;
@@ -11,7 +11,7 @@ type Profile = {
   discordUsername?: string;
 };
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -184,5 +184,13 @@ export default function OnboardingPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<main className="flex min-h-screen items-center justify-center"><p className="text-slate-400">Loading…</p></main>}>
+      <OnboardingContent />
+    </Suspense>
   );
 }

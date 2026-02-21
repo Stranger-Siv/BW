@@ -45,7 +45,7 @@ export async function POST(
     if (!tournament) {
       return Response.json({ error: "Tournament not found" }, { status: 404 });
     }
-    const tour = tournament as { status: string };
+    const tour = tournament as unknown as { status: string; teamSize: number };
     if (tour.status !== "registration_open") {
       return Response.json(
         { error: "Cannot leave after registration has closed" },
@@ -53,7 +53,7 @@ export async function POST(
       );
     }
 
-    const teamSize = (tournament as { teamSize: number }).teamSize;
+    const teamSize = tour.teamSize;
 
     if (teamSize === 1) {
       await Team.findByIdAndDelete(teamId);
@@ -95,7 +95,7 @@ export async function POST(
     }
 
     const remainingIGNs = newPlayers
-      .map((p) => (p as { minecraftIGN?: string }).minecraftIGN ?? "")
+      .map((p) => (p as unknown as { minecraftIGN?: string }).minecraftIGN ?? "")
       .map((s) => s.trim())
       .filter(Boolean);
     const currentReward = (team as unknown as { rewardReceiverIGN?: string }).rewardReceiverIGN ?? "";

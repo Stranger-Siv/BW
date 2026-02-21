@@ -60,10 +60,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(({ href, label }) => {
               if (href.startsWith("/admin") && !isAdmin) return null;
-              const isActive =
-                href === "/"
-                  ? pathname === "/"
-                  : pathname === href || pathname.startsWith(href + "/");
+              const isActive = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link key={href} href={href} className={linkClass(isActive)}>
                   {label}

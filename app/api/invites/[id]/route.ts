@@ -79,7 +79,7 @@ export async function PATCH(
         const alreadyOnTeam = teamDoc.players?.some((p) => p.userId?.toString() === newUserId.toString());
         if (!alreadyOnTeam) {
           const newUser = await User.findById(newUserId).select("minecraftIGN discordUsername").lean();
-          const nu = newUser as { minecraftIGN?: string; discordUsername?: string } | null;
+          const nu = newUser as unknown as { minecraftIGN?: string; discordUsername?: string } | null;
           await Team.findByIdAndUpdate(teamDoc._id, {
             $push: {
               players: {

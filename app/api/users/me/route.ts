@@ -18,7 +18,7 @@ export async function GET() {
     if (!user) {
       return Response.json({ error: "User not found" }, { status: 404 });
     }
-    const u = user as { displayName?: string | null; [k: string]: unknown };
+    const u = user as unknown as { displayName?: string | null; [k: string]: unknown };
     return Response.json(
       { ...u, displayName: u.displayName ?? null },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
@@ -54,7 +54,7 @@ export async function PATCH(request: Request) {
     if (!user) {
       return Response.json({ error: "User not found" }, { status: 404 });
     }
-    const payload = user as { displayName?: string; [k: string]: unknown };
+    const payload = user as unknown as { displayName?: string; [k: string]: unknown };
     return Response.json(
       { ...payload, displayName: payload.displayName ?? null },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }

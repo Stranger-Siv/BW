@@ -54,7 +54,7 @@ export async function POST(
     if (!tournament) {
       return Response.json({ error: "Tournament not found" }, { status: 404 });
     }
-    const tour = tournament as { status: string };
+    const tour = tournament as unknown as { status: string };
     if (tour.status !== "registration_open") {
       return Response.json(
         { error: "Cannot transfer captaincy after registration has closed" },

@@ -43,7 +43,7 @@ export async function DELETE(
     if (!tournament) {
       return Response.json({ error: "Tournament not found" }, { status: 404 });
     }
-    const tour = tournament as { status: string; teamSize: number };
+    const tour = tournament as unknown as { status: string; teamSize: number };
     if (tour.status !== "registration_open") {
       return Response.json(
         { error: "Cannot remove players after registration has closed" },

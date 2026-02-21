@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       const users = await User.find({ _id: { $in: invitedAlreadyIn } })
         .select("name displayName")
         .lean();
-      const names = (users as { name?: string; displayName?: string }[]).map(
+      const names = (users as unknown as { name?: string; displayName?: string }[]).map(
         (u) => (u.displayName && u.displayName.trim()) || u.name || "This player"
       );
       return Response.json(
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       .populate("toUserId", "name displayName")
       .lean();
     if (previouslyDeclined.length > 0) {
-      const names = (previouslyDeclined as { toUserId?: { name?: string; displayName?: string } }[]).map(
+      const names = (previouslyDeclined as unknown as { toUserId?: { name?: string; displayName?: string } }[]).map(
         (inv) => {
           const u = inv.toUserId;
           return (u?.displayName && u.displayName.trim()) || u?.name || "This player";
