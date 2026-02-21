@@ -57,6 +57,21 @@ function validateBody(body: unknown): {
   if (!igns.includes(b.rewardReceiverIGN.trim())) {
     return { ok: false, status: 400, message: "rewardReceiverIGN must be one of the players' Minecraft IGN" };
   }
+  const seenKeys = new Set<string>();
+  for (let i = 0; i < b.players.length; i++) {
+    const ign = (b.players[i].minecraftIGN ?? "").trim().toLowerCase();
+    const discord = (b.players[i].discordUsername ?? "").trim();
+    if (!ign || !discord) continue;
+    const key = `${ign}|${discord}`;
+    if (seenKeys.has(key)) {
+      return {
+        ok: false,
+        status: 400,
+        message: `Same Minecraft IGN and Discord cannot appear twice. Player ${i + 1} duplicates another.`,
+      };
+    }
+    seenKeys.add(key);
+  }
 
   const hasId = typeof b.tournamentId === "string" && b.tournamentId.trim() && mongoose.Types.ObjectId.isValid(b.tournamentId.trim());
   const hasDate = typeof b.tournamentDate === "string" && b.tournamentDate.trim();
@@ -134,9 +149,57 @@ async function registerWithTournamentId(
     );
   }
 
+  const tournamentIdObj = new mongoose.Types.ObjectId(tournamentId);
+  const existingTeam = await Team.findOne({ teamName, tournamentId: tournamentIdObj }).lean();
+  const isUpdateOwn =
+    existingTeam &&
+    captainId &&
+    (existingTeam as { captainId?: mongoose.Types.ObjectId }).captainId?.toString() === captainId;
+
+  if (existingTeam && isUpdateOwn) {
+    // Same captain re-registering same team name: update players/reward, allow same IGNs (their own)
+    const otherTeams = await Team.find(
+      { tournamentId: tournamentIdObj, _id: { $ne: existingTeam._id } },
+      { "players.minecraftIGN": 1, "players.discordUsername": 1 }
+    );
+    const usedPlayerKeys = new Set<string>();
+    for (const t of otherTeams) {
+      for (const p of t.players) {
+        usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
+      }
+    }
+    const duplicate = players.find(
+      (p) => usedPlayerKeys.has(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`)
+    );
+    if (duplicate) {
+      return NextResponse.json(
+        { error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already on another team for this tournament.` },
+        { status: 409 }
+      );
+    }
+    await Team.updateOne(
+      { _id: existingTeam._id },
+      { $set: { players, rewardReceiverIGN } }
+    );
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Team updated successfully",
+        teamId: (existingTeam as { _id: mongoose.Types.ObjectId })._id.toString(),
+      },
+      { status: 200 }
+    );
+  }
+
+  if (existingTeam) {
+    return NextResponse.json(
+      { error: "Team name already registered for this tournament" },
+      { status: 409 }
+    );
+  }
+
   // One team per user per tournament: block if this user is already in a team (captain or player)
   if (captainId) {
-    const tournamentIdObj = new mongoose.Types.ObjectId(tournamentId);
     const existingUserTeam = await Team.findOne({
       tournamentId: tournamentIdObj,
       $or: [
@@ -152,29 +215,23 @@ async function registerWithTournamentId(
     }
   }
 
-  const existingTeam = await Team.findOne({ teamName, tournamentId });
-  if (existingTeam) {
-    return NextResponse.json(
-      { error: "Team name already registered for this tournament" },
-      { status: 409 }
-    );
-  }
-
-  const incomingIGNs = players.map((p) => p.minecraftIGN);
+  // Same IGN is allowed if Discord is different (different people). Block only when IGN + Discord both match.
   const existingTeams = await Team.find(
-    { tournamentId: new mongoose.Types.ObjectId(tournamentId) },
-    { "players.minecraftIGN": 1 }
+    { tournamentId: tournamentIdObj },
+    { "players.minecraftIGN": 1, "players.discordUsername": 1 }
   );
-  const usedIGNs = new Set<string>();
+  const usedPlayerKeys = new Set<string>();
   for (const t of existingTeams) {
     for (const p of t.players) {
-      usedIGNs.add(p.minecraftIGN);
+      usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
     }
   }
-  const duplicateIGN = incomingIGNs.find((ign) => usedIGNs.has(ign));
-  if (duplicateIGN) {
+  const duplicate = players.find(
+    (p) => usedPlayerKeys.has(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`)
+  );
+  if (duplicate) {
     return NextResponse.json(
-      { error: `Player "${duplicateIGN}" is already registered for this tournament` },
+      { error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this tournament.` },
       { status: 409 }
     );
   }
@@ -250,21 +307,22 @@ async function registerWithTournamentDate(
     );
   }
 
-  const incomingIGNs = players.map((p) => p.minecraftIGN);
   const existingTeamsForDate = await Team.find(
     { tournamentDate },
-    { "players.minecraftIGN": 1 }
+    { "players.minecraftIGN": 1, "players.discordUsername": 1 }
   );
-  const usedIGNs = new Set<string>();
+  const usedPlayerKeys = new Set<string>();
   for (const t of existingTeamsForDate) {
     for (const p of t.players) {
-      usedIGNs.add(p.minecraftIGN);
+      usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
     }
   }
-  const duplicateIGN = incomingIGNs.find((ign) => usedIGNs.has(ign));
-  if (duplicateIGN) {
+  const duplicate = players.find(
+    (p) => usedPlayerKeys.has(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`)
+  );
+  if (duplicate) {
     return NextResponse.json(
-      { error: `Player "${duplicateIGN}" is already registered for this date` },
+      { error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this date.` },
       { status: 409 }
     );
   }

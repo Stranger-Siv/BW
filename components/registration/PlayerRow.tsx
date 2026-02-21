@@ -6,6 +6,8 @@ type PlayerRowProps = {
   discordUsername: string;
   onIGNChange: (value: string) => void;
   onDiscordChange: (value: string) => void;
+  /** Shown under the row when this player (IGN + Discord) is already registered in this tournament */
+  error?: string | null;
 };
 
 const inputBase =
@@ -17,9 +19,10 @@ export function PlayerRow({
   discordUsername,
   onIGNChange,
   onDiscordChange,
+  error,
 }: PlayerRowProps) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5 sm:p-5">
+    <div className={`rounded-xl border p-4 sm:p-5 ${error ? "border-red-400/50 bg-red-500/5 dark:border-red-500/50 dark:bg-red-500/5" : "border-white/10 bg-white/5 dark:border-white/10 dark:bg-white/5"}`}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -48,6 +51,11 @@ export function PlayerRow({
           />
         </label>
       </div>
+      {error && (
+        <p className="mt-3 text-sm text-red-400 dark:text-red-300" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -72,6 +72,27 @@ export default function TournamentsPage() {
   const [teamNameAvailable, setTeamNameAvailable] = useState<boolean | null>(null);
   const [teamNameCheckLoading, setTeamNameCheckLoading] = useState(false);
   const [teamNameSuggestions, setTeamNameSuggestions] = useState<string[]>([]);
+  const [playerErrors, setPlayerErrors] = useState<Record<number, string>>({});
+  const [playersCheckLoading, setPlayersCheckLoading] = useState(false);
+
+  const duplicateWithinForm = useMemo(() => {
+    const key = (ign: string, discord: string) => `${(ign || "").trim().toLowerCase()}|${(discord || "").trim()}`;
+    const seen = new Map<string, number>();
+    const err: Record<number, string> = {};
+    players.forEach((p, i) => {
+      const k = key(p.minecraftIGN, p.discordUsername);
+      if (!k || k === "|") return;
+      if (seen.has(k)) {
+        err[seen.get(k)!] = "Same Minecraft IGN + Discord cannot appear twice.";
+        err[i] = "Same Minecraft IGN + Discord cannot appear twice.";
+      } else {
+        seen.set(k, i);
+      }
+    });
+    return err;
+  }, [players]);
+
+  const allPlayerErrors = useMemo(() => ({ ...duplicateWithinForm, ...playerErrors }), [duplicateWithinForm, playerErrors]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +127,7 @@ export default function TournamentsPage() {
       setSuccessMessage(null);
       setMeDisplayName(null);
       setTeamNameAvailable(null);
+      setPlayerErrors({});
     }
   }, [selectedTournament]);
 
@@ -146,6 +168,43 @@ export default function TournamentsPage() {
       cancelled = true;
     };
   }, [selectedTournament?.teamSize, selectedTournament?._id, session?.user?.id]);
+
+  useEffect(() => {
+    if (!selectedTournament) {
+      setPlayerErrors({});
+      return;
+    }
+    const hasAnyFilled = players.some((p) => (p.minecraftIGN || "").trim() && (p.discordUsername || "").trim());
+    if (!hasAnyFilled) {
+      setPlayerErrors({});
+      return;
+    }
+    const timer = setTimeout(() => {
+      setPlayersCheckLoading(true);
+      const body: { players: { minecraftIGN: string; discordUsername: string }[]; teamName?: string; captainId?: string } = {
+        players: players.map((p) => ({ minecraftIGN: (p.minecraftIGN || "").trim(), discordUsername: (p.discordUsername || "").trim() })),
+      };
+      if (teamName.trim()) body.teamName = teamName.trim();
+      if (session?.user?.id) body.captainId = session.user.id;
+      fetch(`/api/tournaments/${selectedTournament._id}/check-players`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        cache: "no-store",
+      })
+        .then((r) => r.json())
+        .then((data: { taken?: { index: number; minecraftIGN: string; discordUsername: string }[] }) => {
+          const next: Record<number, string> = {};
+          for (const t of data.taken ?? []) {
+            next[t.index] = "This Minecraft IGN + Discord is already registered for this tournament. Each player can only be on one team.";
+          }
+          setPlayerErrors(next);
+        })
+        .catch(() => setPlayerErrors({}))
+        .finally(() => setPlayersCheckLoading(false));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [selectedTournament?._id, players, teamName, session?.user?.id]);
 
   useEffect(() => {
     if (!selectedTournament || selectedTournament.teamSize === 1) {
@@ -197,6 +256,11 @@ export default function TournamentsPage() {
         setSubmitError("This team name is already taken for this tournament. Choose another.");
         return;
       }
+      const hasPlayerError = Object.keys(allPlayerErrors).length > 0;
+      if (hasPlayerError) {
+        setSubmitError("Fix player errors: same IGN + Discord cannot appear twice, and each player can only be on one team in this tournament.");
+        return;
+      }
       const err = validateForm(teamName, players, rewardReceiverIGN, selectedTournament.teamSize);
       if (err) {
         setSubmitError(err);
@@ -234,7 +298,7 @@ export default function TournamentsPage() {
         setSubmitLoading(false);
       }
     },
-    [selectedTournament, teamName, players, rewardReceiverIGN, teamNameAvailable]
+    [selectedTournament, teamName, players, rewardReceiverIGN, teamNameAvailable, allPlayerErrors]
   );
 
   return (
@@ -451,12 +515,16 @@ export default function TournamentsPage() {
                       <div className="w-full">
                         <h3 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">Your details</h3>
                         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-1">
+                          {(playersCheckLoading && (players[0]?.minecraftIGN?.trim() && players[0]?.discordUsername?.trim())) && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Checking if this player is already registered…</p>
+                          )}
                           <PlayerRow
                             index={0}
                             minecraftIGN={players[0]?.minecraftIGN ?? ""}
                             discordUsername={players[0]?.discordUsername ?? ""}
                             onIGNChange={(v) => updatePlayer(0, "minecraftIGN", v)}
                             onDiscordChange={(v) => updatePlayer(0, "discordUsername", v)}
+                            error={allPlayerErrors[0]}
                           />
                         </div>
                       </div>
@@ -476,7 +544,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
+                      <button type="submit" disabled={submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
@@ -484,6 +552,9 @@ export default function TournamentsPage() {
                     <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
                       <div className="w-full">
                         <h3 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">All players (Minecraft IGN & Discord)</h3>
+                        {playersCheckLoading && players.some((p) => (p.minecraftIGN || "").trim() && (p.discordUsername || "").trim()) && (
+                          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Checking if any player is already registered…</p>
+                        )}
                         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                           {players.map((player, idx) => (
                             <PlayerRow
@@ -493,6 +564,7 @@ export default function TournamentsPage() {
                               discordUsername={player.discordUsername}
                               onIGNChange={(v) => updatePlayer(idx, "minecraftIGN", v)}
                               onDiscordChange={(v) => updatePlayer(idx, "discordUsername", v)}
+                              error={allPlayerErrors[idx]}
                             />
                           ))}
                         </div>
@@ -513,7 +585,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
+                      <button type="submit" disabled={submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
