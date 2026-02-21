@@ -13,10 +13,17 @@ type TeamRow = {
   tournamentId?: { _id: string; name: string; date: string } | string;
 };
 
+type WinnerInfo = {
+  teamName: string;
+  rewardReceiverIGN: string;
+  players: { minecraftIGN: string; discordUsername: string }[];
+};
+
 export default function MyMatchesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [winners, setWinners] = useState<Record<string, WinnerInfo>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +42,31 @@ export default function MyMatchesPage() {
       .then((res) => (res.ok ? res.json() : []))
       .then((list: TeamRow[]) => {
         if (!cancelled) setTeams(Array.isArray(list) ? list : []);
+        const ids = new Set<string>();
+        for (const t of Array.isArray(list) ? list : []) {
+          const tour = typeof t.tournamentId === "object" && t.tournamentId != null ? t.tournamentId : null;
+          const tid = tour && "_id" in tour ? tour._id : null;
+          if (tid) ids.add(tid);
+        }
+        return Array.from(ids);
+      })
+      .then((tournamentIds: string[]) => {
+        if (cancelled || tournamentIds.length === 0) return;
+        return Promise.all(
+          tournamentIds.map((tid) =>
+            fetch(`/api/tournaments/${tid}/winner`, { cache: "no-store" })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((w: WinnerInfo | null) => (cancelled ? null : { tid, w }))
+          )
+        );
+      })
+      .then((results) => {
+        if (cancelled || !results) return;
+        const map: Record<string, WinnerInfo> = {};
+        for (const r of results) {
+          if (r?.w) map[r.tid] = r.w;
+        }
+        setWinners(map);
       })
       .catch(() => {
         if (!cancelled) setTeams([]);
@@ -95,6 +127,7 @@ export default function MyMatchesPage() {
               const tournamentId = tournament && "_id" in tournament ? tournament._id : null;
               const tournamentName = tournament && "name" in tournament ? tournament.name : "Tournament";
               const tournamentDate = tournament && "date" in tournament ? tournament.date : "";
+              const winner = tournamentId ? winners[tournamentId] : null;
 
               return (
                 <li key={team._id} className="card-glass transition-all duration-300 hover:shadow-lg p-4">
@@ -103,6 +136,12 @@ export default function MyMatchesPage() {
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
                         {tournamentName}
                       </p>
+                      {winner && (
+                        <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                          Winner: {winner.teamName}
+                          {winner.rewardReceiverIGN && ` (Reward: ${winner.rewardReceiverIGN})`}
+                        </p>
+                      )}
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         {tournamentDate ? formatDateLabel(tournamentDate) : ""}
                         {tournamentDate && " · "}

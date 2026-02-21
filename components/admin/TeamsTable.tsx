@@ -14,11 +14,15 @@ export type AdminTeam = {
 
 type TeamsTableProps = {
   teams: AdminTeam[];
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (checked: boolean) => void;
   onApprove: (team: AdminTeam) => void;
   onReject: (team: AdminTeam) => void;
   onChangeDate: (team: AdminTeam) => void;
   onDisband: (team: AdminTeam) => void;
   actionLoadingId: string | null;
+  bulkLoading?: boolean;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -40,11 +44,15 @@ function StatusBadge({ status }: { status: string }) {
 
 export function TeamsTable({
   teams,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
   onApprove,
   onReject,
   onChangeDate,
   onDisband,
   actionLoadingId,
+  bulkLoading = false,
 }: TeamsTableProps) {
   if (teams.length === 0) {
     return (
@@ -54,11 +62,22 @@ export function TeamsTable({
     );
   }
 
+  const allSelected = teams.length > 0 && teams.every((t) => selectedIds.has(t._id));
+
   return (
     <div className="card-glass overflow-x-auto [-webkit-overflow-scrolling:touch]">
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-white/10 dark:border-white/10">
+            <th className="w-10 px-2 py-3">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={(e) => onToggleSelectAll(e.target.checked)}
+                aria-label="Select all teams"
+                className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-400/50 dark:border-white/20"
+              />
+            </th>
             <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">
               Team name
             </th>
@@ -81,12 +100,22 @@ export function TeamsTable({
         </thead>
         <tbody>
           {teams.map((team) => {
-            const loading = actionLoadingId === team._id;
+            const loading = bulkLoading || actionLoadingId === team._id;
+            const isSelected = selectedIds.has(team._id);
             return (
               <tr
                 key={team._id}
-                className="border-b border-white/10 transition last:border-0 hover:bg-white/5 dark:border-white/10 dark:hover:bg-white/5"
+                className={`border-b border-white/10 transition last:border-0 hover:bg-white/5 dark:border-white/10 dark:hover:bg-white/5 ${isSelected ? "bg-emerald-500/5 dark:bg-emerald-500/5" : ""}`}
               >
+                <td className="w-10 px-2 py-3">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(team._id)}
+                    aria-label={`Select ${team.teamName}`}
+                    className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-400/50 dark:border-white/20"
+                  />
+                </td>
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">
                   {team.teamName}
                 </td>

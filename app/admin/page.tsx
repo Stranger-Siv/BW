@@ -48,12 +48,19 @@ export default function AdminPage() {
   const [disbandTeam, setDisbandTeam] = useState<AdminTeam | null>(null);
   const [disbandLoading, setDisbandLoading] = useState(false);
 
+  const [selectedTeamIds, setSelectedTeamIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkDisbandTeams, setBulkDisbandTeams] = useState<AdminTeam[] | null>(null);
+  const [bulkDisbandLoading, setBulkDisbandLoading] = useState(false);
+
   const [addTeamName, setAddTeamName] = useState("");
   const [addTeamPlayers, setAddTeamPlayers] = useState<IPlayer[]>([]);
   const [addTeamRewardReceiver, setAddTeamRewardReceiver] = useState("");
   const [addTeamLoading, setAddTeamLoading] = useState(false);
   const [addTeamError, setAddTeamError] = useState<string | null>(null);
   const [addTeamSuccess, setAddTeamSuccess] = useState<string | null>(null);
+  const [addTeamPlayerErrors, setAddTeamPlayerErrors] = useState<Record<number, string>>({});
+  const [addTeamPlayersCheckLoading, setAddTeamPlayersCheckLoading] = useState(false);
 
   const selectedTournament = tournaments.find((t) => t._id === selectedTournamentId);
 
@@ -117,8 +124,49 @@ export default function AdminPage() {
       setAddTeamRewardReceiver("");
       setAddTeamError(null);
       setAddTeamSuccess(null);
+      setAddTeamPlayerErrors({});
+      setSelectedTeamIds(new Set());
     }
   }, [selectedTournamentId, selectedTournament?.teamSize]);
+
+  useEffect(() => {
+    if (!selectedTournamentId || !selectedTournament) {
+      setAddTeamPlayerErrors({});
+      return;
+    }
+    const hasAnyFilled = addTeamPlayers.some(
+      (p) => (p.minecraftIGN ?? "").trim() && (p.discordUsername ?? "").trim()
+    );
+    if (!hasAnyFilled) {
+      setAddTeamPlayerErrors({});
+      return;
+    }
+    const timer = setTimeout(() => {
+      setAddTeamPlayersCheckLoading(true);
+      fetch(`/api/tournaments/${selectedTournamentId}/check-players`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          players: addTeamPlayers.map((p) => ({
+            minecraftIGN: (p.minecraftIGN ?? "").trim(),
+            discordUsername: (p.discordUsername ?? "").trim(),
+          })),
+        }),
+        cache: "no-store",
+      })
+        .then((r) => r.json())
+        .then((data: { taken?: { index: number }[] }) => {
+          const next: Record<number, string> = {};
+          for (const t of data.taken ?? []) {
+            next[t.index] = "This player is already on another team in this tournament.";
+          }
+          setAddTeamPlayerErrors(next);
+        })
+        .catch(() => setAddTeamPlayerErrors({}))
+        .finally(() => setAddTeamPlayersCheckLoading(false));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [selectedTournamentId, selectedTournament, addTeamPlayers]);
 
   const refetch = useCallback(() => {
     if (selectedTournamentId) fetchTeams(selectedTournamentId);
@@ -203,6 +251,113 @@ export default function AdminPage() {
     setDisbandTeam(team);
   }, []);
 
+  const toggleTeamSelection = useCallback((id: string) => {
+    setSelectedTeamIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllTeams = useCallback(
+    (checked: boolean) => {
+      if (checked) setSelectedTeamIds(new Set(teams.map((t) => t._id)));
+      else setSelectedTeamIds(new Set());
+    },
+    [teams]
+  );
+
+  const selectedTeams = useMemo(
+    () => teams.filter((t) => selectedTeamIds.has(t._id)),
+    [teams, selectedTeamIds]
+  );
+
+  const bulkApprove = useCallback(async () => {
+    const ids = selectedTeams.filter((t) => t.status !== "approved").map((t) => t._id);
+    if (ids.length === 0) return;
+    setBulkLoading(true);
+    setActionError(null);
+    try {
+      const results = await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/admin/team/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "approved" }),
+          }).then((r) => ({ ok: r.ok, id }))
+        )
+      );
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) setActionError(`Approve failed for ${failed.length} team(s).`);
+      else {
+        setSelectedTeamIds(new Set());
+        refetch();
+      }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Bulk approve failed");
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [selectedTeams, refetch]);
+
+  const bulkReject = useCallback(async () => {
+    const ids = selectedTeams.filter((t) => t.status !== "rejected").map((t) => t._id);
+    if (ids.length === 0) return;
+    setBulkLoading(true);
+    setActionError(null);
+    try {
+      const results = await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/admin/team/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: "rejected" }),
+          }).then((r) => ({ ok: r.ok, id }))
+        )
+      );
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) setActionError(`Reject failed for ${failed.length} team(s).`);
+      else {
+        setSelectedTeamIds(new Set());
+        refetch();
+      }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Bulk reject failed");
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [selectedTeams, refetch]);
+
+  const openBulkDisband = useCallback(() => {
+    if (selectedTeams.length === 0) return;
+    setBulkDisbandTeams(selectedTeams);
+  }, [selectedTeams]);
+
+  const handleBulkDisbandConfirm = useCallback(async () => {
+    if (!bulkDisbandTeams?.length) return;
+    setBulkDisbandLoading(true);
+    setActionError(null);
+    try {
+      const results = await Promise.all(
+        bulkDisbandTeams.map((t) =>
+          fetch(`/api/admin/team/${t._id}`, { method: "DELETE" }).then((r) => ({ ok: r.ok, id: t._id }))
+        )
+      );
+      const failed = results.filter((r) => !r.ok);
+      if (failed.length > 0) setActionError(`Disband failed for ${failed.length} team(s).`);
+      else {
+        setBulkDisbandTeams(null);
+        setSelectedTeamIds(new Set());
+        refetch();
+      }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Bulk disband failed");
+    } finally {
+      setBulkDisbandLoading(false);
+    }
+  }, [bulkDisbandTeams, refetch]);
+
   const handleDisbandConfirm = useCallback(async () => {
     if (!disbandTeam) return;
     setDisbandLoading(true);
@@ -242,6 +397,10 @@ export default function AdminPage() {
       const required = selectedTournament.teamSize;
       if (!addTeamName.trim()) {
         setAddTeamError("Team name is required.");
+        return;
+      }
+      if (Object.keys(addTeamPlayerErrors).length > 0) {
+        setAddTeamError("One or more players are already on another team in this tournament.");
         return;
       }
       if (addTeamPlayers.length !== required) {
@@ -285,7 +444,7 @@ export default function AdminPage() {
         setAddTeamLoading(false);
       }
     },
-    [selectedTournamentId, selectedTournament, addTeamName, addTeamPlayers, addTeamRewardReceiver, addTeamRewardOptions, refetch]
+    [selectedTournamentId, selectedTournament, addTeamName, addTeamPlayers, addTeamRewardReceiver, addTeamRewardOptions, addTeamPlayerErrors, refetch]
   );
 
   const tournamentOptionsForModal: TournamentOption[] = tournaments.map((t) => ({
@@ -431,6 +590,11 @@ export default function AdminPage() {
                         <h4 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">
                           Players (Minecraft IGN & Discord)
                         </h4>
+                        {addTeamPlayersCheckLoading && addTeamPlayers.some((p) => (p.minecraftIGN ?? "").trim() && (p.discordUsername ?? "").trim()) && (
+                          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                            Checking if any player is already on a team…
+                          </p>
+                        )}
                         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                           {addTeamPlayers.map((player, idx) => (
                             <PlayerRow
@@ -440,6 +604,7 @@ export default function AdminPage() {
                               discordUsername={player.discordUsername}
                               onIGNChange={(v) => updateAddTeamPlayer(idx, "minecraftIGN", v)}
                               onDiscordChange={(v) => updateAddTeamPlayer(idx, "discordUsername", v)}
+                              error={addTeamPlayerErrors[idx]}
                             />
                           ))}
                         </div>
@@ -468,7 +633,7 @@ export default function AdminPage() {
                       )}
                       <button
                         type="submit"
-                        disabled={addTeamLoading}
+                        disabled={addTeamLoading || Object.keys(addTeamPlayerErrors).length > 0}
                         className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]"
                       >
                         {addTeamLoading ? "Adding…" : "Add team"}
@@ -484,9 +649,49 @@ export default function AdminPage() {
               )}
 
               <div className="mt-6 space-y-6">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                  Registered teams
-                </h3>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                    Registered teams
+                  </h3>
+                  {selectedTeamIds.size > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        {selectedTeamIds.size} selected
+                      </span>
+                      <button
+                        type="button"
+                        onClick={bulkApprove}
+                        disabled={bulkLoading || selectedTeams.every((t) => t.status === "approved")}
+                        className="min-h-[36px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-1.5 text-xs font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-50"
+                      >
+                        {bulkLoading ? "Processing…" : "Approve selected"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={bulkReject}
+                        disabled={bulkLoading || selectedTeams.every((t) => t.status === "rejected")}
+                        className="min-h-[36px] rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-300"
+                      >
+                        {bulkLoading ? "Processing…" : "Reject selected"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={openBulkDisband}
+                        disabled={bulkLoading}
+                        className="min-h-[36px] rounded-full border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-50 dark:text-red-300"
+                      >
+                        Disband selected
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTeamIds(new Set())}
+                        className="min-h-[36px] rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/15 dark:text-slate-500 dark:hover:bg-white/15"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {teamsLoading ? (
                   <div className="flex items-center justify-center gap-2 py-12 text-slate-500 dark:text-slate-400">
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
@@ -497,21 +702,28 @@ export default function AdminPage() {
                     <div className="hidden md:block">
                       <TeamsTable
                         teams={teams}
+                        selectedIds={selectedTeamIds}
+                        onToggleSelect={toggleTeamSelection}
+                        onToggleSelectAll={toggleSelectAllTeams}
                         onApprove={handleApprove}
                         onReject={handleReject}
                         onChangeDate={openChangeDate}
                         onDisband={openDisband}
                         actionLoadingId={actionLoadingId}
+                        bulkLoading={bulkLoading}
                       />
                     </div>
                     <div className="md:hidden">
                       <TeamsCards
                         teams={teams}
+                        selectedIds={selectedTeamIds}
+                        onToggleSelect={toggleTeamSelection}
                         onApprove={handleApprove}
                         onReject={handleReject}
                         onChangeDate={openChangeDate}
                         onDisband={openDisband}
                         actionLoadingId={actionLoadingId}
+                        bulkLoading={bulkLoading}
                       />
                     </div>
                   </>
@@ -555,6 +767,21 @@ export default function AdminPage() {
         onConfirm={handleDisbandConfirm}
         onCancel={() => setDisbandTeam(null)}
         loading={disbandLoading}
+      />
+
+      <ConfirmModal
+        open={!!bulkDisbandTeams?.length}
+        title="Disband selected teams"
+        message={
+          bulkDisbandTeams?.length
+            ? `Are you sure you want to disband ${bulkDisbandTeams.length} team${bulkDisbandTeams.length !== 1 ? "s" : ""}? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Disband all"
+        variant="danger"
+        onConfirm={handleBulkDisbandConfirm}
+        onCancel={() => setBulkDisbandTeams(null)}
+        loading={bulkDisbandLoading}
       />
     </main>
   );

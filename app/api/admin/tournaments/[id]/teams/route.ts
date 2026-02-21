@@ -147,28 +147,30 @@ export async function POST(
       );
     }
 
+    // Build set of (IGN + Discord) already registered in this tournament (any team)
     const existingTeams = await Team.find(
       { tournamentId: tournamentIdObj },
-      { "players.minecraftIGN": 1, "players.discordUsername": 1 }
+      { players: 1 }
     ).lean();
     const usedPlayerKeys = new Set<string>();
     for (const team of existingTeams) {
-      for (const p of team.players ?? []) {
-        usedPlayerKeys.add(
-          `${((p as IPlayer).minecraftIGN ?? "").trim().toLowerCase()}|${((p as IPlayer).discordUsername ?? "").trim()}`
-        );
+      const list = (team as { players?: unknown[] }).players ?? [];
+      for (const p of list) {
+        const ign = (p as Record<string, unknown>).minecraftIGN;
+        const discord = (p as Record<string, unknown>).discordUsername;
+        const ignStr = typeof ign === "string" ? ign.trim().toLowerCase() : "";
+        const discordStr = typeof discord === "string" ? discord.trim() : "";
+        if (ignStr && discordStr) usedPlayerKeys.add(`${ignStr}|${discordStr}`);
       }
     }
-    const duplicate = players.find(
-      (p) =>
-        usedPlayerKeys.has(
-          `${p.minecraftIGN.trim().toLowerCase()}|${p.discordUsername.trim()}`
-        )
-    );
+    const duplicate = players.find((p) => {
+      const key = `${p.minecraftIGN.trim().toLowerCase()}|${p.discordUsername.trim()}`;
+      return usedPlayerKeys.has(key);
+    });
     if (duplicate) {
       return NextResponse.json(
         {
-          error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this tournament.`,
+          error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this tournament. Each player can only be on one team.`,
         },
         { status: 409 }
       );

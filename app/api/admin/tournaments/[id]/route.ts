@@ -26,6 +26,7 @@ type PatchBody = {
   description?: string;
   prize?: string;
   serverIP?: string;
+  winnerTeamId?: string | null;
 };
 
 function validatePatchBody(
@@ -101,13 +102,22 @@ function validatePatchBody(
   if (b.description !== undefined) updates.description = String(b.description).trim() || undefined;
   if (b.prize !== undefined) updates.prize = String(b.prize).trim() || undefined;
   if (b.serverIP !== undefined) updates.serverIP = String(b.serverIP).trim() || undefined;
+  if (b.winnerTeamId !== undefined) {
+    if (b.winnerTeamId === null || b.winnerTeamId === "") {
+      updates.winnerTeamId = null;
+    } else if (typeof b.winnerTeamId === "string" && mongoose.Types.ObjectId.isValid(b.winnerTeamId)) {
+      updates.winnerTeamId = new mongoose.Types.ObjectId(b.winnerTeamId);
+    } else {
+      return { ok: false, status: 400, message: "winnerTeamId must be a valid ObjectId or null" };
+    }
+  }
 
   if (Object.keys(updates).length === 0) {
     return {
       ok: false,
       status: 400,
       message:
-        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, isClosed, description, prize, serverIP",
+        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, isClosed, description, prize, serverIP, winnerTeamId",
     };
   }
 

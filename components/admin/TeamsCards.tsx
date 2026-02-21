@@ -5,11 +5,14 @@ import type { AdminTeam } from "./TeamsTable";
 
 type TeamsCardsProps = {
   teams: AdminTeam[];
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
   onApprove: (team: AdminTeam) => void;
   onReject: (team: AdminTeam) => void;
   onChangeDate: (team: AdminTeam) => void;
   onDisband: (team: AdminTeam) => void;
   actionLoadingId: string | null;
+  bulkLoading?: boolean;
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -28,11 +31,14 @@ function StatusBadge({ status }: { status: string }) {
 
 export function TeamsCards({
   teams,
+  selectedIds,
+  onToggleSelect,
   onApprove,
   onReject,
   onChangeDate,
   onDisband,
   actionLoadingId,
+  bulkLoading = false,
 }: TeamsCardsProps) {
   if (teams.length === 0) {
     return (
@@ -45,16 +51,26 @@ export function TeamsCards({
   return (
     <div className="space-y-4">
       {teams.map((team) => {
-        const loading = actionLoadingId === team._id;
+        const loading = bulkLoading || actionLoadingId === team._id;
+        const isSelected = selectedIds.has(team._id);
         return (
           <div
             key={team._id}
-            className="card-glass p-4 transition-all duration-300 hover:shadow-lg"
+            className={`card-glass p-4 transition-all duration-300 hover:shadow-lg ${isSelected ? "ring-2 ring-emerald-400/50 dark:ring-emerald-500/50" : ""}`}
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                {team.teamName}
-              </h3>
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleSelect(team._id)}
+                  aria-label={`Select ${team.teamName}`}
+                  className="h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-400/50 dark:border-white/20"
+                />
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                  {team.teamName}
+                </h3>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <StatusBadge status={team.status} />
                 <span className="inline-flex rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">

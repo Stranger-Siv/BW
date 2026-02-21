@@ -29,6 +29,7 @@ export interface ITournament {
   prize?: string;
   serverIP?: string;
   isClosed: boolean;
+  winnerTeamId?: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -57,6 +58,7 @@ const tournamentSchema = new Schema<ITournament>(
     prize: { type: String },
     serverIP: { type: String },
     isClosed: { type: Boolean, default: false },
+    winnerTeamId: { type: Schema.Types.ObjectId, ref: "Team" },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

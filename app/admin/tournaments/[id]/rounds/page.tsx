@@ -13,14 +13,16 @@ type RoundDoc = {
   teamIds: string[];
 };
 
-type TeamDoc = { _id: string; teamName: string };
+type TeamDoc = { _id: string; teamName: string; rewardReceiverIGN?: string };
 
 export default function AdminTournamentRoundsPage() {
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : "";
   const [tournamentName, setTournamentName] = useState("");
+  const [winnerTeamId, setWinnerTeamId] = useState<string | null>(null);
   const [rounds, setRounds] = useState<RoundDoc[]>([]);
   const [teams, setTeams] = useState<TeamDoc[]>([]);
+  const [winnerLoading, setWinnerLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newRoundName, setNewRoundName] = useState("");
@@ -57,6 +59,7 @@ export default function AdminTournamentRoundsPage() {
     const data = await res.json();
     const t = Array.isArray(data) ? data.find((x: { _id: string }) => x._id === id) : null;
     setTournamentName(t?.name ?? "Tournament");
+    setWinnerTeamId(t?.winnerTeamId ?? null);
   }, [id]);
 
   useEffect(() => {
@@ -234,6 +237,59 @@ export default function AdminTournamentRoundsPage() {
     }
   };
 
+  const setWinner = useCallback(
+    async (teamId: string) => {
+      setWinnerLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/admin/tournaments/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ winnerTeamId: teamId }),
+        });
+        if (!res.ok) throw new Error("Failed to set winner");
+        setWinnerTeamId(teamId);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to set winner");
+      } finally {
+        setWinnerLoading(false);
+      }
+    },
+    [id]
+  );
+
+  const clearWinner = useCallback(async () => {
+    setWinnerLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/tournaments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winnerTeamId: null }),
+      });
+      if (!res.ok) throw new Error("Failed to clear winner");
+      setWinnerTeamId(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to clear winner");
+    } finally {
+      setWinnerLoading(false);
+    }
+  }, [id]);
+
+  const handleWinnerDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragged(null);
+    try {
+      const raw = e.dataTransfer.getData("text/plain");
+      const { teamId } = JSON.parse(raw) as { teamId: string; roundId: string };
+      setWinner(teamId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const winnerTeam = winnerTeamId ? teams.find((t) => t._id === winnerTeamId) : null;
+
   const teamIdToName = useCallback(
     (tid: string) => teams.find((t) => t._id === tid)?.teamName ?? tid.slice(-6),
     [teams]
@@ -288,6 +344,47 @@ export default function AdminTournamentRoundsPage() {
               >
                 {addRoundLoading ? "Adding…" : "Add round"}
               </button>
+            </div>
+
+            {/* Winner section */}
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleWinnerDrop}
+              className={`mb-6 rounded-xl border-2 border-dashed p-4 transition-colors ${
+                winnerTeam
+                  ? "border-amber-500/60 bg-amber-50/80 dark:border-amber-400/50 dark:bg-amber-900/20"
+                  : "border-slate-400/50 bg-slate-100/80 dark:border-slate-600 dark:bg-slate-800/40"
+              }`}
+            >
+              <h2 className="mb-2 font-semibold text-slate-800 dark:text-slate-200">
+                Tournament winner
+              </h2>
+              {winnerLoading ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Updating…</p>
+              ) : winnerTeam ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="font-medium text-amber-700 dark:text-amber-300">
+                    {winnerTeam.teamName}
+                  </span>
+                  {winnerTeam.rewardReceiverIGN && (
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      Reward: {winnerTeam.rewardReceiverIGN}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={clearWinner}
+                    disabled={winnerLoading}
+                    className="rounded bg-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-400 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 disabled:opacity-50"
+                  >
+                    Clear winner
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Drag a team from any round here to set as tournament winner.
+                </p>
+              )}
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">

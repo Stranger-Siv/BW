@@ -19,6 +19,11 @@ export default function TournamentRoundsPage() {
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : "";
   const [rounds, setRounds] = useState<RoundPublic[]>([]);
+  const [winner, setWinner] = useState<{
+    teamName: string;
+    rewardReceiverIGN: string;
+    players: { minecraftIGN: string; discordUsername: string }[];
+  } | null>(null);
   const [tournamentName, setTournamentName] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +37,8 @@ export default function TournamentRoundsPage() {
       return;
     }
     const data = await res.json();
-    setRounds(Array.isArray(data) ? data : []);
+    setRounds(Array.isArray(data) ? data : (data.rounds ?? []));
+    setWinner(data.winner ?? null);
   }, [id]);
 
   useEffect(() => {
@@ -96,6 +102,30 @@ export default function TournamentRoundsPage() {
           <p className="text-slate-500 dark:text-slate-400">Loading…</p>
         ) : (
           <>
+            {winner && (
+              <div className="card-glass mb-6 border-emerald-400/30 bg-emerald-500/10 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                  Tournament winner
+                </h2>
+                <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
+                  {winner.teamName}
+                </p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  Reward receiver: <span className="font-medium text-emerald-600 dark:text-emerald-400">{winner.rewardReceiverIGN}</span>
+                </p>
+                {winner.players.length > 0 && (
+                  <ul className="mt-3 list-inside list-disc text-sm text-slate-600 dark:text-slate-400">
+                    {winner.players.map((p, i) => (
+                      <li key={i}>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{p.minecraftIGN}</span>
+                        <span className="text-slate-500 dark:text-slate-500"> · {p.discordUsername}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             {nextRound && (
               <div className="card-glass mb-6 p-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-400">
