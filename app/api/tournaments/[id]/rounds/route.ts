@@ -18,7 +18,7 @@ export async function GET(
     const rounds = await Round.find({ tournamentId: id })
       .sort({ roundNumber: 1 })
       .lean();
-    const teamIds = rounds.flatMap((r) => (r as { teamIds: mongoose.Types.ObjectId[] }).teamIds);
+    const teamIds = rounds.flatMap((r) => (r as unknown as { teamIds: mongoose.Types.ObjectId[] }).teamIds);
     const teams = await Team.find({ _id: { $in: teamIds } })
       .select("_id teamName")
       .lean();
@@ -26,7 +26,7 @@ export async function GET(
       (teams as unknown as { _id: { toString(): string }; teamName: string }[]).map((t) => [t._id.toString(), t.teamName])
     );
     const roundsResult = rounds.map((r) => {
-      const rDoc = r as { _id: unknown; roundNumber: number; name: string; scheduledAt?: Date; teamIds: mongoose.Types.ObjectId[] };
+      const rDoc = r as unknown as { _id: unknown; roundNumber: number; name: string; scheduledAt?: Date; teamIds: mongoose.Types.ObjectId[] };
       return {
         _id: rDoc._id,
         roundNumber: rDoc.roundNumber,
