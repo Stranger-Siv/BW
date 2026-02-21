@@ -151,15 +151,17 @@ async function registerWithTournamentId(
 
   const tournamentIdObj = new mongoose.Types.ObjectId(tournamentId);
   const existingTeam = await Team.findOne({ teamName, tournamentId: tournamentIdObj }).lean();
+  type ExistingTeamDoc = { _id: mongoose.Types.ObjectId; captainId?: mongoose.Types.ObjectId };
+  const existing = existingTeam as ExistingTeamDoc | null;
   const isUpdateOwn =
-    existingTeam &&
+    existing &&
     captainId &&
-    (existingTeam as { captainId?: mongoose.Types.ObjectId }).captainId?.toString() === captainId;
+    existing.captainId?.toString() === captainId;
 
-  if (existingTeam && isUpdateOwn) {
+  if (existing && isUpdateOwn) {
     // Same captain re-registering same team name: update players/reward, allow same IGNs (their own)
     const otherTeams = await Team.find(
-      { tournamentId: tournamentIdObj, _id: { $ne: existingTeam._id } },
+      { tournamentId: tournamentIdObj, _id: { $ne: existing._id } },
       { "players.minecraftIGN": 1, "players.discordUsername": 1 }
     );
     const usedPlayerKeys = new Set<string>();
@@ -178,20 +180,20 @@ async function registerWithTournamentId(
       );
     }
     await Team.updateOne(
-      { _id: existingTeam._id },
+      { _id: existing._id },
       { $set: { players, rewardReceiverIGN } }
     );
     return NextResponse.json(
       {
         success: true,
         message: "Team updated successfully",
-        teamId: (existingTeam as { _id: mongoose.Types.ObjectId })._id.toString(),
+        teamId: existing._id.toString(),
       },
       { status: 200 }
     );
   }
 
-  if (existingTeam) {
+  if (existing) {
     return NextResponse.json(
       { error: "Team name already registered for this tournament" },
       { status: 409 }
