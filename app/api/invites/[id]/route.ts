@@ -72,7 +72,7 @@ export async function PATCH(
       teamName: inv.teamName,
     }).lean();
     if (existingIncompleteTeam) {
-      const teamDoc = existingIncompleteTeam as { _id: mongoose.Types.ObjectId; players: { userId?: mongoose.Types.ObjectId }[] };
+      const teamDoc = existingIncompleteTeam as unknown as { _id: mongoose.Types.ObjectId; players: { userId?: mongoose.Types.ObjectId }[] };
       const currentSize = teamDoc.players?.length ?? 0;
       if (currentSize === t.teamSize - 1) {
         const newUserId = new mongoose.Types.ObjectId(session.user!.id);
