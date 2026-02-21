@@ -23,7 +23,7 @@ export function RewardReceiverSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="w-full min-h-[48px] rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-800 transition-all duration-200 focus:border-emerald-400/50 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 sm:min-h-0 sm:py-2.5 sm:text-sm"
+      className="w-full min-h-[48px] rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-slate-800 transition-all duration-200 focus:border-emerald-400/50 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 sm:min-h-[44px] sm:py-2.5 sm:text-sm"
       aria-label="Reward receiver"
     >
       <option value="">

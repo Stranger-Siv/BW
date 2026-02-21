@@ -63,7 +63,7 @@ function LoginForm() {
             </li>
             <li className="flex gap-2">
               <span className="text-emerald-400 font-medium shrink-0">3.</span>
-              <span>Accept team invites from your Profile and view your matches when brackets are published.</span>
+              <span>View your matches when brackets are published.</span>
             </li>
           </ol>
         </div>

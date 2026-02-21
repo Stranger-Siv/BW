@@ -15,29 +15,10 @@ type Profile = {
   role: string;
 };
 
-
-type Invite = {
-  _id: string;
-  status: string;
-  teamName: string;
-  captainId: { name: string; displayName?: string; email?: string; image?: string };
-  tournamentId: { name: string; date: string; teamSize: number };
-  createdAt: string;
-};
-
-type TeamRow = {
-  _id: string;
-  teamName: string;
-  tournamentId?: { name?: string; date?: string } | string;
-  status: string;
-};
-
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [teams, setTeams] = useState<TeamRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,25 +37,13 @@ export default function ProfilePage() {
     (async () => {
       setLoading(true);
       try {
-        const [profileRes, invitesRes, teamsRes] = await Promise.all([
-          fetch("/api/users/me", { cache: "no-store" }),
-          fetch("/api/invites?type=received"),
-          fetch("/api/users/me/teams"),
-        ]);
+        const profileRes = await fetch("/api/users/me", { cache: "no-store" });
         if (profileRes.ok && !cancelled) {
           const p = await profileRes.json();
           setProfile(p);
           setDisplayName(p.displayName ?? "");
           setMinecraftIGN(p.minecraftIGN ?? "");
           setDiscordUsername(p.discordUsername ?? "");
-        }
-        if (invitesRes.ok && !cancelled) {
-          const inv = await invitesRes.json();
-          setInvites(Array.isArray(inv) ? inv : []);
-        }
-        if (teamsRes.ok && !cancelled) {
-          const t = await teamsRes.json();
-          setTeams(Array.isArray(t) ? t : []);
         }
       } catch {
         if (!cancelled) setMessage("Failed to load");
@@ -118,33 +87,6 @@ export default function ProfilePage() {
       setSaving(false);
     }
   }, [displayName, minecraftIGN, discordUsername]);
-
-  const respondToInvite = useCallback(async (inviteId: string, action: "accept" | "reject") => {
-    setMessage("");
-    try {
-      const res = await fetch(`/api/invites/${inviteId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setMessage(data.error ?? "Failed");
-        return;
-      }
-      setMessage(data.message ?? (action === "accept" ? "Accepted!" : "Declined."));
-      setInvites((prev) => prev.filter((i) => i._id !== inviteId));
-      if (action === "accept") {
-        const teamsRes = await fetch("/api/users/me/teams", { cache: "no-store" });
-        if (teamsRes.ok) {
-          const t = await teamsRes.json();
-          setTeams(Array.isArray(t) ? t : []);
-        }
-      }
-    } catch {
-      setMessage("Request failed");
-    }
-  }, []);
 
   if (status === "loading" || loading) {
     return (
@@ -258,72 +200,6 @@ export default function ProfilePage() {
             </dl>
           )}
         </div>
-
-        <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold text-slate-800 dark:text-slate-100">Team invites</h2>
-          {invites.length === 0 ? (
-            <p className="card-glass p-4 text-sm text-slate-500 dark:text-slate-400">
-              No pending invites.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {invites.map((inv) => (
-                <li key={inv._id} className="card-glass flex flex-wrap items-center justify-between gap-2 p-4">
-                  <div>
-                    <p className="font-medium text-slate-800 dark:text-slate-200">
-                      {(inv.captainId as { displayName?: string; name?: string })?.displayName || (inv.captainId as { name?: string })?.name} invited you to join <strong>{inv.teamName}</strong>
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {(inv.tournamentId as { name?: string })?.name}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => respondToInvite(inv._id, "accept")}
-                      className="rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-1.5 text-sm font-medium text-slate-900 transition hover:opacity-90"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => respondToInvite(inv._id, "reject")}
-                      className="rounded-full border border-white/10 bg-white/10 px-4 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-white/15 dark:text-slate-400 dark:hover:bg-white/15"
-                    >
-                      Decline
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-xl font-semibold text-slate-800 dark:text-slate-100">My teams</h2>
-          {teams.length === 0 ? (
-            <p className="card-glass p-4 text-sm text-slate-500 dark:text-slate-400">
-              You are not on any teams yet. Register for a tournament or accept an invite.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {teams.map((team) => (
-                <li key={team._id}>
-                  <Link
-                    href={`/profile/teams/${team._id}`}
-                    className="card-glass block px-4 py-3 transition hover:border-emerald-400/30 hover:shadow-lg dark:hover:border-emerald-500/20"
-                  >
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{team.teamName}</span>
-                    <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">
-                      {typeof team.tournamentId === "object" && team.tournamentId?.name ? ` · ${team.tournamentId.name}` : ""} ({team.status})
-                    </span>
-                    <span className="ml-2 text-xs text-emerald-400 dark:text-emerald-300">View details →</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
 
         {/* Sign out: shown on small screens only (nav Sign out is hidden on mobile) */}
         <div className="mt-8 md:hidden">

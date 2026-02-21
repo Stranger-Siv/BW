@@ -368,9 +368,9 @@ export default function TournamentsPage() {
                 </div>
               </div>
             ) : (
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-            <div className="flex-1 min-w-0">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+            <div className="min-w-0 flex-1">
+              <div className="mb-5 flex flex-wrap items-center gap-3 sm:mb-6">
                 <button
                   type="button"
                   onClick={clearSelection}
@@ -392,19 +392,19 @@ export default function TournamentsPage() {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/5 sm:p-6 md:p-8">
-                <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 md:text-2xl">
+              <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm dark:border-white/10 dark:bg-white/5 sm:p-6 md:p-8">
+                <h2 className="mb-5 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 sm:text-2xl">
                   {selectedTournament.teamSize === 1 ? "Register your entry" : "Team details"}
                 </h2>
                 {session?.user && meDisplayName && (
-                  <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                  <p className="mb-5 text-sm text-slate-500 dark:text-slate-400 sm:mb-6">
                     Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
                   </p>
                 )}
 
-                <div className="space-y-5 sm:space-y-6">
-                  <div>
-                    <label htmlFor="team-name" className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">
+                <div className="space-y-6">
+                  <div className="w-full">
+                    <label htmlFor="team-name" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
                       {selectedTournament.teamSize === 1 ? "Display name" : "Team name"}
                     </label>
                     <input
@@ -413,7 +413,7 @@ export default function TournamentsPage() {
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder={selectedTournament.teamSize === 1 ? "e.g. Your IGN or nickname" : "e.g. Dragon Slayers"}
-                      className={`w-full rounded-xl border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:py-2.5 ${
+                      className={`w-full min-h-[48px] rounded-lg border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:min-h-[44px] sm:py-2.5 ${
                         teamNameAvailable === false
                           ? "border-red-400 dark:border-red-500"
                           : "border-white/10 dark:border-white/10 focus:border-emerald-400/50"
@@ -421,13 +421,13 @@ export default function TournamentsPage() {
                       aria-required
                     />
                     {teamNameCheckLoading && teamName.trim() && (
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Checking name…</p>
+                      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Checking name…</p>
                     )}
                     {!teamNameCheckLoading && teamName.trim() && teamNameAvailable === true && (
-                      <p className="mt-1 text-xs text-emerald-400">Name available</p>
+                      <p className="mt-1.5 text-xs text-emerald-400">Name available</p>
                     )}
                     {!teamNameCheckLoading && teamName.trim() && teamNameAvailable === false && (
-                      <p className="mt-1 text-xs text-red-400">This name is already taken for this tournament</p>
+                      <p className="mt-1.5 text-xs text-red-400">This name is already taken for this tournament</p>
                     )}
                     {selectedTournament.teamSize > 1 && teamNameSuggestions.length > 0 && (
                       <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -447,10 +447,10 @@ export default function TournamentsPage() {
                   </div>
 
                   {selectedTournament.teamSize === 1 ? (
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-300">Your details</h3>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
+                      <div className="w-full">
+                        <h3 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">Your details</h3>
+                        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-1">
                           <PlayerRow
                             index={0}
                             minecraftIGN={players[0]?.minecraftIGN ?? ""}
@@ -460,8 +460,8 @@ export default function TournamentsPage() {
                           />
                         </div>
                       </div>
-                      <div>
-                        <label htmlFor="reward-receiver" className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
+                      <div className="w-full">
+                        <label htmlFor="reward-receiver" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
                         <RewardReceiverSelect
                           id="reward-receiver"
                           igns={rewardReceiverOptions}
@@ -471,20 +471,20 @@ export default function TournamentsPage() {
                         />
                       </div>
                       {submitError && (
-                        <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
+                        <div className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
                       )}
                       {successMessage && (
-                        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
+                        <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full sm:w-auto sm:min-w-[200px]">
+                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
                   ) : (
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-300">All players (Minecraft IGN & Discord)</h3>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
+                      <div className="w-full">
+                        <h3 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">All players (Minecraft IGN & Discord)</h3>
+                        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
                           {players.map((player, idx) => (
                             <PlayerRow
                               key={idx}
@@ -497,8 +497,8 @@ export default function TournamentsPage() {
                           ))}
                         </div>
                       </div>
-                      <div>
-                        <label htmlFor="reward-receiver" className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
+                      <div className="w-full">
+                        <label htmlFor="reward-receiver" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
                         <RewardReceiverSelect
                           id="reward-receiver"
                           igns={rewardReceiverOptions}
@@ -508,12 +508,12 @@ export default function TournamentsPage() {
                         />
                       </div>
                       {submitError && (
-                        <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
+                        <div className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
                       )}
                       {successMessage && (
-                        <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
+                        <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full sm:w-auto sm:min-w-[200px]">
+                      <button type="submit" disabled={submitLoading} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
@@ -522,22 +522,22 @@ export default function TournamentsPage() {
               </div>
             </div>
 
-            <aside className="w-full shrink-0 lg:w-72 lg:sticky lg:top-6">
-              <div className="card-glass p-4 sm:p-5">
+            <aside className="w-full shrink-0 lg:w-80 lg:sticky lg:top-6">
+              <div className="card-glass w-full p-5 sm:p-6">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Slots & info
                 </h3>
-                <div className="mt-3 space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                <div className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
                   <p>
                     <span className="font-medium">Remaining slots:</span>{" "}
                     {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} / {selectedTournament.maxTeams}
                   </p>
                 </div>
-                <div className="mt-4 border-t border-white/10 pt-4 dark:border-white/10">
+                <div className="mt-5 border-t border-white/10 pt-5 dark:border-white/10">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Rules
                   </p>
-                  <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600 dark:text-slate-400">
+                  <ul className="mt-3 list-inside list-disc space-y-2 text-xs text-slate-600 dark:text-slate-400">
                     <li>{(selectedTournament.teamSize === 1 ? "Your" : "Team")} name must be unique for this tournament.</li>
                     <li>Each player needs Minecraft IGN and Discord.</li>
                     <li>One player is the reward receiver.</li>

@@ -83,11 +83,7 @@ export default function MyMatchesPage() {
               <Link href="/tournaments" className="font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
                 Register a team
               </Link>{" "}
-              or accept an invite from your{" "}
-              <Link href="/profile" className="font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-                Profile
-              </Link>
-              .
+              to get started.
             </p>
           </div>
         ) : (

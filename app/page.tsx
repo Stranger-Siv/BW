@@ -169,7 +169,7 @@ export default function HomePage() {
               </li>
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-sm font-bold text-emerald-400">3</span>
-                <span><strong className="text-slate-200">Register or invite</strong> — for Solo you register alone; for Duo/Squad the captain sends invites and teammates accept from their Profile.</span>
+                <span><strong className="text-slate-200">Register</strong> — fill in your entry or team details (Solo, Duo, or Squad) in one form.</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-sm font-bold text-emerald-400">4</span>
@@ -267,7 +267,7 @@ export default function HomePage() {
               <li>Matches are hosted on {SITE.serverName} — <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code></li>
               <li>Minecraft Java Edition and a valid in-game name (IGN)</li>
               <li>Google account to sign in and register on this site</li>
-              <li>For Duo/Squad: teammates must sign in at least once so you can invite them</li>
+              <li>For Duo/Squad: the captain fills in all players’ Minecraft IGN and Discord</li>
             </ul>
             <p className="mt-6 text-sm text-slate-500">
               Each tournament has a limited number of slots and a registration deadline. Once your team is complete and registered, you’ll see rounds and matchups when the organizer publishes them.
