@@ -47,7 +47,8 @@ export async function GET(
     const existing = await Team.find({ tournamentId })
       .select("teamName")
       .lean();
-    const taken = new Set((existing as { teamName: string }[]).map((t) => t.teamName.trim().toLowerCase()));
+    const existingNames = existing as unknown as { teamName: string }[];
+    const taken = new Set(existingNames.map((t) => t.teamName.trim().toLowerCase()));
     const shuffled = [...CANDIDATES].sort(() => Math.random() - 0.5);
     const suggestions: string[] = [];
     for (const name of shuffled) {
