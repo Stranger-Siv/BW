@@ -15,7 +15,7 @@ export async function GET(
     }
     await connectDB();
     const tournament = await Tournament.findById(id).select("winnerTeamId").lean();
-    const winnerTeamId = (tournament as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
+    const winnerTeamId = (tournament as unknown as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
     if (!winnerTeamId) {
       return NextResponse.json({ error: "No winner set" }, { status: 404 });
     }
@@ -25,7 +25,7 @@ export async function GET(
     if (!winnerTeam) {
       return NextResponse.json({ error: "Winner team not found" }, { status: 404 });
     }
-    const wt = winnerTeam as {
+    const wt = winnerTeam as unknown as {
       teamName: string;
       rewardReceiverIGN: string;
       players: { minecraftIGN: string; discordUsername: string }[];

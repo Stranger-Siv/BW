@@ -38,14 +38,14 @@ export async function GET(
     });
 
     const tournament = await Tournament.findById(id).select("winnerTeamId").lean();
-    const winnerTeamId = (tournament as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
+    const winnerTeamId = (tournament as unknown as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
     let winner: { teamName: string; rewardReceiverIGN: string; players: { minecraftIGN: string; discordUsername: string }[] } | null = null;
     if (winnerTeamId) {
       const winnerTeam = await Team.findById(winnerTeamId)
         .select("teamName rewardReceiverIGN players")
         .lean();
       if (winnerTeam) {
-        const wt = winnerTeam as { teamName: string; rewardReceiverIGN: string; players: { minecraftIGN: string; discordUsername: string }[] };
+        const wt = winnerTeam as unknown as { teamName: string; rewardReceiverIGN: string; players: { minecraftIGN: string; discordUsername: string }[] };
         winner = {
           teamName: wt.teamName,
           rewardReceiverIGN: wt.rewardReceiverIGN,
