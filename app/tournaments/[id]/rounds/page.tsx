@@ -3,7 +3,8 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { formatDateTime, formatRegistrationCountdown } from "@/lib/formatDate";
+import { formatDateTime } from "@/lib/formatDate";
+import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 
 type RoundPublic = {
   _id: string;
@@ -77,8 +78,11 @@ export default function TournamentRoundsPage() {
           Rounds and who advanced
         </p>
         {registrationDeadline && (
-          <p className="mb-4 text-sm font-medium text-emerald-500 dark:text-emerald-400">
-            {formatRegistrationCountdown(registrationDeadline).text}
+          <p className="mb-4 text-sm font-medium">
+            <RegistrationCountdown
+              deadline={registrationDeadline}
+              className="text-emerald-500 dark:text-emerald-400"
+            />
           </p>
         )}
 

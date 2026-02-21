@@ -6,7 +6,8 @@ import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
-import { formatDateLabel, formatRegistrationCountdown } from "@/lib/formatDate";
+import { formatDateLabel } from "@/lib/formatDate";
+import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import type { IPlayer } from "@/models/Team";
 
 type TournamentOption = {
@@ -414,8 +415,11 @@ export default function TournamentsPage() {
                             {remaining} slot{remaining !== 1 ? "s" : ""} left
                           </p>
                           {t.registrationDeadline && (
-                            <p className="mt-1 text-xs font-medium text-emerald-400/90 dark:text-emerald-300">
-                              {formatRegistrationCountdown(t.registrationDeadline).text}
+                            <p className="mt-1 text-xs font-medium">
+                              <RegistrationCountdown
+                                deadline={t.registrationDeadline}
+                                className="text-emerald-400/90 dark:text-emerald-300"
+                              />
                             </p>
                           )}
                         </button>
@@ -450,8 +454,11 @@ export default function TournamentsPage() {
                   {TYPE_LABEL[selectedTournament.type ?? "squad"] ?? (selectedTournament.type ?? "Squad")}
                 </span>
                 {selectedTournament.registrationDeadline && (
-                  <span className="text-sm font-medium text-emerald-400/90 dark:text-emerald-300">
-                    {formatRegistrationCountdown(selectedTournament.registrationDeadline).text}
+                  <span className="text-sm font-medium">
+                    <RegistrationCountdown
+                      deadline={selectedTournament.registrationDeadline}
+                      className="text-emerald-400/90 dark:text-emerald-300"
+                    />
                   </span>
                 )}
               </div>

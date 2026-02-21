@@ -28,8 +28,9 @@ export function formatDateTime(dateStr: string | Date): string {
 }
 
 /**
- * Registration deadline countdown (e.g. "Closes in 2 days" or "Closes in 3 hours" or "Registration closed").
+ * Registration deadline countdown (e.g. "Closes in 2 days" or "Closes in 3h 45m 12s" or "Registration closed").
  * deadline: ISO date string or "YYYY-MM-DDTHH:mm" style.
+ * When under 1 hour, includes minutes and seconds for realtime countdown.
  */
 export function formatRegistrationCountdown(deadline: string): { text: string; closed: boolean } {
   const end = new Date(deadline);
@@ -39,8 +40,10 @@ export function formatRegistrationCountdown(deadline: string): { text: string; c
   const ms = end.getTime() - now.getTime();
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
   const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-  if (days > 0) return { text: `Closes in ${days} day${days !== 1 ? "s" : ""}`, closed: false };
-  if (hours > 0) return { text: `Closes in ${hours} hour${hours !== 1 ? "s" : ""}`, closed: false };
   const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
-  return { text: `Closes in ${minutes} minute${minutes !== 1 ? "s" : ""}`, closed: false };
+  const seconds = Math.floor((ms % (60 * 1000)) / 1000);
+  if (days > 0) return { text: `Closes in ${days} day${days !== 1 ? "s" : ""}`, closed: false };
+  if (hours > 0) return { text: `Closes in ${hours}h ${minutes}m ${seconds}s`, closed: false };
+  if (minutes > 0) return { text: `Closes in ${minutes}m ${seconds}s`, closed: false };
+  return { text: `Closes in ${seconds}s`, closed: false };
 }
