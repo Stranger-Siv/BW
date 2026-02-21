@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateLabel } from "@/lib/formatDate";
 import { ChangeDateModal, type TournamentOption } from "@/components/admin/ChangeDateModal";
@@ -8,6 +8,13 @@ import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { TeamsCards } from "@/components/admin/TeamsCards";
 import { TeamsTable, type AdminTeam } from "@/components/admin/TeamsTable";
+import { PlayerRow } from "@/components/registration/PlayerRow";
+import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
+import type { IPlayer } from "@/models/Team";
+
+function getInitialPlayers(count: number): IPlayer[] {
+  return Array.from({ length: count }, () => ({ minecraftIGN: "", discordUsername: "" }));
+}
 
 type TournamentDoc = {
   _id: string;
@@ -40,6 +47,13 @@ export default function AdminPage() {
 
   const [disbandTeam, setDisbandTeam] = useState<AdminTeam | null>(null);
   const [disbandLoading, setDisbandLoading] = useState(false);
+
+  const [addTeamName, setAddTeamName] = useState("");
+  const [addTeamPlayers, setAddTeamPlayers] = useState<IPlayer[]>([]);
+  const [addTeamRewardReceiver, setAddTeamRewardReceiver] = useState("");
+  const [addTeamLoading, setAddTeamLoading] = useState(false);
+  const [addTeamError, setAddTeamError] = useState<string | null>(null);
+  const [addTeamSuccess, setAddTeamSuccess] = useState<string | null>(null);
 
   const selectedTournament = tournaments.find((t) => t._id === selectedTournamentId);
 
@@ -95,6 +109,16 @@ export default function AdminPage() {
       setTeamsError(null);
     }
   }, [selectedTournamentId, fetchTeams]);
+
+  useEffect(() => {
+    if (selectedTournament) {
+      setAddTeamPlayers(getInitialPlayers(selectedTournament.teamSize));
+      setAddTeamName("");
+      setAddTeamRewardReceiver("");
+      setAddTeamError(null);
+      setAddTeamSuccess(null);
+    }
+  }, [selectedTournamentId, selectedTournament?.teamSize]);
 
   const refetch = useCallback(() => {
     if (selectedTournamentId) fetchTeams(selectedTournamentId);
@@ -194,6 +218,75 @@ export default function AdminPage() {
       setDisbandLoading(false);
     }
   }, [disbandTeam, refetch]);
+
+  const updateAddTeamPlayer = useCallback((index: number, field: "minecraftIGN" | "discordUsername", value: string) => {
+    setAddTeamPlayers((prev) => {
+      const next = [...prev];
+      if (!next[index]) return prev;
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  }, []);
+
+  const addTeamRewardOptions = useMemo(
+    () => addTeamPlayers.map((p) => (p.minecraftIGN ?? "").trim()).filter(Boolean),
+    [addTeamPlayers]
+  );
+
+  const handleAddTeam = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedTournamentId || !selectedTournament) return;
+      setAddTeamError(null);
+      setAddTeamSuccess(null);
+      const required = selectedTournament.teamSize;
+      if (!addTeamName.trim()) {
+        setAddTeamError("Team name is required.");
+        return;
+      }
+      if (addTeamPlayers.length !== required) {
+        setAddTeamError(`Exactly ${required} player(s) required.`);
+        return;
+      }
+      for (let i = 0; i < addTeamPlayers.length; i++) {
+        if (!addTeamPlayers[i].minecraftIGN?.trim() || !addTeamPlayers[i].discordUsername?.trim()) {
+          setAddTeamError(`Player ${i + 1}: Minecraft IGN and Discord are required.`);
+          return;
+        }
+      }
+      if (!addTeamRewardOptions.includes(addTeamRewardReceiver.trim())) {
+        setAddTeamError("Select a reward receiver from the players listed.");
+        return;
+      }
+      setAddTeamLoading(true);
+      try {
+        const res = await fetch(`/api/admin/tournaments/${selectedTournamentId}/teams`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamName: addTeamName.trim(),
+            players: addTeamPlayers.map((p) => ({
+              minecraftIGN: (p.minecraftIGN ?? "").trim(),
+              discordUsername: (p.discordUsername ?? "").trim(),
+            })),
+            rewardReceiverIGN: addTeamRewardReceiver.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to add team");
+        setAddTeamSuccess("Team added.");
+        setAddTeamName("");
+        setAddTeamPlayers(getInitialPlayers(selectedTournament.teamSize));
+        setAddTeamRewardReceiver("");
+        refetch();
+      } catch (e) {
+        setAddTeamError(e instanceof Error ? e.message : "Failed to add team");
+      } finally {
+        setAddTeamLoading(false);
+      }
+    },
+    [selectedTournamentId, selectedTournament, addTeamName, addTeamPlayers, addTeamRewardReceiver, addTeamRewardOptions, refetch]
+  );
 
   const tournamentOptionsForModal: TournamentOption[] = tournaments.map((t) => ({
     _id: t._id,
@@ -311,6 +404,79 @@ export default function AdminPage() {
                 />
               </div>
 
+              {!selectedTournament.isClosed &&
+                selectedTournament.registeredTeams < selectedTournament.maxTeams && (
+                  <div className="mt-6 w-full rounded-2xl border border-white/10 bg-white/5 p-5 dark:border-white/10 dark:bg-white/5 sm:p-6 md:p-8">
+                    <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100 sm:mb-5">
+                      Add team manually
+                    </h3>
+                    <p className="mb-4 text-sm text-slate-500 dark:text-slate-400 sm:mb-5">
+                      Add a staff or guest team. Team name must be unique; each player (IGN + Discord) can only be in one team for this tournament.
+                    </p>
+                    <form onSubmit={handleAddTeam} className="flex w-full flex-col gap-6">
+                      <div className="w-full">
+                        <label htmlFor="admin-team-name" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
+                          Team name
+                        </label>
+                        <input
+                          id="admin-team-name"
+                          type="text"
+                          value={addTeamName}
+                          onChange={(e) => setAddTeamName(e.target.value)}
+                          placeholder="e.g. Staff Team"
+                          className="w-full min-h-[48px] rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:border-emerald-400/50 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:min-h-[44px] sm:py-2.5"
+                        />
+                      </div>
+                      <div className="w-full">
+                        <h4 className="mb-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                          Players (Minecraft IGN & Discord)
+                        </h4>
+                        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                          {addTeamPlayers.map((player, idx) => (
+                            <PlayerRow
+                              key={idx}
+                              index={idx}
+                              minecraftIGN={player.minecraftIGN}
+                              discordUsername={player.discordUsername}
+                              onIGNChange={(v) => updateAddTeamPlayer(idx, "minecraftIGN", v)}
+                              onDiscordChange={(v) => updateAddTeamPlayer(idx, "discordUsername", v)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="w-full">
+                        <label htmlFor="admin-reward-receiver" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
+                          Reward receiver
+                        </label>
+                        <RewardReceiverSelect
+                          id="admin-reward-receiver"
+                          igns={addTeamRewardOptions}
+                          value={addTeamRewardReceiver}
+                          onChange={setAddTeamRewardReceiver}
+                          disabled={addTeamRewardOptions.length === 0}
+                        />
+                      </div>
+                      {addTeamError && (
+                        <div className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+                          {addTeamError}
+                        </div>
+                      )}
+                      {addTeamSuccess && (
+                        <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                          {addTeamSuccess}
+                        </div>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={addTeamLoading}
+                        className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]"
+                      >
+                        {addTeamLoading ? "Adding…" : "Add team"}
+                      </button>
+                    </form>
+                  </div>
+                )}
+
               {teamsError && (
                 <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
                   {teamsError}
@@ -318,6 +484,9 @@ export default function AdminPage() {
               )}
 
               <div className="mt-6 space-y-6">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                  Registered teams
+                </h3>
                 {teamsLoading ? (
                   <div className="flex items-center justify-center gap-2 py-12 text-slate-500 dark:text-slate-400">
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />

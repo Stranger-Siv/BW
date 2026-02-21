@@ -37,7 +37,7 @@ export function TeamsCards({
   if (teams.length === 0) {
     return (
       <div className="card-glass py-12 text-center text-slate-500 dark:text-slate-400">
-        No teams registered for this date.
+        No teams registered.
       </div>
     );
   }
