@@ -79,7 +79,7 @@ export default function TournamentsPage() {
       setFetchLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch("/api/tournaments");
+        const res = await fetch("/api/tournaments", { cache: "no-store" });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error ?? "Failed to load tournaments");

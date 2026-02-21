@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Tournament from "@/models/Tournament";
 
+/** Prevent caching so draft→registration_open updates show immediately */
+export const dynamic = "force-dynamic";
+
 /**
  * Public list of tournaments open for registration.
  * Returns tournaments with status "registration_open" that are not full.
