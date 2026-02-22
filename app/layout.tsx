@@ -11,10 +11,15 @@ import { OnboardingGate } from "@/components/OnboardingGate";
 
 export const metadata: Metadata = {
   title: "BedWars Tournament · MCFleet",
-  description: "Register for BedWars tournaments on MCFleet. Defend your bed, break theirs, claim victory. Sponsored by Baba Tillu. play.mcfleet.net",
+  description:
+    "Register for BedWars tournaments on MCFleet. Defend your bed, break theirs, claim victory. Sponsored by Baba Tillu. play.mcfleet.net",
   icons: {
-    icon: { url: "/favicon.jpeg", sizes: "32x32", type: "image/jpeg" },
-    apple: "/favicon.jpeg",
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
   },
 };
 
