@@ -517,9 +517,13 @@ export default function AdminTournamentRoundsPage() {
                           onDragStart={(e) => handleDragStart(e, tid, round._id)}
                           className="group flex items-center justify-between rounded-lg border border-slate-400/50 bg-slate-100 py-2 pl-3 pr-2 dark:border-slate-600 dark:bg-slate-700/50"
                         >
-                          <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                          <Link
+                            href={`/admin/teams/${tid}`}
+                            className="truncate text-sm font-medium text-slate-800 hover:text-amber-600 hover:underline dark:text-slate-200 dark:hover:text-amber-400"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {teamIdToName(tid)}
-                          </span>
+                          </Link>
                           <div className="flex items-center gap-1">
                             {rounds.findIndex((r) => r._id === round._id) < rounds.length - 1 && (
                               <button
@@ -572,12 +576,13 @@ export default function AdminTournamentRoundsPage() {
               </button>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
-                  <span
+                  <Link
                     key={t._id}
-                    className="rounded bg-slate-300/60 px-2 py-1 text-sm dark:bg-slate-700/60"
+                    href={`/admin/teams/${t._id}`}
+                    className="rounded bg-slate-300/60 px-2 py-1 text-sm font-medium text-slate-800 transition hover:bg-amber-500/30 hover:text-amber-800 dark:bg-slate-700/60 dark:text-slate-200 dark:hover:bg-amber-500/30 dark:hover:text-amber-200"
                   >
                     {t.teamName}
-                  </span>
+                  </Link>
                 ))}
               </div>
             </div>
