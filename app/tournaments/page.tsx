@@ -9,6 +9,7 @@ import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSe
 import { formatDateLabel } from "@/lib/formatDate";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import type { IPlayer } from "@/models/Team";
+import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
 
 type TournamentOption = {
   _id: string;
@@ -305,6 +306,7 @@ export default function TournamentsPage() {
   return (
     <main className="min-h-screen">
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-8 lg:py-16">
+        <FadeInUp>
         <h1 className="mb-6 text-2xl font-bold tracking-tight text-white md:text-3xl">
           Tournaments
         </h1>
@@ -333,6 +335,7 @@ export default function TournamentsPage() {
             Join Discord
           </a>
         </div>
+        </FadeInUp>
         <section>
           <div className="card-glass mx-auto max-w-5xl p-6 sm:p-8 md:p-10">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -388,12 +391,12 @@ export default function TournamentsPage() {
                     </p>
                   </div>
                 )}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <StaggerChildren className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {tournaments.map((t) => {
                     const remaining = Math.max(0, t.maxTeams - t.registeredTeams);
                     const typeLabel = TYPE_LABEL[t.type ?? "squad"] ?? (t.type ?? "Squad");
                     return (
-                      <div
+                      <StaggerItem
                         key={t._id}
                         className="card-glass transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                       >
@@ -430,10 +433,10 @@ export default function TournamentsPage() {
                         >
                           View rounds & who advanced
                         </Link>
-                      </div>
+                      </StaggerItem>
                     );
                   })}
-                </div>
+                </StaggerChildren>
               </div>
             ) : (
           <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">

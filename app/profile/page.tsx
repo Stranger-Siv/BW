@@ -4,6 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { FadeInUp } from "@/components/ui/animations";
 
 type Profile = {
   email: string;
@@ -99,6 +100,7 @@ export default function ProfilePage() {
   return (
     <main className="page">
       <div className="page-inner-narrow">
+        <FadeInUp>
         <h1 className="page-title mb-6">Profile</h1>
 
         {message && (
@@ -198,6 +200,7 @@ export default function ProfilePage() {
             </dl>
           )}
         </div>
+        </FadeInUp>
 
         {/* Sign out: shown on small screens only (nav Sign out is hidden on mobile) */}
         <div className="mt-8 md:hidden">

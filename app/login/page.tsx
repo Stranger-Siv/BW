@@ -4,12 +4,13 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { SITE } from "@/lib/site";
+import { FadeInUp } from "@/components/ui/animations";
 
 function LoginForm() {
   return (
     <main className="page py-10 sm:py-16">
       <div className="page-inner-form">
-        <div className="mb-8 text-center sm:mb-10">
+        <FadeInUp className="mb-8 text-center sm:mb-10">
           <img
             src={SITE.hostedByLogo}
             alt=""
@@ -24,9 +25,10 @@ function LoginForm() {
           <p className="mt-1 text-xs text-slate-500">
             Hosted by <strong className="text-slate-400">{SITE.hostedBy}</strong> · <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="back-link">Join Discord</a> for rules &amp; updates
           </p>
-        </div>
+        </FadeInUp>
 
-        <div className="card-lg animate-fade-in">
+        <FadeInUp delay={0.08}>
+        <div className="card-lg">
           <h2 className="mb-4 text-lg font-semibold text-white">
             Sign in with Google
           </h2>
@@ -47,8 +49,10 @@ function LoginForm() {
             Sign in with Google
           </button>
         </div>
+        </FadeInUp>
 
-        <div className="card mt-6 animate-fade-in">
+        <FadeInUp delay={0.12}>
+        <div className="card mt-6">
           <h3 className="mb-3 text-base font-semibold text-white">
             What happens next
           </h3>
@@ -67,12 +71,15 @@ function LoginForm() {
             </li>
           </ol>
         </div>
+        </FadeInUp>
 
+        <FadeInUp delay={0.16}>
         <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-500">
           <p>
             We only use your Google account to sign you in. We don’t post to your account or access your data outside of what’s needed for the tournament platform.
           </p>
         </div>
+        </FadeInUp>
 
         <p className="mt-8 text-center text-sm text-slate-400">
           <Link href="/" className="back-link">← Back to home</Link>

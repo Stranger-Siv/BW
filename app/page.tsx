@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
 
 export default function HomePage() {
   return (
@@ -12,7 +13,7 @@ export default function HomePage() {
           <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-60">
             <div className="h-[400px] w-[600px] rounded-full bg-emerald-500/20 blur-[120px]" aria-hidden />
           </div>
-          <div className="relative animate-fade-in">
+          <FadeInUp className="relative">
             <p className="text-sm font-medium uppercase tracking-widest text-emerald-400/90 sm:text-base">
               {SITE.name} · {SITE.serverName}
             </p>
@@ -44,11 +45,12 @@ export default function HomePage() {
                 Join Discord
               </a>
             </div>
-          </div>
+          </FadeInUp>
         </section>
 
         {/* Hosted by Baba Tillu */}
         <section className="mb-10 sm:mb-16 md:mb-20">
+          <FadeInUp>
           <div className="card-glass flex flex-col items-center gap-4 p-6 sm:flex-row sm:gap-6 sm:p-8">
             <img
               src={SITE.hostedByLogo}
@@ -64,34 +66,38 @@ export default function HomePage() {
               </p>
             </div>
           </div>
+          </FadeInUp>
         </section>
 
         {/* What Awaits You */}
         <section className="mb-10 sm:mb-16 md:mb-20">
+          <FadeInUp>
           <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
             What Awaits You
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <StaggerChildren className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {[
               { label: "Active matches & custom events", icon: "🎮" },
               { label: "Competitive tournaments & rewards", icon: "🏆" },
               { label: "Friendly but competitive community", icon: "🤝" },
               { label: "Fair play & supportive staff", icon: "🛡️" },
             ].map((item) => (
-              <div
+              <StaggerItem
                 key={item.label}
-                className="card-glass flex items-center gap-3 p-4 sm:p-4"
+                className="card-glass flex items-center gap-3 p-4 sm:p-4 transition-shadow duration-300 hover:shadow-lg"
               >
                 <span className="text-2xl" aria-hidden>{item.icon}</span>
                 <span className="text-sm font-medium text-slate-200 sm:text-base">{item.label}</span>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
+          </FadeInUp>
         </section>
 
         {/* Server & where to play */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl">
               Where we play
             </h2>
@@ -105,11 +111,13 @@ export default function HomePage() {
               <span className="text-sm text-slate-500">Minecraft Java · As supported by server</span>
             </div>
           </div>
+          </FadeInUp>
         </section>
 
         {/* What is Bedwars */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8 lg:p-10">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-2xl font-semibold text-white md:text-3xl">
               What is Bedwars?
             </h2>
@@ -154,7 +162,8 @@ export default function HomePage() {
 
         {/* How it works */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8 lg:p-10">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
               How it works
             </h2>
@@ -177,10 +186,12 @@ export default function HomePage() {
               </li>
             </ol>
           </div>
+          </FadeInUp>
         </section>
 
         {/* Feature cards */}
-        <section className="mb-10 grid gap-4 sm:mb-16 sm:gap-6 sm:grid-cols-3 md:mb-20">
+        <section className="mb-10 sm:mb-16 md:mb-20">
+          <StaggerChildren className="grid gap-4 sm:gap-6 sm:grid-cols-3">
           {[
             {
               title: "Structured Tournament System",
@@ -197,11 +208,10 @@ export default function HomePage() {
               desc: "Organizers manage rounds and advancement with full control.",
               icon: "🎮",
             },
-          ].map((item, i) => (
-            <div
+          ].map((item) => (
+            <StaggerItem
               key={item.title}
-              className="card-glass animate-fade-in p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
-              style={{ animationDelay: `${i * 0.1}s` }}
+              className="card-glass p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
             >
               <span className="text-2xl sm:text-3xl" aria-hidden>{item.icon}</span>
               <h3 className="mt-2 text-lg font-semibold text-white sm:mt-3 sm:text-xl">
@@ -210,13 +220,15 @@ export default function HomePage() {
               <p className="mt-1.5 text-sm text-slate-400 sm:mt-2">
                 {item.desc}
               </p>
-            </div>
+            </StaggerItem>
           ))}
+          </StaggerChildren>
         </section>
 
         {/* Tournament rules */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Tournament rules
             </h2>
@@ -233,11 +245,13 @@ export default function HomePage() {
               Rule break = immediate disqualification
             </p>
           </div>
+          </FadeInUp>
         </section>
 
         {/* Winner prizes */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Winner prizes
             </h2>
@@ -252,11 +266,13 @@ export default function HomePage() {
               <li>👑 Special winner role on Discord for 1 week</li>
             </ul>
           </div>
+          </FadeInUp>
         </section>
 
         {/* Requirements */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <div className="card-glass animate-fade-in p-4 sm:p-6 md:p-8 lg:p-10">
+          <FadeInUp>
+          <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl md:text-3xl">
               Requirements
             </h2>
@@ -273,10 +289,12 @@ export default function HomePage() {
               Each tournament has a limited number of slots and a registration deadline. Once your team is complete and registered, you’ll see rounds and matchups when the organizer publishes them.
             </p>
           </div>
+          </FadeInUp>
         </section>
 
         {/* CTA */}
         <section className="text-center pb-6 sm:pb-0">
+          <FadeInUp delay={0.1}>
           <p className="mb-4 text-slate-400 sm:mb-6">
             Ready to compete? Join Discord for updates and registrations.
           </p>
@@ -296,6 +314,7 @@ export default function HomePage() {
               Join Discord
             </a>
           </div>
+          </FadeInUp>
         </section>
       </div>
     </main>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatDateLabel } from "@/lib/formatDate";
+import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
 
 type TeamRow = {
   _id: string;
@@ -114,7 +115,7 @@ export default function MyMatchesPage() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <StaggerChildren as="ul" className="space-y-3">
             {teams.map((team) => {
               const tournament = typeof team.tournamentId === "object" && team.tournamentId != null
                 ? team.tournamentId
@@ -125,7 +126,7 @@ export default function MyMatchesPage() {
               const winner = tournamentId ? winners[tournamentId] : null;
 
               return (
-                <li key={team._id} className="card transition-all duration-300 hover:shadow-lg">
+                <StaggerItem key={team._id} as="li" className="card transition-all duration-300 hover:shadow-lg">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
@@ -162,10 +163,10 @@ export default function MyMatchesPage() {
                       )}
                     </div>
                   </div>
-                </li>
+                </StaggerItem>
               );
             })}
-          </ul>
+          </StaggerChildren>
         )}
 
         <p className="mt-8">
