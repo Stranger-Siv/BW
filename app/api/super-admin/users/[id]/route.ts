@@ -5,6 +5,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import { authOptions } from "@/lib/auth";
 import { isSuperAdmin } from "@/lib/adminAuth";
+import { createAuditLog } from "@/lib/auditLog";
 
 const ROLES = ["player", "admin", "super_admin"] as const;
 
@@ -51,7 +52,40 @@ export async function PATCH(
     if (role !== undefined) updates.role = role;
     if (banned !== undefined) updates.banned = banned;
 
+    const targetObj = target as unknown as { email?: string; name?: string; role?: string; banned?: boolean };
+    const prevRole = targetObj.role;
+    const prevBanned = targetObj.banned === true;
+
     await User.findByIdAndUpdate(id, { $set: updates });
+
+    if (role !== undefined && role !== prevRole) {
+      await createAuditLog({
+        actorId: currentUserId!,
+        action: "role_change",
+        targetType: "user",
+        targetId: id,
+        details: { from: prevRole, to: role, targetEmail: targetObj.email },
+      });
+    }
+    if (banned === true && !prevBanned) {
+      await createAuditLog({
+        actorId: currentUserId!,
+        action: "ban",
+        targetType: "user",
+        targetId: id,
+        details: { targetEmail: targetObj.email },
+      });
+    }
+    if (banned === false && prevBanned) {
+      await createAuditLog({
+        actorId: currentUserId!,
+        action: "unban",
+        targetType: "user",
+        targetId: id,
+        details: { targetEmail: targetObj.email },
+      });
+    }
+
     const updated = await User.findById(id)
       .select("email name displayName minecraftIGN discordUsername role banned createdAt")
       .lean();

@@ -9,6 +9,8 @@ const adminNavLinks: { href: string; label: string; superAdminOnly?: boolean }[]
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/tournaments", label: "Tournaments" },
   { href: "/admin/users", label: "Users", superAdminOnly: true },
+  { href: "/admin/settings", label: "Settings", superAdminOnly: true },
+  { href: "/admin/audit", label: "Audit", superAdminOnly: true },
 ];
 
 export function Navbar() {

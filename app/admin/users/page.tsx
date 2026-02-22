@@ -18,7 +18,7 @@ type UserRow = {
 };
 
 export default function AdminUsersPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,28 @@ export default function AdminUsersPage() {
     setLoading(true);
     fetchUsers().finally(() => setLoading(false));
   }, [status, isSuperAdmin, router, fetchUsers]);
+
+  const startImpersonate = useCallback(
+    async (userId: string) => {
+      try {
+        const res = await fetch("/api/super-admin/impersonate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setMessage(data.error ?? "Failed to start impersonation");
+          return;
+        }
+        await update({ impersonatingUserId: userId });
+        router.push("/");
+      } catch {
+        setMessage("Failed to start impersonation");
+      }
+    },
+    [router, update]
+  );
 
   const updateUser = useCallback(
     async (userId: string, updates: { role?: string; banned?: boolean }) => {
@@ -204,7 +226,16 @@ export default function AdminUsersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 flex flex-wrap items-center gap-2">
+                          {!isSelf && (
+                            <button
+                              type="button"
+                              onClick={() => startImpersonate(u._id)}
+                              className="rounded-full border border-slate-400/50 bg-slate-500/20 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-500/30"
+                            >
+                              Impersonate
+                            </button>
+                          )}
                           {isSelf ? (
                             <span className="text-xs text-slate-500">—</span>
                           ) : (

@@ -15,6 +15,8 @@ declare module "next-auth" {
       role?: string;
       banned?: boolean;
     };
+    /** Set when a super_admin is impersonating another user (real admin's id). */
+    impersonatingFrom?: string;
   }
 }
 
@@ -23,5 +25,9 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: string;
     banned?: boolean;
+    /** When set, session.user is the impersonated user. */
+    impersonatingUserId?: string;
+    /** Real super_admin user id when impersonating. */
+    impersonatingFrom?: string;
   }
 }
