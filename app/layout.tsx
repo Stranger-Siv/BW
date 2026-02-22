@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
+import { Footer } from "@/components/Footer";
 import { OnboardingGate } from "@/components/OnboardingGate";
 
 export const metadata: Metadata = {
@@ -23,8 +24,9 @@ export default function RootLayout({
           <SessionProvider>
             <OnboardingGate>
               <Navbar />
-              <div className="pb-bottom-nav md:pb-0 min-h-screen">
+              <div className="pb-bottom-nav md:pb-0 min-h-screen flex flex-col">
                 {children}
+                <Footer />
               </div>
               <BottomNav />
             </OnboardingGate>
