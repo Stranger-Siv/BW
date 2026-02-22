@@ -38,11 +38,11 @@ export function Navbar() {
           className="flex items-center gap-2 text-base font-bold tracking-tight accent-gradient transition-all duration-300 hover:opacity-90 sm:text-lg min-w-0 truncate"
         >
           <img
-            src="/icon.png"
+            src="/new-icon.png"
             alt=""
-            className="h-14 w-14 shrink-0 rounded-lg object-contain sm:h-16 sm:w-16"
-            width={64}
-            height={64}
+            className="h-10 w-10 shrink-0 rounded-lg object-contain sm:h-12 sm:w-12"
+            width={48}
+            height={48}
           />
           <span className="truncate">{SITE.name}</span>
         </Link>
