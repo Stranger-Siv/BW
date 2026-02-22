@@ -14,12 +14,26 @@ type Profile = {
   minecraftIGN?: string;
   discordUsername?: string;
   role: string;
+  createdAt?: string;
 };
+
+type TeamSummary = { _id: string; teamName: string; tournamentId?: { name: string } | string };
+
+function formatMemberSince(iso: string | undefined): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,13 +52,20 @@ export default function ProfilePage() {
     (async () => {
       setLoading(true);
       try {
-        const profileRes = await fetch("/api/users/me", { cache: "no-store" });
+        const [profileRes, teamsRes] = await Promise.all([
+          fetch("/api/users/me", { cache: "no-store" }),
+          fetch("/api/users/me/teams", { cache: "no-store" }),
+        ]);
         if (profileRes.ok && !cancelled) {
           const p = await profileRes.json();
           setProfile(p);
           setDisplayName(p.displayName ?? "");
           setMinecraftIGN(p.minecraftIGN ?? "");
           setDiscordUsername(p.discordUsername ?? "");
+        }
+        if (teamsRes.ok && !cancelled) {
+          const list = await teamsRes.json();
+          setTeams(Array.isArray(list) ? list : []);
         }
       } catch {
         if (!cancelled) setMessage("Failed to load");
@@ -116,10 +137,27 @@ export default function ProfilePage() {
                 <img src={profile.image} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-white/10" />
               )}
               <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-100">
-                  {profile?.displayName || profile?.name || "—"}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">
+                    {profile?.displayName || profile?.name || "—"}
+                  </p>
+                  {profile?.role === "super_admin" && (
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400 dark:text-amber-300">
+                      Super Admin
+                    </span>
+                  )}
+                  {profile?.role === "admin" && (
+                    <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{profile?.email}</p>
+                {profile?.createdAt && (
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+                    Member since {formatMemberSince(profile.createdAt)}
+                  </p>
+                )}
               </div>
             </div>
             {!editing && (
@@ -201,6 +239,81 @@ export default function ProfilePage() {
           )}
         </div>
         </FadeInUp>
+
+        {/* Quick links */}
+        <div className="card mb-6">
+          <h2 className="section-title mb-3">Quick links</h2>
+          <ul className="space-y-2">
+            <li>
+              <Link href="/matches" className="text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white">
+                My matches & teams →
+              </Link>
+            </li>
+            <li>
+              <Link href="/tournaments" className="text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white">
+                Register for a tournament →
+              </Link>
+            </li>
+            {(profile?.role === "admin" || profile?.role === "super_admin") && (
+              <li>
+                <Link href="/admin" className="text-emerald-400 hover:text-emerald-300">
+                  Admin dashboard →
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {/* Your teams summary */}
+        <div className="card mb-8">
+          <h2 className="section-title mb-3">Your teams</h2>
+          {teams.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              You’re not on any teams yet.{" "}
+              <Link href="/tournaments" className="back-link">
+                Register for a tournament
+              </Link>{" "}
+              to create or join a team.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mb-3">
+                {teams.length} team{teams.length !== 1 ? "s" : ""} registered.
+              </p>
+              <ul className="space-y-2">
+                {teams.slice(0, 5).map((t) => {
+                  const tournament = typeof t.tournamentId === "object" && t.tournamentId != null ? t.tournamentId : null;
+                  const tournamentName = tournament && "name" in tournament ? tournament.name : "Tournament";
+                  return (
+                    <li key={t._id}>
+                      <Link
+                        href={`/profile/teams/${t._id}`}
+                        className="text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white"
+                      >
+                        {t.teamName}
+                        <span className="ml-1 text-xs text-slate-500">· {tournamentName}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              {teams.length > 5 && (
+                <p className="mt-3">
+                  <Link href="/matches" className="back-link text-sm">
+                    View all ({teams.length}) →
+                  </Link>
+                </p>
+              )}
+              {teams.length <= 5 && teams.length > 0 && (
+                <p className="mt-3">
+                  <Link href="/matches" className="back-link text-sm">
+                    My matches →
+                  </Link>
+                </p>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Sign out: shown on small screens only (nav Sign out is hidden on mobile) */}
         <div className="mt-8 md:hidden">
