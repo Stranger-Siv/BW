@@ -7,7 +7,7 @@ export const SITE = {
   discordUrl: "https://discord.gg/6zyEsX854m",
   /** Discord server invite code or server ID, shown on maintenance page */
   discordId: "6zyEsX854m",
-  hostedBy: "Baba Tillu",
+  hostedBy: "BABA TILLU",
   /** Path to Baba Tillu host/sponsor logo (in public/) */
   hostedByLogo: "/baba-tillu-logo.png",
   /** Shown in footer on every page. Set url to make the name a link. */

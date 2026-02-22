@@ -113,12 +113,6 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
                 <span className="text-slate-500">Address</span>
                 <span className="font-mono text-slate-200">{SITE.serverIp}</span>
               </div>
-              {SITE.discordId && (
-                <div className="flex items-center justify-between gap-4 text-slate-300">
-                  <span className="text-slate-500">Discord</span>
-                  <span className="font-mono text-[#5865F2]/90">{SITE.discordId}</span>
-                </div>
-              )}
               {SITE.hostedBy && (
                 <div className="flex items-center justify-between gap-4 text-slate-300">
                   <span className="text-slate-500">Sponsored by</span>
