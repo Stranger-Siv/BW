@@ -42,6 +42,9 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   usePusherChannel("site", "maintenance_changed", (data: unknown) => {
     const payload = data as Maintenance;
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Pusher] Received maintenance_changed", payload);
+    }
     if (typeof payload?.maintenanceMode === "boolean") {
       setMaintenance({ maintenanceMode: payload.maintenanceMode });
     }

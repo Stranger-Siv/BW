@@ -76,11 +76,17 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await SiteSettings.findById(SITE_SETTINGS_ID).lean();
     const u = updated as unknown as { maintenanceMode?: boolean; announcement?: { message?: string; active?: boolean }; updatedAt?: string };
-    const pusher = getServerPusher();
-    if (maintenanceMode !== undefined && pusher) {
-      pusher.trigger(PUSHER_CHANNELS.SITE, PUSHER_EVENTS.MAINTENANCE_CHANGED, {
-        maintenanceMode: u?.maintenanceMode ?? false,
-      });
+    if (maintenanceMode !== undefined) {
+      const pusher = getServerPusher();
+      const payload = { maintenanceMode: u?.maintenanceMode ?? false };
+      if (pusher) {
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Pusher] Triggering maintenance_changed", payload);
+        }
+        pusher.trigger(PUSHER_CHANNELS.SITE, PUSHER_EVENTS.MAINTENANCE_CHANGED, payload);
+      } else if (process.env.NODE_ENV === "development") {
+        console.log("[Pusher] Not configured: set PUSHER_APP_ID, PUSHER_KEY, PUSHER_SECRET, PUSHER_CLUSTER in .env.local");
+      }
     }
     return NextResponse.json(
       {

@@ -20,11 +20,13 @@ function createPusherClient(): Pusher | null {
     }
     return null;
   }
+  const clusterStr = (cluster as string).trim();
   const client = new Pusher(key.trim(), {
-    cluster: (cluster as string).trim(),
+    cluster: clusterStr,
     forceTLS: true,
   });
   if (process.env.NODE_ENV === "development") {
+    console.log("[Pusher] Connecting to cluster:", clusterStr);
     client.connection.bind("connected", () => console.log("[Pusher] Connected"));
     client.connection.bind("error", (err: Error) => console.warn("[Pusher] Connection error", err));
   }
