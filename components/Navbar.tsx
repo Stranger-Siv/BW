@@ -6,17 +6,19 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
 
-const navLinks = [
-  { href: "/tournaments", label: "Tournaments" },
+const adminNavLinks = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/tournaments", label: "Tournaments" },
+  { href: "/admin/users", label: "Users", superAdminOnly: true },
 ] as const;
 
 export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [displayName, setDisplayName] = useState<string | null>(null);
-  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const isAdminOrSuperAdmin = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) {
@@ -58,8 +60,11 @@ export function Navbar() {
         <div className="flex items-center gap-1 sm:gap-2">
           {/* Desktop: main nav links; mobile: these are in BottomNav */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ href, label }) => {
-              if (href.startsWith("/admin") && !isAdmin) return null;
+            <Link href="/tournaments" className={linkClass(pathname === "/tournaments" || pathname?.startsWith("/tournaments/"))}>
+              Tournaments
+            </Link>
+            {isAdminOrSuperAdmin && adminNavLinks.map(({ href, label, superAdminOnly }) => {
+              if (superAdminOnly && !isSuperAdmin) return null;
               const isActive = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link key={href} href={href} className={linkClass(isActive)}>
@@ -73,7 +78,7 @@ export function Navbar() {
             <span className="ml-2 text-sm text-slate-400">…</span>
           ) : session?.user ? (
             <div className="ml-2 flex items-center gap-1 sm:gap-2 sm:ml-4">
-              {!isAdmin && (
+              {!isAdminOrSuperAdmin && (
                 <Link
                   href="/matches"
                   className={`${linkClass(pathname === "/matches")} hidden md:inline-block`}
