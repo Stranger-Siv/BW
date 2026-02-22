@@ -19,11 +19,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen antialiased bg-gradient-gaming text-slate-100">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{document.documentElement.classList.add('dark');}catch(e){}})();`.trim(),
-          }}
-        />
         <ThemeProvider>
           <SessionProvider>
             <OnboardingGate>
