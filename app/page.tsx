@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SITE } from "@/lib/site";
-import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
+import { FadeInUp, FadeInUpInView, StaggerChildren, StaggerChildrenInView, StaggerItem } from "@/components/ui/animations";
 
 export default function HomePage() {
   return (
@@ -56,7 +56,7 @@ export default function HomePage() {
 
         {/* Hosted by Baba Tillu */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.05}>
+          <FadeInUpInView>
           <div className="card-glass flex flex-col items-center gap-4 p-6 sm:flex-row sm:gap-6 sm:p-8">
             <img
               src={SITE.hostedByLogo}
@@ -72,16 +72,16 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* What Awaits You */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.06}>
+          <FadeInUpInView>
           <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
             What Awaits You
           </h2>
-          <StaggerChildren className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          <StaggerChildrenInView className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {[
               { label: "Active matches & custom events", icon: "🎮" },
               { label: "Competitive tournaments & rewards", icon: "🏆" },
@@ -90,19 +90,20 @@ export default function HomePage() {
             ].map((item) => (
               <StaggerItem
                 key={item.label}
+                viewTrigger
                 className="card-glass flex items-center gap-3 p-4 sm:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <span className="text-2xl" aria-hidden>{item.icon}</span>
                 <span className="text-sm font-medium text-slate-200 sm:text-base">{item.label}</span>
               </StaggerItem>
             ))}
-          </StaggerChildren>
-          </FadeInUp>
+          </StaggerChildrenInView>
+          </FadeInUpInView>
         </section>
 
         {/* Server & where to play */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.08}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl">
               Where we play
@@ -117,12 +118,12 @@ export default function HomePage() {
               <span className="text-sm text-slate-500">Minecraft Java · As supported by server</span>
             </div>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* What is Bedwars */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.1}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-2xl font-semibold text-white md:text-3xl">
               What is Bedwars?
@@ -133,16 +134,16 @@ export default function HomePage() {
               All events are organized with scheduled rounds, admin-managed brackets, and live slot tracking so you know exactly when and who you’re facing.
             </p>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* Tournament formats */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.12}>
+          <FadeInUpInView>
           <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
             Tournament formats
           </h2>
-          <StaggerChildren className="grid gap-4 sm:gap-6 sm:grid-cols-3">
+          <StaggerChildrenInView className="grid gap-4 sm:gap-6 sm:grid-cols-3" staggerDelay={0.08}>
             {[
               { title: "Solo", players: 1, desc: "Every player for themselves. Register with your IGN and fight alone for the crown.", icon: "⚔️" },
               { title: "Duo", players: 2, desc: "Team up with one partner. Coordinate strategies and share the victory.", icon: "👥" },
@@ -150,6 +151,7 @@ export default function HomePage() {
             ].map((item) => (
               <StaggerItem
                 key={item.title}
+                viewTrigger
                 className="card-glass p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
               >
                 <span className="text-2xl sm:text-3xl" aria-hidden>{item.icon}</span>
@@ -164,13 +166,13 @@ export default function HomePage() {
                 </p>
               </StaggerItem>
             ))}
-          </StaggerChildren>
-          </FadeInUp>
+          </StaggerChildrenInView>
+          </FadeInUpInView>
         </section>
 
         {/* How it works */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.06}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
               How it works
@@ -194,34 +196,35 @@ export default function HomePage() {
               </li>
             </ol>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* Feature cards */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.08}>
-          <StaggerChildren className="grid gap-4 sm:gap-6 sm:grid-cols-3">
-          {[
-            {
-              title: "Structured Tournament System",
-              desc: "Clear brackets, schedules, and rules for every event.",
-              icon: "🏆",
-            },
-            {
-              title: "Live Slot Tracking",
-              desc: "See remaining spots and registration deadlines in real time.",
-              icon: "📊",
-            },
-            {
-              title: "Admin Controlled Brackets",
-              desc: "Organizers manage rounds and advancement with full control.",
-              icon: "🎮",
-            },
-          ].map((item) => (
-            <StaggerItem
-              key={item.title}
-              className="card-glass p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
-            >
+          <FadeInUpInView>
+          <StaggerChildrenInView className="grid gap-4 sm:gap-6 sm:grid-cols-3" staggerDelay={0.08}>
+            {[
+              {
+                title: "Structured Tournament System",
+                desc: "Clear brackets, schedules, and rules for every event.",
+                icon: "🏆",
+              },
+              {
+                title: "Live Slot Tracking",
+                desc: "See remaining spots and registration deadlines in real time.",
+                icon: "📊",
+              },
+              {
+                title: "Admin Controlled Brackets",
+                desc: "Organizers manage rounds and advancement with full control.",
+                icon: "🎮",
+              },
+            ].map((item) => (
+              <StaggerItem
+                key={item.title}
+                viewTrigger
+                className="card-glass p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
+              >
               <span className="text-2xl sm:text-3xl" aria-hidden>{item.icon}</span>
               <h3 className="mt-2 text-lg font-semibold text-white sm:mt-3 sm:text-xl">
                 {item.title}
@@ -231,13 +234,13 @@ export default function HomePage() {
               </p>
             </StaggerItem>
           ))}
-          </StaggerChildren>
-          </FadeInUp>
+          </StaggerChildrenInView>
+          </FadeInUpInView>
         </section>
 
         {/* Tournament rules */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.1}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Tournament rules
@@ -255,12 +258,12 @@ export default function HomePage() {
               Rule break = immediate disqualification
             </p>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* Winner prizes */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.12}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Winner prizes
@@ -276,12 +279,12 @@ export default function HomePage() {
               <li>👑 Special winner role on Discord for 1 week</li>
             </ul>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* Requirements */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp delay={0.14}>
+          <FadeInUpInView>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl md:text-3xl">
               Requirements
@@ -299,12 +302,12 @@ export default function HomePage() {
               Each tournament has a limited number of slots and a registration deadline. Once your team is complete and registered, you’ll see rounds and matchups when the organizer publishes them.
             </p>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
 
         {/* CTA */}
         <section className="text-center pb-6 sm:pb-0">
-          <FadeInUp delay={0.16}>
+          <FadeInUpInView>
           <p className="mb-4 text-slate-400 sm:mb-6">
             Ready to compete? Join Discord for updates and registrations.
           </p>
@@ -324,7 +327,7 @@ export default function HomePage() {
               Join Discord
             </a>
           </div>
-          </FadeInUp>
+          </FadeInUpInView>
         </section>
       </div>
     </main>

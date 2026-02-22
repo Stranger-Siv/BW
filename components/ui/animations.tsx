@@ -4,7 +4,10 @@ import { motion, type Variants } from "framer-motion";
 
 /** Smooth, professional easing — not bouncy (cubic-bezier) */
 const ease = [0.25, 0.1, 0.25, 1] as const;
+/** Softer easing for scroll-triggered animations */
+const easeSoft = [0.33, 0, 0.2, 1] as const;
 const duration = 0.4;
+const durationView = 0.55;
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 12 },
@@ -19,6 +22,9 @@ const fadeIn: Variants = {
 export const motionConfig = {
   transition: { duration, ease },
 } as const;
+
+/** Default viewport options for on-scroll trigger — super smooth, fire once */
+const viewportOnce = { once: true, amount: 0.15, margin: "0px 0px -40px 0px" };
 
 /**
  * Fade in and move up slightly. Use for section headers, hero, single cards.
@@ -38,6 +44,32 @@ export function FadeInUp({
       animate="visible"
       variants={fadeInUp}
       transition={{ duration, ease, delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/**
+ * Fade in + move up when the element enters the viewport. Super smooth, runs once.
+ */
+export function FadeInUpInView({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={viewportOnce}
+      variants={fadeInUp}
+      transition={{ duration: durationView, ease: easeSoft, delay }}
       className={className}
     >
       {children}
@@ -114,20 +146,62 @@ export function StaggerChildren({
   );
 }
 
+/**
+ * Stagger children when container enters viewport. Super smooth, runs once.
+ */
+export function StaggerChildrenInView({
+  children,
+  className,
+  as = "div",
+  staggerDelay = 0.07,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: ElementTag;
+  staggerDelay?: number;
+}) {
+  const Tag = as === "ul" ? motion.ul : as === "section" ? motion.section : motion.div;
+  return (
+    <Tag
+      initial="hidden"
+      whileInView="visible"
+      viewport={viewportOnce}
+      variants={{
+        visible: {
+          transition: {
+            staggerChildren: staggerDelay,
+            staggerDirection: 1,
+          },
+        },
+      }}
+      className={className}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 export function StaggerItem({
   children,
   className,
   as = "div",
+  viewTrigger = false,
 }: {
   children: React.ReactNode;
   className?: string;
   as?: ElementTag | "li";
+  /** Use softer, longer transition when parent is StaggerChildrenInView */
+  viewTrigger?: boolean;
 }) {
   const Tag = as === "li" ? motion.li : motion.div;
   return (
     <Tag
       variants={staggerItem}
-      transition={{ duration, ease }}
+      transition={
+        viewTrigger
+          ? { duration: durationView, ease: easeSoft }
+          : { duration, ease }
+      }
       className={className}
     >
       {children}
