@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
 
-const adminNavLinks = [
+const adminNavLinks: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/tournaments", label: "Tournaments" },
   { href: "/admin/users", label: "Users", superAdminOnly: true },
-] as const;
+];
 
 export function Navbar() {
   const pathname = usePathname();
