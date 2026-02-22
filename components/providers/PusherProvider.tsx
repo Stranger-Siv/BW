@@ -13,12 +13,22 @@ const PusherContext = createContext<PusherContextValue>({ pusher: null, isReady:
 function createPusherClient(): Pusher | null {
   const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
   const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER ?? "us2";
-  if (!key?.trim()) return null;
   if (typeof window === "undefined") return null;
-  return new Pusher(key, {
-    cluster,
+  if (!key?.trim()) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Pusher] Skipped: NEXT_PUBLIC_PUSHER_KEY is not set. Add it to .env.local and restart.");
+    }
+    return null;
+  }
+  const client = new Pusher(key.trim(), {
+    cluster: (cluster as string).trim(),
     forceTLS: true,
   });
+  if (process.env.NODE_ENV === "development") {
+    client.connection.bind("connected", () => console.log("[Pusher] Connected"));
+    client.connection.bind("error", (err: Error) => console.warn("[Pusher] Connection error", err));
+  }
+  return client;
 }
 
 export function PusherProvider({ children }: { children: React.ReactNode }) {
