@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { AdminTournamentsSkeleton } from "@/components/admin/AdminSkeletons";
 import { CreateTournamentModal, type TournamentSubmitPayload } from "@/components/admin/CreateTournamentModal";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 
@@ -151,9 +153,17 @@ export default function AdminTournamentsPage() {
     }
   }, [deleteTournament, fetchList]);
 
+  if (loading) {
+    return <AdminTournamentsSkeleton />;
+  }
+
   return (
     <main className="min-h-screen pb-bottom-nav">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:px-6 md:py-10 lg:px-8 lg:py-12">
+        <AdminBreadcrumbs
+          items={[{ label: "Admin", href: "/admin" }, { label: "Tournaments" }]}
+          className="mb-4"
+        />
         <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
@@ -187,12 +197,7 @@ export default function AdminTournamentsPage() {
             </div>
           )}
 
-          {loading ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-12">
-              <div className="loading-spinner border-emerald-500" aria-hidden />
-              <p className="loading-text">Loading…</p>
-            </div>
-          ) : list.length === 0 ? (
+          {list.length === 0 ? (
             <div className="card-glass py-12 text-center">
               <p className="text-slate-600 dark:text-slate-400">
                 No tournaments yet.

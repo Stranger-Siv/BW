@@ -3,6 +3,8 @@
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { AdminTeamDetailSkeleton } from "@/components/admin/AdminSkeletons";
 import { ChangeDateModal, type TournamentOption } from "@/components/admin/ChangeDateModal";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { formatDateLabel } from "@/lib/formatDate";
@@ -204,12 +206,7 @@ export default function AdminTeamDetailPage() {
   }, [team, router]);
 
   if (loading) {
-    return (
-      <main className="loading-wrap">
-        <div className="loading-spinner border-amber-500" aria-hidden />
-        <p className="loading-text">Loading team…</p>
-      </main>
-    );
+    return <AdminTeamDetailSkeleton />;
   }
 
   if (error || !team) {
@@ -236,18 +233,14 @@ export default function AdminTeamDetailPage() {
   return (
     <main className="min-h-screen pb-bottom-nav px-4 py-6 sm:px-6 md:px-8 lg:py-8">
       <div className="mx-auto max-w-4xl">
-        <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link
-            href="/admin"
-            className="min-h-[44px] flex items-center font-medium text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300"
-          >
-            ← Admin
-          </Link>
-          <span className="text-slate-500 dark:text-slate-400">/</span>
-          <span className="text-slate-600 dark:text-slate-300 truncate max-w-[180px] sm:max-w-none" title={team.teamName}>
-            {team.teamName}
-          </span>
-        </nav>
+        <AdminBreadcrumbs
+          items={[
+            { label: "Admin", href: "/admin" },
+            { label: "Team", href: "/admin" },
+            { label: team.teamName },
+          ]}
+          className="mb-4"
+        />
 
         <header className="card-glass animate-fade-in mb-6 p-4 sm:mb-8 sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">

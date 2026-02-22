@@ -4,6 +4,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { AdminUsersSkeleton } from "@/components/admin/AdminSkeletons";
 
 type UserRow = {
   _id: string;
@@ -117,24 +119,16 @@ export default function AdminUsersPage() {
   );
 
   if (status === "loading" || (isSuperAdmin && loading)) {
-    return (
-      <main className="loading-wrap">
-        <div className="loading-spinner border-amber-500" aria-hidden />
-        <p className="loading-text">Loading…</p>
-      </main>
-    );
+    return <AdminUsersSkeleton />;
   }
 
   return (
     <main className="page pb-bottom-nav">
       <div className="page-inner-wide max-w-5xl">
-        <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link href="/admin" className="back-link min-h-[44px] flex items-center text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
-            ← Admin
-          </Link>
-          <span className="text-slate-500 dark:text-slate-400">/</span>
-          <span className="text-slate-600 dark:text-slate-300">Users</span>
-        </nav>
+        <AdminBreadcrumbs
+          items={[{ label: "Admin", href: "/admin" }, { label: "Users" }]}
+          className="mb-4"
+        />
 
         <h1 className="mb-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
           Manage users

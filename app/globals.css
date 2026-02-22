@@ -102,6 +102,9 @@
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
+  .animate-skeleton-shine {
+    animation: skeletonShine 1.5s ease-in-out infinite;
+  }
   /* Extra padding above bottom nav on mobile; account for safe area */
   .pb-bottom-nav {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
@@ -123,6 +126,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes skeletonShine {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
   }
 }
 

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { AdminRoundsSkeleton } from "@/components/admin/AdminSkeletons";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type MovePayload = {
@@ -353,20 +355,24 @@ export default function AdminTournamentRoundsPage() {
     );
   }
 
+  if (loading) {
+    return <AdminRoundsSkeleton />;
+  }
+
   return (
     <main className="min-h-screen pb-bottom-nav bg-slate-300/90 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:px-8">
-        <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-          <Link
-            href="/admin/tournaments"
-            className="min-h-[44px] flex items-center text-sm text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
-          >
-            ← Tournaments
-          </Link>
-          <h1 className="text-xl font-bold text-amber-600 dark:text-amber-400 sm:text-2xl">
-            Rounds: {tournamentName}
-          </h1>
-        </div>
+        <AdminBreadcrumbs
+          items={[
+            { label: "Admin", href: "/admin" },
+            { label: "Tournaments", href: "/admin/tournaments" },
+            { label: tournamentName ? `Rounds: ${tournamentName}` : "Rounds" },
+          ]}
+          className="mb-4"
+        />
+        <h1 className="mb-4 text-xl font-bold text-amber-600 dark:text-amber-400 sm:text-2xl sm:mb-6">
+          Rounds: {tournamentName}
+        </h1>
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-300 bg-red-100/80 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200">
@@ -374,10 +380,7 @@ export default function AdminTournamentRoundsPage() {
           </div>
         )}
 
-        {loading ? (
-          <p className="loading-text">Loading…</p>
-        ) : (
-          <>
+        <>
             <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
               <input
                 type="text"
@@ -593,8 +596,7 @@ export default function AdminTournamentRoundsPage() {
                 ))}
               </div>
             </div>
-          </>
-        )}
+        </>
       </div>
     </main>
   );

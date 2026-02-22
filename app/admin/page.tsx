@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { formatDateLabel } from "@/lib/formatDate";
+import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
+import { AdminDashboardSkeleton } from "@/components/admin/AdminSkeletons";
 import { ChangeDateModal, type TournamentOption } from "@/components/admin/ChangeDateModal";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { StatsCards } from "@/components/admin/StatsCards";
@@ -469,9 +471,14 @@ export default function AdminPage() {
     isClosed: t.isClosed,
   }));
 
+  if (tournamentsLoading && tournaments.length === 0) {
+    return <AdminDashboardSkeleton />;
+  }
+
   return (
     <main className="page pb-bottom-nav">
       <div className="page-inner-wide max-w-7xl">
+        <AdminBreadcrumbs items={[{ label: "Dashboard" }]} className="mb-4" />
         <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <h1 className="page-title text-xl sm:text-2xl md:text-3xl">Admin Dashboard</h1>
           <nav className="flex flex-wrap items-center gap-2 sm:gap-3">
