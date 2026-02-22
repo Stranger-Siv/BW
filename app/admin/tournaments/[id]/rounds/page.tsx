@@ -369,7 +369,7 @@ export default function AdminTournamentRoundsPage() {
         )}
 
         {loading ? (
-          <p className="text-slate-600 dark:text-slate-400">Loading…</p>
+          <p className="loading-text">Loading…</p>
         ) : (
           <>
             <div className="mb-6 flex flex-wrap items-center gap-3">

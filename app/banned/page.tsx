@@ -8,8 +8,8 @@ export default function BannedPage() {
 
   if (status === "loading") {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-slate-500">Loading…</p>
+      <main className="loading-wrap">
+        <p className="loading-text">Loading…</p>
       </main>
     );
   }

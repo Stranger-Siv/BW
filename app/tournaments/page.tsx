@@ -362,7 +362,7 @@ export default function TournamentsPage() {
               </p>
             )}
             {fetchError && (
-              <div className="mb-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+              <div className="alert-error mb-4">
                 {fetchError}
               </div>
             )}

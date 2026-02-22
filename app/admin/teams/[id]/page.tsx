@@ -205,24 +205,22 @@ export default function AdminTeamDetailPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-          <p className="text-slate-500 dark:text-slate-400">Loading team…</p>
-        </div>
+      <main className="loading-wrap">
+        <div className="loading-spinner border-amber-500" aria-hidden />
+        <p className="loading-text">Loading team…</p>
       </main>
     );
   }
 
   if (error || !team) {
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6 md:px-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="card-glass rounded-2xl border-red-400/30 bg-red-500/10 p-6 dark:border-red-500/30 dark:bg-red-500/10">
-            <p className="text-red-200">{error || "Team not found"}</p>
+      <main className="page">
+        <div className="page-inner-narrow">
+          <div className="alert-error">
+            <p>{error || "Team not found"}</p>
           </div>
           <p className="mt-6">
-            <Link href="/admin" className="text-sm font-medium text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
+            <Link href="/admin" className="back-link text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
               ← Back to Admin
             </Link>
           </p>

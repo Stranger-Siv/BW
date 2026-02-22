@@ -114,29 +114,27 @@ function OnboardingContent() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400">Loading…</p>
+      <main className="loading-wrap">
+        <p className="loading-text">Loading…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="mx-auto max-w-md">
-        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
-          Complete your profile
-        </h1>
-        <p className="mb-6 text-sm text-slate-600 dark:text-slate-400">
+    <main className="page">
+      <div className="page-inner-form">
+        <h1 className="page-title mb-2">Complete your profile</h1>
+        <p className="page-subtitle mb-6">
           Set your in-game name, Discord info, and a username for this platform.
         </p>
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+          <div className="alert-error mb-4">
             {error}
           </div>
         )}
 
-        <div className="card-glass animate-fade-in space-y-4 p-6">
+        <div className="card animate-fade-in space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">
               Username for platform <span className="text-emerald-400">*</span>
@@ -185,9 +183,7 @@ function OnboardingContent() {
 
         <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
           You can update these anytime from your{" "}
-          <Link href="/profile" className="font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-            Profile
-          </Link>{" "}
+          <Link href="/profile" className="back-link">Profile</Link>{" "}
           after continuing.
         </p>
       </div>
@@ -197,7 +193,7 @@ function OnboardingContent() {
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={<main className="flex min-h-screen items-center justify-center"><p className="text-slate-400">Loading…</p></main>}>
+    <Suspense fallback={<main className="loading-wrap"><p className="loading-text">Loading…</p></main>}>
       <OnboardingContent />
     </Suspense>
   );

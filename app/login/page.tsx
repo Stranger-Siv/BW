@@ -7,26 +7,26 @@ import { SITE } from "@/lib/site";
 
 function LoginForm() {
   return (
-    <main className="min-h-screen px-4 py-10 sm:py-16">
-      <div className="mx-auto max-w-lg">
+    <main className="page py-10 sm:py-16">
+      <div className="page-inner-form">
         <div className="mb-8 text-center sm:mb-10">
           <img
             src={SITE.hostedByLogo}
             alt=""
             className="mx-auto h-16 w-16 rounded-2xl object-cover ring-2 ring-white/10 sm:h-20 sm:w-20"
           />
-          <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="page-title mt-4 text-white sm:text-4xl">
             Sign in to {SITE.name}
           </h1>
-          <p className="mt-2 text-slate-400">
+          <p className="page-subtitle mt-2 text-slate-400">
             Use your Google account to register for BedWars tournaments on {SITE.serverName} and manage your teams.
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Hosted by <strong className="text-slate-400">{SITE.hostedBy}</strong> · <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300">Join Discord</a> for rules &amp; updates
+            Hosted by <strong className="text-slate-400">{SITE.hostedBy}</strong> · <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="back-link">Join Discord</a> for rules &amp; updates
           </p>
         </div>
 
-        <div className="card-glass animate-fade-in p-6 sm:p-8">
+        <div className="card-lg animate-fade-in">
           <h2 className="mb-4 text-lg font-semibold text-white">
             Sign in with Google
           </h2>
@@ -48,7 +48,7 @@ function LoginForm() {
           </button>
         </div>
 
-        <div className="card-glass mt-6 animate-fade-in p-5 sm:p-6">
+        <div className="card mt-6 animate-fade-in">
           <h3 className="mb-3 text-base font-semibold text-white">
             What happens next
           </h3>
@@ -75,11 +75,9 @@ function LoginForm() {
         </div>
 
         <p className="mt-8 text-center text-sm text-slate-400">
-          <Link href="/" className="font-medium text-emerald-400 transition hover:text-emerald-300">
-            ← Back to home
-          </Link>
+          <Link href="/" className="back-link">← Back to home</Link>
           {" · "}
-          <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-emerald-400 transition hover:text-emerald-300">
+          <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="back-link">
             Join Discord
           </a>
         </p>
@@ -90,13 +88,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="flex min-h-screen items-center justify-center">
-          <p className="text-slate-400">Loading…</p>
-        </main>
-      }
-    >
+    <Suspense fallback={<main className="loading-wrap"><p className="loading-text">Loading…</p></main>}>
       <LoginForm />
     </Suspense>
   );

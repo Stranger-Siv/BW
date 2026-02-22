@@ -79,26 +79,22 @@ export default function TeamDetailPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
-          <p className="text-slate-500 dark:text-slate-400">Loading team…</p>
-        </div>
+      <main className="loading-wrap">
+        <div className="loading-spinner" aria-hidden />
+        <p className="loading-text">Loading team…</p>
       </main>
     );
   }
 
   if (error || !team) {
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6 md:px-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="card-glass rounded-2xl border-red-400/30 bg-red-500/10 p-6 dark:border-red-500/30 dark:bg-red-500/10">
-            <p className="text-red-200">{error || "Team not found"}</p>
+      <main className="page">
+        <div className="page-inner-narrow">
+          <div className="alert-error">
+            <p>{error || "Team not found"}</p>
           </div>
           <p className="mt-6">
-            <Link href="/profile" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-              ← Back to Profile
-            </Link>
+            <Link href="/profile" className="back-link">← Back to Profile</Link>
           </p>
         </div>
       </main>
@@ -189,14 +185,11 @@ export default function TeamDetailPage() {
   });
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 md:px-8 lg:py-8">
-      <div className="mx-auto max-w-4xl">
+    <main className="page">
+      <div className="page-inner">
         {/* Breadcrumb / back */}
         <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link
-            href="/profile"
-            className="font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
+          <Link href="/profile" className="back-link">
             ← Profile
           </Link>
           <span className="text-slate-500 dark:text-slate-400">/</span>
@@ -206,10 +199,10 @@ export default function TeamDetailPage() {
         </nav>
 
         {/* Hero: team name + status + primary actions */}
-        <header className="card-glass animate-fade-in mb-6 sm:mb-8 p-5 sm:p-6 md:p-8">
+        <header className="card-lg animate-fade-in mb-6 sm:mb-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate sm:text-3xl md:text-4xl">
+              <h1 className="page-title truncate sm:text-3xl md:text-4xl">
                 {team.teamName}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -233,10 +226,7 @@ export default function TeamDetailPage() {
                   View rounds & matches
                 </Link>
               )}
-              <Link
-                href="/matches"
-                className="rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
-              >
+              <Link href="/matches" className="btn-secondary">
                 My matches
               </Link>
             </div>
@@ -244,7 +234,7 @@ export default function TeamDetailPage() {
         </header>
 
         {actionMessage && (
-          <div className="mb-6 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+          <div className="alert-success mb-6">
             {actionMessage}
           </div>
         )}
@@ -252,8 +242,8 @@ export default function TeamDetailPage() {
         {/* Info grid: 1 col mobile, 2 col lg */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Team & status */}
-          <section className="card-glass animate-fade-in p-5 sm:p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <section className="card animate-fade-in">
+            <h2 className="section-title mb-4">
               Team & status
             </h2>
             <dl className="space-y-3">
@@ -287,8 +277,8 @@ export default function TeamDetailPage() {
           </section>
 
           {/* Tournament */}
-          <section className="card-glass animate-fade-in p-5 sm:p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <section className="card animate-fade-in">
+            <h2 className="section-title mb-4">
               Tournament
             </h2>
             {tournament ? (
@@ -313,10 +303,7 @@ export default function TeamDetailPage() {
             )}
             {tournamentId && (
               <div className="mt-5 pt-4 border-t border-white/10">
-                <Link
-                  href={`/tournaments/${tournamentId}/rounds`}
-                  className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
+                <Link href={`/tournaments/${tournamentId}/rounds`} className="back-link">
                   Open tournament rounds →
                 </Link>
               </div>
@@ -324,8 +311,8 @@ export default function TeamDetailPage() {
           </section>
 
           {/* Registration details */}
-          <section className="card-glass animate-fade-in p-5 sm:p-6 lg:col-span-2">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <section className="card animate-fade-in lg:col-span-2">
+            <h2 className="section-title mb-4">
               Registration details
             </h2>
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -342,8 +329,8 @@ export default function TeamDetailPage() {
         </div>
 
         {/* Captain */}
-        <section className="card-glass animate-fade-in mt-4 sm:mt-6 p-5 sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <section className="card animate-fade-in mt-4 sm:mt-6">
+          <h2 className="section-title mb-4">
             Captain
           </h2>
           <div className="flex flex-wrap items-center gap-4">
@@ -397,8 +384,8 @@ export default function TeamDetailPage() {
         </section>
 
         {/* Roster */}
-        <section className="card-glass animate-fade-in mt-4 sm:mt-6 p-5 sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <section className="card animate-fade-in mt-4 sm:mt-6">
+          <h2 className="section-title mb-4">
             Roster ({players.length})
           </h2>
           <ul className="space-y-3">
@@ -466,9 +453,7 @@ export default function TeamDetailPage() {
         </section>
 
         <p className="mt-8">
-          <Link href="/profile" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-            ← Back to Profile
-          </Link>
+          <Link href="/profile" className="back-link">← Back to Profile</Link>
         </p>
       </div>
     </main>

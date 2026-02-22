@@ -188,9 +188,9 @@ export default function AdminTournamentsPage() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-slate-500 dark:text-slate-400">
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-              Loading…
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <div className="loading-spinner border-emerald-500" aria-hidden />
+              <p className="loading-text">Loading…</p>
             </div>
           ) : list.length === 0 ? (
             <div className="card-glass py-12 text-center">

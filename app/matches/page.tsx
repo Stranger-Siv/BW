@@ -81,38 +81,33 @@ export default function MyMatchesPage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400">Loading…</p>
+      <main className="loading-wrap">
+        <p className="loading-text">Loading…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 md:px-8">
-      <div className="mx-auto max-w-3xl">
+    <main className="page">
+      <div className="page-inner">
         <div className="mb-6">
-          <Link
-            href="/tournaments"
-            className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
+          <Link href="/tournaments" className="back-link">
             ← Tournaments
           </Link>
         </div>
 
-        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
-          My registered matches
-        </h1>
-        <p className="mb-6 text-slate-600 dark:text-slate-400">
+        <h1 className="page-title mb-2">My registered matches</h1>
+        <p className="page-subtitle mb-6">
           Tournaments you’re registered in. Open a tournament to see rounds and matchups.
         </p>
 
         {teams.length === 0 ? (
-          <div className="card-glass animate-fade-in p-8 text-center">
+          <div className="card-lg animate-fade-in text-center">
             <p className="text-slate-600 dark:text-slate-400">
               You’re not registered for any tournaments yet.
             </p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              <Link href="/tournaments" className="font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
+              <Link href="/tournaments" className="back-link">
                 Register a team
               </Link>{" "}
               to get started.
@@ -130,7 +125,7 @@ export default function MyMatchesPage() {
               const winner = tournamentId ? winners[tournamentId] : null;
 
               return (
-                <li key={team._id} className="card-glass transition-all duration-300 hover:shadow-lg p-4">
+                <li key={team._id} className="card transition-all duration-300 hover:shadow-lg">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
@@ -153,7 +148,7 @@ export default function MyMatchesPage() {
                     <div className="flex flex-shrink-0 gap-2">
                       <Link
                         href={`/profile/teams/${team._id}`}
-                        className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
+                        className="btn-secondary"
                       >
                         Team details
                       </Link>
@@ -174,13 +169,9 @@ export default function MyMatchesPage() {
         )}
 
         <p className="mt-8">
-          <Link href="/profile" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-            Profile
-          </Link>
+          <Link href="/profile" className="back-link">Profile</Link>
           {" · "}
-          <Link href="/tournaments" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
-            Tournaments
-          </Link>
+          <Link href="/tournaments" className="back-link">Tournaments</Link>
         </p>
       </div>
     </main>

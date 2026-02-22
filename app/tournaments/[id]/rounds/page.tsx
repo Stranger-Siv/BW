@@ -99,7 +99,7 @@ export default function TournamentRoundsPage() {
         )}
 
         {loading ? (
-          <p className="text-slate-500 dark:text-slate-400">Loading…</p>
+          <p className="loading-text">Loading…</p>
         ) : (
           <>
             {winner && (

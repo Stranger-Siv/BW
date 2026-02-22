@@ -96,23 +96,18 @@ export default function AdminUsersPage() {
 
   if (status === "loading" || (isSuperAdmin && loading)) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-          <p className="text-slate-500 dark:text-slate-400">Loading…</p>
-        </div>
+      <main className="loading-wrap">
+        <div className="loading-spinner border-amber-500" aria-hidden />
+        <p className="loading-text">Loading…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 md:px-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="page">
+      <div className="page-inner-wide max-w-5xl">
         <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link
-            href="/admin"
-            className="font-medium text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300"
-          >
+          <Link href="/admin" className="back-link text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
             ← Admin
           </Link>
           <span className="text-slate-500 dark:text-slate-400">/</span>

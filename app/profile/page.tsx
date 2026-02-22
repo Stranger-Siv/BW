@@ -90,26 +90,24 @@ export default function ProfilePage() {
 
   if (status === "loading" || loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-slate-500 dark:text-slate-400">Loading…</p>
+      <main className="loading-wrap">
+        <p className="loading-text">Loading…</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 md:px-8">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
-          Profile
-        </h1>
+    <main className="page">
+      <div className="page-inner-narrow">
+        <h1 className="page-title mb-6">Profile</h1>
 
         {message && (
-          <div className="mb-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+          <div className="alert-success mb-4">
             {message}
           </div>
         )}
 
-        <div className="card-glass mb-8 p-6">
+        <div className="card mb-8">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {profile?.image && (
@@ -126,7 +124,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="shrink-0 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
+                className="btn-secondary shrink-0"
                 aria-label="Edit profile"
               >
                 Edit ✏️
@@ -177,7 +175,7 @@ export default function ProfilePage() {
                     setDiscordUsername(profile?.discordUsername ?? "");
                   }}
                   disabled={saving}
-                  className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
@@ -222,7 +220,7 @@ export default function ProfilePage() {
         </div>
 
         <p className="mt-8">
-          <Link href="/tournaments" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
+          <Link href="/tournaments" className="back-link">
             ← Back to Tournaments
           </Link>
         </p>

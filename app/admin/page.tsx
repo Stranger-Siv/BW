@@ -460,12 +460,10 @@ export default function AdminPage() {
   }));
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:px-6 md:py-10 lg:px-8 lg:py-12">
+    <main className="page">
+      <div className="page-inner-wide">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Admin Dashboard
-          </h1>
+          <h1 className="page-title">Admin Dashboard</h1>
           <div className="flex flex-wrap items-center gap-3">
             {isSuperAdmin && (
               <Link
@@ -481,29 +479,23 @@ export default function AdminPage() {
             >
               Manage tournaments
             </Link>
-            <Link
-              href="/tournaments"
-              className="min-h-[44px] flex items-center text-sm font-medium text-emerald-500 transition hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-            >
+            <Link href="/tournaments" className="back-link min-h-[44px] flex items-center">
               ← Tournaments
             </Link>
           </div>
         </header>
 
-        <div className="card-glass mb-6 p-4 sm:p-5">
+        <div className="card mb-6">
           <p className="text-sm text-slate-600 dark:text-slate-400">
             Create and edit tournaments, then come back here to view teams and manage registrations.
           </p>
-          <Link
-            href="/admin/tournaments"
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
+          <Link href="/admin/tournaments" className="back-link mt-3 inline-flex items-center gap-1.5">
             Go to Tournaments page →
           </Link>
         </div>
 
-        <div className="card-glass p-4 shadow-lg sm:p-6 md:p-8">
-          <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-100 md:text-2xl">
+        <div className="card-lg shadow-lg">
+          <h2 className="section-title mb-4 !normal-case !text-xl text-slate-800 dark:text-slate-100 md:!text-2xl">
             Registrations by tournament
           </h2>
 
