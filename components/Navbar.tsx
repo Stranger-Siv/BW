@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
 
 const adminNavLinks: { href: string; label: string; superAdminOnly?: boolean }[] = [
@@ -15,27 +14,9 @@ const adminNavLinks: { href: string; label: string; superAdminOnly?: boolean }[]
 export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isAdminOrSuperAdmin = role === "admin" || role === "super_admin";
   const isSuperAdmin = role === "super_admin";
-
-  useEffect(() => {
-    if (status !== "authenticated" || !session?.user) {
-      setDisplayName(null);
-      return;
-    }
-    let cancelled = false;
-    fetch("/api/users/me", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((p) => {
-        if (!cancelled && p?.displayName) setDisplayName(p.displayName);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [status, session?.user]);
 
   const linkClass = (isActive: boolean) =>
     `rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ${
@@ -89,9 +70,6 @@ export function Navbar() {
               <Link href="/profile" className={`${linkClass(pathname === "/profile")} hidden md:inline-block`}>
                 Profile
               </Link>
-              <span className="hidden max-w-[120px] truncate text-sm text-slate-400 lg:inline">
-                {displayName ?? session.user.name ?? session.user.email}
-              </span>
               <button
                 type="button"
                 onClick={() => {

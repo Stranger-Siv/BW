@@ -23,7 +23,7 @@ function LoginForm() {
             Use your Google account to register for BedWars tournaments on {SITE.serverName} and manage your teams.
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Hosted by <strong className="text-slate-400">{SITE.hostedBy}</strong> · <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="back-link">Join Discord</a> for rules &amp; updates
+            Sponsored by <strong className="text-slate-400">{SITE.hostedBy}</strong> · <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="back-link">Join Discord</a> for rules &amp; updates
           </p>
         </FadeInUp>
 

@@ -24,33 +24,39 @@ export default function HomePage() {
               Welcome to the ultimate BedWars arena. Register your team and battle in competitive tournaments — Solo, Duo, or Squad. Defend your bed. Break theirs. Claim your victory.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-8 sm:gap-4">
-              <Link
-                href="/tournaments"
-                className="btn-gradient inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-5 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
-              >
-                Register Now
-              </Link>
-              <Link
-                href="/tournaments"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
-              >
-                View Tournaments
-              </Link>
-              <a
-                href={SITE.discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
-              >
-                Join Discord
-              </a>
+              <FadeInUp delay={0.08}>
+                <Link
+                  href="/tournaments"
+                  className="btn-gradient inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-5 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                >
+                  Register Now
+                </Link>
+              </FadeInUp>
+              <FadeInUp delay={0.12}>
+                <Link
+                  href="/tournaments"
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
+                >
+                  View Tournaments
+                </Link>
+              </FadeInUp>
+              <FadeInUp delay={0.16}>
+                <a
+                  href={SITE.discordUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
+                >
+                  Join Discord
+                </a>
+              </FadeInUp>
             </div>
           </FadeInUp>
         </section>
 
         {/* Hosted by Baba Tillu */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.05}>
           <div className="card-glass flex flex-col items-center gap-4 p-6 sm:flex-row sm:gap-6 sm:p-8">
             <img
               src={SITE.hostedByLogo}
@@ -59,7 +65,7 @@ export default function HomePage() {
             />
             <div className="text-center sm:text-left">
               <h2 className="text-lg font-semibold text-white sm:text-xl">
-                Hosted &amp; sponsored by {SITE.hostedBy}
+                 Sponsored by {SITE.hostedBy}
               </h2>
               <p className="mt-1 text-sm text-slate-400">
                 This isn’t just a server — it’s a battlefield where strategy meets skill. Whether you’re learning the grind or chasing perfection, this is your place to grow, team up, and conquer.
@@ -71,7 +77,7 @@ export default function HomePage() {
 
         {/* What Awaits You */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.06}>
           <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
             What Awaits You
           </h2>
@@ -84,7 +90,7 @@ export default function HomePage() {
             ].map((item) => (
               <StaggerItem
                 key={item.label}
-                className="card-glass flex items-center gap-3 p-4 sm:p-4 transition-shadow duration-300 hover:shadow-lg"
+                className="card-glass flex items-center gap-3 p-4 sm:p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <span className="text-2xl" aria-hidden>{item.icon}</span>
                 <span className="text-sm font-medium text-slate-200 sm:text-base">{item.label}</span>
@@ -96,7 +102,7 @@ export default function HomePage() {
 
         {/* Server & where to play */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.08}>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl">
               Where we play
@@ -116,7 +122,7 @@ export default function HomePage() {
 
         {/* What is Bedwars */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.1}>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-2xl font-semibold text-white md:text-3xl">
               What is Bedwars?
@@ -132,19 +138,19 @@ export default function HomePage() {
 
         {/* Tournament formats */}
         <section className="mb-10 sm:mb-16 md:mb-20">
+          <FadeInUp delay={0.12}>
           <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
             Tournament formats
           </h2>
-          <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
+          <StaggerChildren className="grid gap-4 sm:gap-6 sm:grid-cols-3">
             {[
               { title: "Solo", players: 1, desc: "Every player for themselves. Register with your IGN and fight alone for the crown.", icon: "⚔️" },
               { title: "Duo", players: 2, desc: "Team up with one partner. Coordinate strategies and share the victory.", icon: "👥" },
               { title: "Squad", players: 4, desc: "Full team of four. Build your roster, assign roles, and dominate as a unit.", icon: "🛡️" },
-            ].map((item, i) => (
-              <div
+            ].map((item) => (
+              <StaggerItem
                 key={item.title}
-                className="card-glass animate-fade-in p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
-                style={{ animationDelay: `${(i + 1) * 0.1}s` }}
+                className="card-glass p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-6"
               >
                 <span className="text-2xl sm:text-3xl" aria-hidden>{item.icon}</span>
                 <h3 className="mt-2 text-lg font-semibold text-white sm:mt-3 sm:text-xl">
@@ -156,14 +162,15 @@ export default function HomePage() {
                 <p className="mt-2 text-sm text-slate-400">
                   {item.desc}
                 </p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerChildren>
+          </FadeInUp>
         </section>
 
         {/* How it works */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.06}>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-4 text-xl font-semibold text-white sm:mb-6 sm:text-2xl md:text-3xl">
               How it works
@@ -192,6 +199,7 @@ export default function HomePage() {
 
         {/* Feature cards */}
         <section className="mb-10 sm:mb-16 md:mb-20">
+          <FadeInUp delay={0.08}>
           <StaggerChildren className="grid gap-4 sm:gap-6 sm:grid-cols-3">
           {[
             {
@@ -224,11 +232,12 @@ export default function HomePage() {
             </StaggerItem>
           ))}
           </StaggerChildren>
+          </FadeInUp>
         </section>
 
         {/* Tournament rules */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.1}>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Tournament rules
@@ -251,7 +260,7 @@ export default function HomePage() {
 
         {/* Winner prizes */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.12}>
           <div className="card-glass p-4 sm:p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
               Winner prizes
@@ -272,7 +281,7 @@ export default function HomePage() {
 
         {/* Requirements */}
         <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUp>
+          <FadeInUp delay={0.14}>
           <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
             <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl md:text-3xl">
               Requirements
@@ -295,7 +304,7 @@ export default function HomePage() {
 
         {/* CTA */}
         <section className="text-center pb-6 sm:pb-0">
-          <FadeInUp delay={0.1}>
+          <FadeInUp delay={0.16}>
           <p className="mb-4 text-slate-400 sm:mb-6">
             Ready to compete? Join Discord for updates and registrations.
           </p>
