@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
-export type UserRole = "player" | "admin";
+export type UserRole = "player" | "admin" | "super_admin";
 
 export interface IUser {
   googleId: string;
@@ -8,6 +8,8 @@ export interface IUser {
   name: string;
   image?: string;
   role: UserRole;
+  /** When true, user cannot use the app; checked on each session load */
+  banned?: boolean;
   /** Username for the platform (chosen by user, not from Google) */
   displayName?: string;
   minecraftIGN?: string;
@@ -24,9 +26,10 @@ const userSchema = new Schema<IUser>(
     role: {
       type: String,
       required: true,
-      enum: ["player", "admin"],
+      enum: ["player", "admin", "super_admin"],
       default: "player",
     },
+    banned: { type: Boolean, default: false },
     displayName: { type: String, trim: true },
     minecraftIGN: { type: String, trim: true },
     discordUsername: { type: String, trim: true },

@@ -24,6 +24,11 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
+    const banned = (session.user as { banned?: boolean }).banned;
+    if (banned) {
+      if (pathname !== "/banned") router.replace("/banned");
+      return;
+    }
     if (pathname === "/login" || pathname === "/onboarding") return;
     const userId = (session.user as { id?: string }).id;
     if (!userId) return;

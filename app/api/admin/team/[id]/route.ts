@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Tournament from "@/models/Tournament";
 import TournamentDate from "@/models/TournamentDate";
 import Team, { type IPlayer, type ITeam } from "@/models/Team";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES = ["approved", "rejected"] as const;
 type StatusUpdate = (typeof STATUS_VALUES)[number];
@@ -50,6 +53,36 @@ function validatePatchBody(
   }
 
   return { ok: true, data: updates };
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { id?: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const id = typeof params?.id === "string" ? params.id : undefined;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid team ID" }, { status: 400 });
+    }
+    await connectDB();
+    const team = await Team.findById(id)
+      .populate("tournamentId", "name date status teamSize maxTeams registeredTeams isClosed")
+      .lean();
+    if (!team) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+    return NextResponse.json(team, { status: 200 });
+  } catch (err) {
+    console.error("GET /api/admin/team/[id] error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch team" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(

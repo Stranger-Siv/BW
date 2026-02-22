@@ -26,16 +26,24 @@ export const authOptions: NextAuthOptions = {
           });
           dbUser = created.toObject();
         }
-        const u = dbUser as unknown as { _id: { toString(): string }; role: string };
+        const u = dbUser as unknown as { _id: { toString(): string }; role: string; banned?: boolean };
         token.id = u._id.toString();
         token.role = u.role;
+        token.banned = u.banned === true;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         (session.user as { id?: string }).id = token.id as string;
         (session.user as { role?: string }).role = token.role as string;
+        await connectDB();
+        const u = await User.findById(token.id).select("role banned").lean();
+        const dbUser = u as unknown as { role?: string; banned?: boolean } | null;
+        if (dbUser) {
+          (session.user as { role?: string }).role = dbUser.role;
+          (session.user as { banned?: boolean }).banned = dbUser.banned === true;
+        }
       }
       return session;
     },

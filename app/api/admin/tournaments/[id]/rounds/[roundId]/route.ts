@@ -4,10 +4,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Round from "@/models/Round";
 import { authOptions } from "@/lib/auth";
-
-function isAdmin(session: { user?: { role?: string } } | null): boolean {
-  return session?.user?.role === "admin";
-}
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 /**
  * DELETE /api/admin/tournaments/[id]/rounds/[roundId]
@@ -18,7 +15,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id?: string; roundId?: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!isAdmin(session)) {
+  if (!isAdminOrSuperAdmin(session)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   const { id: tournamentId, roundId } = await params;

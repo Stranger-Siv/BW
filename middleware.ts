@@ -4,7 +4,8 @@ export default withAuth({
   callbacks: {
     authorized: ({ token }) => {
       if (!token) return false;
-      return token.role === "admin";
+      if (token.banned) return false;
+      return token.role === "admin" || token.role === "super_admin";
     },
   },
   pages: { signIn: "/login" },

@@ -5,10 +5,7 @@ import connectDB from "@/lib/mongodb";
 import Tournament from "@/models/Tournament";
 import Team, { type IPlayer } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
-
-function isAdmin(session: { user?: { role?: string } } | null): boolean {
-  return session?.user?.role === "admin";
-}
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 function isPlayer(obj: unknown): obj is IPlayer {
   return (
@@ -98,7 +95,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!isAdmin(session)) {
+    if (!isAdminOrSuperAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { id } = await params;

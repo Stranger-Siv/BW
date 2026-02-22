@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateLabel } from "@/lib/formatDate";
@@ -29,6 +30,8 @@ type TournamentDoc = {
 };
 
 export default function AdminPage() {
+  const { data: session } = useSession();
+  const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === "super_admin";
   const [tournaments, setTournaments] = useState<TournamentDoc[]>([]);
   const [tournamentsLoading, setTournamentsLoading] = useState(true);
   const [selectedTournamentId, setSelectedTournamentId] = useState("");
@@ -464,6 +467,14 @@ export default function AdminPage() {
             Admin Dashboard
           </h1>
           <div className="flex flex-wrap items-center gap-3">
+            {isSuperAdmin && (
+              <Link
+                href="/admin/users"
+                className="min-h-[44px] flex items-center rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 dark:text-amber-300"
+              >
+                Manage users
+              </Link>
+            )}
             <Link
               href="/admin/tournaments"
               className="btn-gradient min-h-[44px] flex items-center"

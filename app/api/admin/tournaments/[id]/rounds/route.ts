@@ -6,10 +6,7 @@ import Round from "@/models/Round";
 import Team from "@/models/Team";
 import Tournament from "@/models/Tournament";
 import { authOptions } from "@/lib/auth";
-
-function isAdmin(session: { user?: { role?: string } } | null): boolean {
-  return session?.user?.role === "admin";
-}
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 export async function GET(
   _request: NextRequest,
@@ -17,7 +14,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!isAdmin(session)) {
+    if (!isAdminOrSuperAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const id = params?.id;
@@ -41,7 +38,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!isAdmin(session)) {
+    if (!isAdminOrSuperAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const id = params?.id;
@@ -98,7 +95,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!isAdmin(session)) {
+    if (!isAdminOrSuperAdmin(session)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const id = params?.id;

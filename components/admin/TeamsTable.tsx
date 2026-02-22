@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { formatDateTime } from "@/lib/formatDate";
 
 export type AdminTeam = {
@@ -117,7 +118,12 @@ export function TeamsTable({
                   />
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">
-                  {team.teamName}
+                  <Link
+                    href={`/admin/teams/${team._id}`}
+                    className="hover:text-emerald-400 hover:underline dark:hover:text-emerald-300"
+                  >
+                    {team.teamName}
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                   <ul className="space-y-0.5">
