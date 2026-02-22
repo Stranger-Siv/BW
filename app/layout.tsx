@@ -14,10 +14,12 @@ export const metadata: Metadata = {
   description: "Register for BedWars tournaments on MCFleet. Defend your bed, break theirs, claim victory. Sponsored by Baba Tillu. play.mcfleet.net",
   icons: {
     icon: [
-      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon.png", sizes: "96x96", type: "image/png" },
       { url: "/icon.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icon1.png",
+    apple: "/icon.png",
   },
 };
 

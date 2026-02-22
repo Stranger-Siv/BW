@@ -40,9 +40,9 @@ export function Navbar() {
           <img
             src="/icon.png"
             alt=""
-            className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
-            width={36}
-            height={36}
+            className="h-14 w-14 shrink-0 rounded-lg object-contain sm:h-16 sm:w-16"
+            width={64}
+            height={64}
           />
           <span className="truncate">{SITE.name}</span>
         </Link>
