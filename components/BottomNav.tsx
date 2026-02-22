@@ -97,6 +97,8 @@ export function BottomNav() {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
+    // Dashboard is only active on exact /admin, so child routes (e.g. /admin/users) don’t highlight it
+    if (href === "/admin") return pathname === "/admin";
     return pathname === href || pathname.startsWith(href + "/");
   };
 

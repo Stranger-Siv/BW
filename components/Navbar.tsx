@@ -48,7 +48,8 @@ export function Navbar() {
             </Link>
             {isAdminOrSuperAdmin && adminNavLinks.map(({ href, label, superAdminOnly }) => {
               if (superAdminOnly && !isSuperAdmin) return null;
-              const isActive = pathname === href || pathname.startsWith(href + "/");
+              // Dashboard is only active on exact /admin so child routes don’t highlight it
+              const isActive = href === "/admin" ? pathname === "/admin" : (pathname === href || pathname.startsWith(href + "/"));
               return (
                 <Link key={href} href={href} className={linkClass(isActive)}>
                   {label}
