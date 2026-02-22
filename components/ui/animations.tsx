@@ -2,8 +2,8 @@
 
 import { motion, type Variants } from "framer-motion";
 
-/** Smooth, professional easing — not bouncy */
-const ease = [0.25, 0.1, 0.25, 1];
+/** Smooth, professional easing — not bouncy (cubic-bezier) */
+const ease = [0.25, 0.1, 0.25, 1] as const;
 const duration = 0.4;
 
 const fadeInUp: Variants = {

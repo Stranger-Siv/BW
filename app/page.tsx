@@ -127,6 +127,7 @@ export default function HomePage() {
               All events are organized with scheduled rounds, admin-managed brackets, and live slot tracking so you know exactly when and who you’re facing.
             </p>
           </div>
+          </FadeInUp>
         </section>
 
         {/* Tournament formats */}
