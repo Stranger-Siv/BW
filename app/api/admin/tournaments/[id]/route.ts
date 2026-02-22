@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Tournament, { type TournamentStatus, type TournamentType } from "@/models/Tournament";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
@@ -129,6 +132,10 @@ export async function PATCH(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const id = typeof params?.id === "string" ? params.id : undefined;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid tournament ID" }, { status: 400 });
@@ -203,6 +210,10 @@ export async function DELETE(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const id = typeof params?.id === "string" ? params.id : undefined;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid tournament ID" }, { status: 400 });

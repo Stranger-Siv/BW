@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Tournament from "@/models/Tournament";
 import TournamentDate from "@/models/TournamentDate";
 import Team from "@/models/Team";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const tournamentId = searchParams.get("tournamentId");

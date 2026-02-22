@@ -11,11 +11,19 @@ type Profile = {
   discordUsername?: string;
 };
 
+/** Allow only same-origin path (no protocol-relative or absolute URLs) to prevent open redirect */
+function safeReturnUrl(raw: string | null): string {
+  if (typeof raw !== "string" || !raw.trim()) return "/";
+  const path = raw.trim();
+  if (!path.startsWith("/") || path.startsWith("//")) return "/";
+  return path;
+}
+
 function OnboardingContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl") ?? "/";
+  const returnUrl = safeReturnUrl(searchParams.get("returnUrl"));
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

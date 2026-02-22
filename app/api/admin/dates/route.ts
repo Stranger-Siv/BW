@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import TournamentDate from "@/models/TournamentDate";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 type CreateBody = {
   date?: string;
@@ -27,6 +30,10 @@ function validateCreateBody(body: unknown): { ok: true; data: { date: string; ma
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     await connectDB();
 
     const dates = await TournamentDate.find()
@@ -45,6 +52,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     let body: unknown;
     try {
       body = await request.json();

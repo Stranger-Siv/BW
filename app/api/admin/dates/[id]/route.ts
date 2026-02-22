@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import TournamentDate from "@/models/TournamentDate";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 type PatchBody = {
   maxTeams?: number;
@@ -42,6 +45,10 @@ export async function PATCH(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const id = typeof params?.id === "string" ? params.id : undefined;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
@@ -109,6 +116,10 @@ export async function DELETE(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const id = typeof params?.id === "string" ? params.id : undefined;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {

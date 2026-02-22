@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import connectDB from "@/lib/mongodb";
 import Tournament, {
   type TournamentStatus,
   type TournamentType,
   TOURNAMENT_TYPE_TEAM_SIZE,
 } from "@/models/Tournament";
+import { authOptions } from "@/lib/auth";
+import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
@@ -93,6 +96,10 @@ function validateCreateBody(
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     await connectDB();
     const list = await Tournament.find().sort({ createdAt: -1 }).lean();
     return NextResponse.json(list, { status: 200 });
@@ -107,6 +114,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     let body: unknown;
     try {
       body = await request.json();
