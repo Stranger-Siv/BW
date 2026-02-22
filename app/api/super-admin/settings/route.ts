@@ -5,6 +5,7 @@ import SiteSettings, { SITE_SETTINGS_ID } from "@/models/SiteSettings";
 import { authOptions } from "@/lib/auth";
 import { isSuperAdmin } from "@/lib/adminAuth";
 import { createAuditLog } from "@/lib/auditLog";
+import { getServerPusher, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,12 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await SiteSettings.findById(SITE_SETTINGS_ID).lean();
     const u = updated as unknown as { maintenanceMode?: boolean; announcement?: { message?: string; active?: boolean }; updatedAt?: string };
+    const pusher = getServerPusher();
+    if (maintenanceMode !== undefined && pusher) {
+      pusher.trigger(PUSHER_CHANNELS.SITE, PUSHER_EVENTS.MAINTENANCE_CHANGED, {
+        maintenanceMode: u?.maintenanceMode ?? false,
+      });
+    }
     return NextResponse.json(
       {
         maintenanceMode: u.maintenanceMode ?? false,

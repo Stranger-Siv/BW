@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type Announcement = { message: string; active: boolean };
 
@@ -13,6 +14,13 @@ export function AnnouncementBanner() {
       .then((data: Announcement) => setAnn(data))
       .catch(() => setAnn({ message: "", active: false }));
   }, []);
+
+  usePusherChannel("site", "announcement_changed", (data: unknown) => {
+    const payload = data as Announcement;
+    if (payload && typeof payload.message === "string" && typeof payload.active === "boolean") {
+      setAnn({ message: payload.message, active: payload.active });
+    }
+  });
 
   if (!ann?.active || !ann?.message?.trim()) return null;
 

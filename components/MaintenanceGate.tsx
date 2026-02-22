@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ImpersonationBanner } from "./ImpersonationBanner";
 import { SITE } from "@/lib/site";
@@ -38,6 +39,13 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
       .then((data: Maintenance) => setMaintenance(data))
       .catch(() => setMaintenance({ maintenanceMode: false }));
   }, []);
+
+  usePusherChannel("site", "maintenance_changed", (data: unknown) => {
+    const payload = data as Maintenance;
+    if (typeof payload?.maintenanceMode === "boolean") {
+      setMaintenance({ maintenanceMode: payload.maintenanceMode });
+    }
+  });
 
   const isSuperAdmin = (session?.user as { role?: string })?.role === "super_admin";
   const showMaintenance = maintenance?.maintenanceMode === true && status === "authenticated" && !isSuperAdmin;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { PusherProvider } from "@/components/providers/PusherProvider";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
@@ -22,8 +23,9 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen antialiased bg-gradient-gaming text-slate-100">
         <ThemeProvider>
-          <SessionProvider>
-            <OnboardingGate>
+<SessionProvider>
+              <PusherProvider>
+              <OnboardingGate>
               <MaintenanceGate>
                 <Navbar />
                 <div className="pb-bottom-nav md:pb-0 min-h-screen flex flex-col">
@@ -32,8 +34,9 @@ export default function RootLayout({
                 </div>
                 <BottomNav />
               </MaintenanceGate>
-            </OnboardingGate>
-          </SessionProvider>
+</OnboardingGate>
+              </PusherProvider>
+            </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

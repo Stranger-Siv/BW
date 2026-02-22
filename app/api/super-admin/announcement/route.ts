@@ -5,6 +5,7 @@ import SiteSettings, { SITE_SETTINGS_ID } from "@/models/SiteSettings";
 import { authOptions } from "@/lib/auth";
 import { isSuperAdmin } from "@/lib/adminAuth";
 import { createAuditLog } from "@/lib/auditLog";
+import { getServerPusher, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,14 @@ export async function PATCH(request: NextRequest) {
         actorId: actorId!,
         action: "announcement_clear",
         targetType: "announcement",
+      });
+    }
+
+    const pusher = getServerPusher();
+    if (pusher) {
+      pusher.trigger(PUSHER_CHANNELS.SITE, PUSHER_EVENTS.ANNOUNCEMENT_CHANGED, {
+        message: newMessage,
+        active: newActive,
       });
     }
 
