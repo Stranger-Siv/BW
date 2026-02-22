@@ -35,9 +35,16 @@ export function Navbar() {
       >
         <Link
           href="/"
-          className="text-base font-bold tracking-tight accent-gradient transition-all duration-300 hover:opacity-90 sm:text-lg min-w-0 truncate"
+          className="flex items-center gap-2 text-base font-bold tracking-tight accent-gradient transition-all duration-300 hover:opacity-90 sm:text-lg min-w-0 truncate"
         >
-          {SITE.name}
+          <img
+            src="/icon.png"
+            alt=""
+            className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9"
+            width={36}
+            height={36}
+          />
+          <span className="truncate">{SITE.name}</span>
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
