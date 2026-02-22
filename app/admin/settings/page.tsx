@@ -3,6 +3,8 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmModal } from "@/components/admin/ConfirmModal";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type SettingsState = {
   maintenanceMode: boolean;
@@ -21,6 +23,7 @@ export default function AdminSettingsPage() {
   const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
   const [maintenanceSaving, setMaintenanceSaving] = useState(false);
   const [announcementSaving, setAnnouncementSaving] = useState(false);
+  const [maintenanceConfirm, setMaintenanceConfirm] = useState<"on" | "off" | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -59,8 +62,29 @@ export default function AdminSettingsPage() {
     fetchSettings();
   }, [status, isSuperAdmin, fetchSettings]);
 
+  usePusherChannel(isSuperAdmin ? "site" : null, "maintenance_changed", (data: unknown) => {
+    const payload = data as { maintenanceMode?: boolean };
+    const mode = payload?.maintenanceMode;
+    if (typeof mode === "boolean") {
+      setSettings((prev) => ({ ...prev, maintenanceMode: mode }));
+    }
+  });
+
+  usePusherChannel(isSuperAdmin ? "site" : null, "announcement_changed", (data: unknown) => {
+    const payload = data as { message?: string; active?: boolean };
+    const message = payload?.message;
+    const active = payload?.active;
+    if (typeof message === "string" && typeof active === "boolean") {
+      setSettings((prev) => ({
+        ...prev,
+        announcement: { message, active },
+      }));
+    }
+  });
+
   const onMaintenanceChange = useCallback(
     async (checked: boolean) => {
+      setMaintenanceConfirm(null);
       setMaintenanceSaving(true);
       setMessage(null);
       try {
@@ -173,17 +197,54 @@ export default function AdminSettingsPage() {
               <p className="mb-4 text-sm text-slate-400">
                 When on, only super admins can use the site. Others see an &quot;Under maintenance&quot; page.
               </p>
-              <label className="flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={settings.maintenanceMode}
-                  onChange={(e) => onMaintenanceChange(e.target.checked)}
-                  disabled={maintenanceSaving}
-                  className="h-4 w-4 rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500 disabled:opacity-60"
-                />
-                <span className="text-slate-200">Maintenance mode {maintenanceSaving ? "(saving…)" : ""}</span>
-              </label>
+              <p className="mb-3 text-sm font-medium text-slate-300">
+                Status: <span className={settings.maintenanceMode ? "text-amber-400" : "text-emerald-400"}>
+                  {settings.maintenanceMode ? "On" : "Off"}
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMaintenanceConfirm("on")}
+                  disabled={maintenanceSaving || settings.maintenanceMode}
+                  className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-300 transition hover:bg-amber-500/30 disabled:opacity-50 disabled:hover:bg-amber-500/20"
+                >
+                  Turn on
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaintenanceConfirm("off")}
+                  disabled={maintenanceSaving || !settings.maintenanceMode}
+                  className="rounded-full border border-emerald-400/50 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/30 disabled:opacity-50 disabled:hover:bg-emerald-500/20"
+                >
+                  Turn off
+                </button>
+              </div>
+              {maintenanceSaving && (
+                <p className="mt-2 text-xs text-slate-500">Saving…</p>
+              )}
             </section>
+
+            <ConfirmModal
+              open={maintenanceConfirm === "on"}
+              title="Turn on maintenance mode?"
+              message="Only super admins will be able to use the site. Everyone else will see the maintenance page."
+              confirmLabel="Turn on"
+              variant="danger"
+              loading={maintenanceSaving}
+              onConfirm={() => onMaintenanceChange(true)}
+              onCancel={() => setMaintenanceConfirm(null)}
+            />
+            <ConfirmModal
+              open={maintenanceConfirm === "off"}
+              title="Turn off maintenance mode?"
+              message="The site will be available to everyone again."
+              confirmLabel="Turn off"
+              variant="neutral"
+              loading={maintenanceSaving}
+              onConfirm={() => onMaintenanceChange(false)}
+              onCancel={() => setMaintenanceConfirm(null)}
+            />
 
             <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-6 dark:border-slate-500/30 dark:bg-slate-800/60">
               <h2 className="mb-3 text-lg font-semibold text-slate-200 dark:text-slate-200">Announcement</h2>

@@ -7,6 +7,7 @@ import TournamentDate from "@/models/TournamentDate";
 import Team, { type IPlayer, type ITeam } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
 const STATUS_VALUES = ["approved", "rejected"] as const;
 type StatusUpdate = (typeof STATUS_VALUES)[number];
@@ -387,6 +388,7 @@ export async function DELETE(
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
+    const tournamentIdForPusher = team.tournamentId?.toString?.() ?? null;
 
     if (team.tournamentId) {
       const tournament = await Tournament.findById(team.tournamentId).lean();
@@ -423,6 +425,12 @@ export async function DELETE(
     }
 
     await Team.findByIdAndDelete(id);
+
+    const pusher = getServerPusher();
+    if (pusher && tournamentIdForPusher) {
+      pusher.trigger(tournamentChannel(tournamentIdForPusher), PUSHER_EVENTS.TEAMS_CHANGED, {});
+      pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
 
     return NextResponse.json(
       { success: true, message: "Team disbanded" },

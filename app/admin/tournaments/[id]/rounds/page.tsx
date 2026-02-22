@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type MovePayload = {
   fromRoundId: string;
@@ -83,6 +84,11 @@ export default function AdminTournamentRoundsPage() {
       setLoading(false)
     );
   }, [id, fetchRounds, fetchTeams, fetchTournament]);
+
+  usePusherChannel(id ? `tournament-${id}` : null, "teams_changed", () => {
+    fetchTeams();
+    fetchRounds();
+  });
 
   const addRound = useCallback(async () => {
     if (!newRoundName.trim()) return;

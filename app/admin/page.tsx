@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { formatDateLabel } from "@/lib/formatDate";
 import { ChangeDateModal, type TournamentOption } from "@/components/admin/ChangeDateModal";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
@@ -119,6 +120,15 @@ export default function AdminPage() {
       setTeamsError(null);
     }
   }, [selectedTournamentId, fetchTeams]);
+
+  usePusherChannel(
+    selectedTournamentId ? `tournament-${selectedTournamentId}` : null,
+    "teams_changed",
+    () => {
+      if (selectedTournamentId) fetchTeams(selectedTournamentId);
+    }
+  );
+  usePusherChannel("tournaments", "tournaments_changed", () => fetchTournaments());
 
   useEffect(() => {
     if (selectedTournament) {

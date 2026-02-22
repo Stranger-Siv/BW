@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { SITE } from "@/lib/site";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
@@ -96,30 +97,31 @@ export default function TournamentsPage() {
 
   const allPlayerErrors = useMemo(() => ({ ...duplicateWithinForm, ...playerErrors }), [duplicateWithinForm, playerErrors]);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setFetchLoading(true);
-      setFetchError(null);
-      try {
-        const res = await fetch("/api/tournaments", { cache: "no-store" });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Failed to load tournaments");
-        }
-        const data = await res.json();
-        if (!cancelled) setTournaments(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (!cancelled) setFetchError(e instanceof Error ? e.message : "Failed to load tournaments");
-      } finally {
-        if (!cancelled) setFetchLoading(false);
+  const fetchTournaments = useCallback(async () => {
+    setFetchLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetch("/api/tournaments", { cache: "no-store" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to load tournaments");
       }
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : [];
+      setTournaments(list);
+      setSelectedTournament((prev) => (prev ? list.find((t) => t._id === prev._id) ?? prev : null));
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : "Failed to load tournaments");
+    } finally {
+      setFetchLoading(false);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    fetchTournaments();
+  }, [fetchTournaments]);
+
+  usePusherChannel("tournaments", "tournaments_changed", () => fetchTournaments());
 
   useEffect(() => {
     if (selectedTournament) {

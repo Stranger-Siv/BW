@@ -6,6 +6,7 @@ import Tournament from "@/models/Tournament";
 import TournamentDate from "@/models/TournamentDate";
 import Team, { type IPlayer } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
+import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
 type RegisterBody = {
   teamName?: string;
@@ -183,6 +184,11 @@ async function registerWithTournamentId(
       { _id: existing._id },
       { $set: { players, rewardReceiverIGN } }
     );
+    const pusherUpdate = getServerPusher();
+    if (pusherUpdate) {
+      pusherUpdate.trigger(tournamentChannel(tournamentId), PUSHER_EVENTS.TEAMS_CHANGED, {});
+      pusherUpdate.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
     return NextResponse.json(
       {
         success: true,
@@ -261,6 +267,11 @@ async function registerWithTournamentId(
     );
     await session.commitTransaction();
     const created = team[0];
+    const pusherNew = getServerPusher();
+    if (pusherNew) {
+      pusherNew.trigger(tournamentChannel(tournamentId), PUSHER_EVENTS.TEAMS_CHANGED, {});
+      pusherNew.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
     return NextResponse.json(
       {
         success: true,

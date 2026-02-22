@@ -6,6 +6,7 @@ import Tournament from "@/models/Tournament";
 import Team, { type IPlayer } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
 function isPlayer(obj: unknown): obj is IPlayer {
   return (
@@ -186,6 +187,12 @@ export async function POST(
       { _id: id },
       { $inc: { registeredTeams: 1 } }
     );
+
+    const pusher = getServerPusher();
+    if (pusher) {
+      pusher.trigger(tournamentChannel(id), PUSHER_EVENTS.TEAMS_CHANGED, {});
+      pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
 
     return NextResponse.json(
       {
