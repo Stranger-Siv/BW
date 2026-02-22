@@ -354,16 +354,16 @@ export default function AdminTournamentRoundsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-300/90 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+    <main className="min-h-screen pb-bottom-nav bg-slate-300/90 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:px-8">
-        <div className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           <Link
             href="/admin/tournaments"
-            className="text-sm text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+            className="min-h-[44px] flex items-center text-sm text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
           >
             ← Tournaments
           </Link>
-          <h1 className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+          <h1 className="text-xl font-bold text-amber-600 dark:text-amber-400 sm:text-2xl">
             Rounds: {tournamentName}
           </h1>
         </div>
@@ -378,19 +378,20 @@ export default function AdminTournamentRoundsPage() {
           <p className="loading-text">Loading…</p>
         ) : (
           <>
-            <div className="mb-6 flex flex-wrap items-center gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
               <input
                 type="text"
                 value={newRoundName}
                 onChange={(e) => setNewRoundName(e.target.value)}
                 placeholder="New round name (e.g. Round 2)"
-                className="rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                className="min-h-[44px] w-full min-w-0 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-auto"
+                aria-label="New round name"
               />
               <button
                 type="button"
                 onClick={addRound}
                 disabled={addRoundLoading || !newRoundName.trim()}
-                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-60"
+                className="min-h-[44px] w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-60 sm:w-auto"
               >
                 {addRoundLoading ? "Adding…" : "Add round"}
               </button>

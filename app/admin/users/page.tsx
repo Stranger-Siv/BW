@@ -126,27 +126,27 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <main className="page">
+    <main className="page pb-bottom-nav">
       <div className="page-inner-wide max-w-5xl">
         <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link href="/admin" className="back-link text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
+          <Link href="/admin" className="back-link min-h-[44px] flex items-center text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
             ← Admin
           </Link>
           <span className="text-slate-500 dark:text-slate-400">/</span>
           <span className="text-slate-600 dark:text-slate-300">Users</span>
         </nav>
 
-        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="mb-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
           Manage users
         </h1>
-        <p className="mb-6 text-slate-600 dark:text-slate-400">
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-400 sm:text-base">
           Change roles (player, admin, super_admin) and ban or unban accounts. Only super admins can access this page.
         </p>
 
         {!isSuperAdmin && (
-          <div className="card-glass rounded-xl border-amber-400/30 bg-amber-500/10 p-6 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <div className="card-glass rounded-xl border-amber-400/30 bg-amber-500/10 p-4 dark:border-amber-500/30 dark:bg-amber-500/10 sm:p-6">
             <p className="text-amber-200">You need super admin access to manage users.</p>
-            <Link href="/admin" className="mt-3 inline-block text-sm font-medium text-amber-400 hover:text-amber-300">
+            <Link href="/admin" className="mt-3 inline-flex min-h-[44px] items-center text-sm font-medium text-amber-400 hover:text-amber-300">
               ← Back to Admin
             </Link>
           </div>
@@ -165,7 +165,83 @@ export default function AdminUsersPage() {
               </div>
             )}
 
-            <div className="card-glass overflow-x-auto">
+            {/* Mobile: card list */}
+            <div className="space-y-3 md:hidden">
+              {users.length === 0 && !error && (
+                <div className="card-glass py-12 text-center text-slate-500 dark:text-slate-400">
+                  No users found.
+                </div>
+              )}
+              {users.map((u) => {
+                const loading = actionLoadingId === u._id;
+                const isSelf = u._id === (session?.user as { id?: string })?.id;
+                return (
+                  <div
+                    key={u._id}
+                    className="card-glass rounded-xl border border-white/10 p-4"
+                  >
+                    <p className="font-medium text-slate-800 dark:text-slate-200">
+                      {u.displayName || u.name || u.email}
+                      {isSelf && (
+                        <span className="ml-2 rounded bg-slate-500/20 px-1.5 py-0.5 text-xs text-slate-300">
+                          You
+                        </span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {u.email}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                      {u.minecraftIGN || "—"} · {u.discordUsername || "—"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <select
+                        value={u.role}
+                        onChange={(e) => updateUser(u._id, { role: e.target.value })}
+                        disabled={loading || isSelf}
+                        className="min-h-[44px] flex-1 min-w-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-400/40 disabled:opacity-60"
+                        aria-label={`Role for ${u.displayName || u.email}`}
+                      >
+                        <option value="player">Player</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super admin</option>
+                      </select>
+                      <span className={`rounded px-2 py-1 text-xs font-medium ${u.banned ? "bg-red-500/20 text-red-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+                        {u.banned ? "Banned" : "Active"}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {!isSelf && (
+                        <button
+                          type="button"
+                          onClick={() => startImpersonate(u._id)}
+                          className="min-h-[44px] rounded-full border border-slate-400/50 bg-slate-500/20 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-500/30"
+                        >
+                          Impersonate
+                        </button>
+                      )}
+                      {!isSelf && (
+                        <button
+                          type="button"
+                          onClick={() => updateUser(u._id, { banned: !u.banned })}
+                          disabled={loading}
+                          className={`min-h-[44px] rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${
+                            u.banned
+                              ? "border border-emerald-400/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                              : "border border-red-400/50 bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                          }`}
+                        >
+                          {u.banned ? "Unban" : "Ban"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="card-glass admin-table-wrap hidden md:block">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-white/10">
@@ -231,7 +307,7 @@ export default function AdminUsersPage() {
                             <button
                               type="button"
                               onClick={() => startImpersonate(u._id)}
-                              className="rounded-full border border-slate-400/50 bg-slate-500/20 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-500/30"
+                              className="min-h-[44px] rounded-full border border-slate-400/50 bg-slate-500/20 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-500/30 sm:min-h-[36px] sm:py-1.5"
                             >
                               Impersonate
                             </button>
@@ -243,7 +319,7 @@ export default function AdminUsersPage() {
                               type="button"
                               onClick={() => updateUser(u._id, { banned: !u.banned })}
                               disabled={loading}
-                              className={`rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${
+                              className={`min-h-[44px] rounded-full px-3 py-2 text-xs font-medium transition disabled:opacity-60 sm:min-h-[36px] sm:py-1.5 ${
                                 u.banned
                                   ? "border border-emerald-400/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
                                   : "border border-red-400/50 bg-red-500/20 text-red-400 hover:bg-red-500/30"

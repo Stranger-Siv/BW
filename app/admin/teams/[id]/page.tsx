@@ -234,12 +234,12 @@ export default function AdminTeamDetailPage() {
   const tournamentDate = tournament && "date" in tournament ? tournament.date : team.tournamentDate ?? "";
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 md:px-8 lg:py-8">
+    <main className="min-h-screen pb-bottom-nav px-4 py-6 sm:px-6 md:px-8 lg:py-8">
       <div className="mx-auto max-w-4xl">
         <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
           <Link
             href="/admin"
-            className="font-medium text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300"
+            className="min-h-[44px] flex items-center font-medium text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300"
           >
             ← Admin
           </Link>
@@ -249,10 +249,10 @@ export default function AdminTeamDetailPage() {
           </span>
         </nav>
 
-        <header className="card-glass animate-fade-in mb-6 sm:mb-8 p-5 sm:p-6 md:p-8">
+        <header className="card-glass animate-fade-in mb-6 p-4 sm:mb-8 sm:p-6 md:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate sm:text-3xl md:text-4xl">
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate sm:text-2xl md:text-3xl lg:text-4xl">
                 {team.teamName}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -275,7 +275,7 @@ export default function AdminTeamDetailPage() {
               {tournamentIdStr && (
                 <Link
                   href={`/admin/tournaments/${tournamentIdStr}/rounds`}
-                  className="rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
+                  className="min-h-[44px] flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
                 >
                   Tournament rounds
                 </Link>
@@ -291,7 +291,7 @@ export default function AdminTeamDetailPage() {
         )}
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-          <section className="card-glass animate-fade-in p-5 sm:p-6">
+          <section className="card-glass animate-fade-in p-4 sm:p-6">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Team & status
             </h2>
@@ -311,7 +311,7 @@ export default function AdminTeamDetailPage() {
                   type="button"
                   onClick={handleApprove}
                   disabled={actionLoading}
-                  className="rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-60"
+                  className="min-h-[44px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-60"
                 >
                   Approve
                 </button>
@@ -321,7 +321,7 @@ export default function AdminTeamDetailPage() {
                   type="button"
                   onClick={handleReject}
                   disabled={actionLoading}
-                  className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300"
+                  className="min-h-[44px] rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300"
                 >
                   Reject
                 </button>
@@ -330,7 +330,7 @@ export default function AdminTeamDetailPage() {
                 type="button"
                 onClick={openChangeDate}
                 disabled={actionLoading}
-                className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/15 disabled:opacity-60 dark:text-slate-400 dark:hover:bg-white/15"
+                className="min-h-[44px] rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/15 disabled:opacity-60 dark:text-slate-400 dark:hover:bg-white/15"
               >
                 Move to another tournament
               </button>
@@ -338,14 +338,14 @@ export default function AdminTeamDetailPage() {
                 type="button"
                 onClick={openDisband}
                 disabled={actionLoading}
-                className="rounded-full border border-red-400/50 bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-60 dark:text-red-300"
+                className="min-h-[44px] rounded-full border border-red-400/50 bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-60 dark:text-red-300"
               >
                 Disband team
               </button>
             </div>
           </section>
 
-          <section className="card-glass animate-fade-in p-5 sm:p-6">
+          <section className="card-glass animate-fade-in p-4 sm:p-6">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Tournament
             </h2>
@@ -385,7 +385,7 @@ export default function AdminTeamDetailPage() {
             )}
           </section>
 
-          <section className="card-glass animate-fade-in p-5 sm:p-6 lg:col-span-2">
+          <section className="card-glass animate-fade-in p-4 sm:p-6 lg:col-span-2">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Registration details
             </h2>

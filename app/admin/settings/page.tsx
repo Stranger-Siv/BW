@@ -152,27 +152,27 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <main className="page">
+    <main className="page pb-bottom-nav">
       <div className="page-inner-wide max-w-2xl">
         <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          <Link href="/admin" className="back-link text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
+          <Link href="/admin" className="back-link min-h-[44px] flex items-center text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300">
             ← Admin
           </Link>
           <span className="text-slate-500 dark:text-slate-400">/</span>
           <span className="text-slate-600 dark:text-slate-300">Settings</span>
         </nav>
 
-        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+        <h1 className="mb-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
           Global site settings
         </h1>
-        <p className="mb-6 text-slate-600 dark:text-slate-400">
+        <p className="mb-6 text-sm text-slate-600 dark:text-slate-400 sm:text-base">
           Maintenance mode and site-wide announcement. Only super admins can change these.
         </p>
 
         {!isSuperAdmin && (
-          <div className="card-glass rounded-xl border-amber-400/30 bg-amber-500/10 p-6 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <div className="card-glass rounded-xl border-amber-400/30 bg-amber-500/10 p-4 dark:border-amber-500/30 dark:bg-amber-500/10 sm:p-6">
             <p className="text-amber-200">You need super admin access to manage settings.</p>
-            <Link href="/admin" className="mt-3 inline-block text-sm font-medium text-amber-400 hover:text-amber-300">
+            <Link href="/admin" className="mt-3 inline-flex min-h-[44px] items-center text-sm font-medium text-amber-400 hover:text-amber-300">
               ← Back to Admin
             </Link>
           </div>
@@ -192,8 +192,8 @@ export default function AdminSettingsPage() {
               </div>
             )}
 
-            <section className="card-glass mb-6 rounded-xl border border-slate-600/40 bg-slate-800/40 p-6 dark:border-slate-500/30 dark:bg-slate-800/60">
-              <h2 className="mb-3 text-lg font-semibold text-slate-200 dark:text-slate-200">Maintenance mode</h2>
+            <section className="card-glass mb-6 rounded-xl border border-slate-600/40 bg-slate-800/40 p-4 dark:border-slate-500/30 dark:bg-slate-800/60 sm:p-6">
+              <h2 className="mb-3 text-base font-semibold text-slate-200 sm:text-lg dark:text-slate-200">Maintenance mode</h2>
               <p className="mb-4 text-sm text-slate-400">
                 When on, only super admins can use the site. Others see an &quot;Under maintenance&quot; page.
               </p>
@@ -207,7 +207,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => setMaintenanceConfirm("on")}
                   disabled={maintenanceSaving || settings.maintenanceMode}
-                  className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-300 transition hover:bg-amber-500/30 disabled:opacity-50 disabled:hover:bg-amber-500/20"
+                  className="admin-touch-btn rounded-full border border-amber-400/50 bg-amber-500/20 text-amber-300 transition hover:bg-amber-500/30 disabled:opacity-50 disabled:hover:bg-amber-500/20"
                 >
                   Turn on
                 </button>
@@ -215,7 +215,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={() => setMaintenanceConfirm("off")}
                   disabled={maintenanceSaving || !settings.maintenanceMode}
-                  className="rounded-full border border-emerald-400/50 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/30 disabled:opacity-50 disabled:hover:bg-emerald-500/20"
+                  className="admin-touch-btn rounded-full border border-emerald-400/50 bg-emerald-500/20 text-emerald-300 transition hover:bg-emerald-500/30 disabled:opacity-50 disabled:hover:bg-emerald-500/20"
                 >
                   Turn off
                 </button>
@@ -246,8 +246,8 @@ export default function AdminSettingsPage() {
               onCancel={() => setMaintenanceConfirm(null)}
             />
 
-            <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-6 dark:border-slate-500/30 dark:bg-slate-800/60">
-              <h2 className="mb-3 text-lg font-semibold text-slate-200 dark:text-slate-200">Announcement</h2>
+            <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-4 dark:border-slate-500/30 dark:bg-slate-800/60 sm:p-6">
+              <h2 className="mb-3 text-base font-semibold text-slate-200 sm:text-lg dark:text-slate-200">Announcement</h2>
               <p className="mb-4 text-sm text-slate-400">
                 Show a site-wide banner. Leave message empty and inactive to hide it.
               </p>
@@ -261,9 +261,10 @@ export default function AdminSettingsPage() {
                 }
                 placeholder="Announcement message…"
                 rows={3}
-                className="mb-4 w-full rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2 text-slate-200 placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="mb-4 w-full min-w-0 rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                aria-label="Announcement message"
               />
-              <label className="mb-4 flex cursor-pointer items-center gap-3">
+              <label className="mb-4 flex min-h-[44px] cursor-pointer items-center gap-3">
                 <input
                   type="checkbox"
                   checked={settings.announcement.active}
@@ -273,7 +274,7 @@ export default function AdminSettingsPage() {
                       announcement: { ...prev.announcement, active: e.target.checked },
                     }))
                   }
-                  className="h-4 w-4 rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500"
+                  className="h-5 w-5 rounded border-slate-500 bg-slate-700 text-amber-500 focus:ring-amber-500"
                 />
                 <span className="text-slate-200">Show announcement</span>
               </label>
@@ -281,7 +282,7 @@ export default function AdminSettingsPage() {
                 type="button"
                 onClick={onAnnouncementSave}
                 disabled={announcementSaving}
-                className="rounded-full bg-amber-500/80 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
+                className="admin-touch-btn w-full rounded-full bg-amber-500/80 text-slate-900 hover:bg-amber-500 disabled:opacity-60 sm:w-auto"
               >
                 {announcementSaving ? "Saving…" : "Save announcement"}
               </button>

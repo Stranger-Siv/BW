@@ -152,32 +152,32 @@ export default function AdminTournamentsPage() {
   }, [deleteTournament, fetchList]);
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-bottom-nav">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:px-6 md:py-10 lg:px-8 lg:py-12">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 sm:mb-8">
+        <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
               Tournaments
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               Create tournaments and manage their settings. Use the Dashboard to view teams per tournament.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <nav className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link
               href="/admin"
-              className="min-h-[44px] flex items-center rounded-full border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
+              className="admin-touch-btn flex rounded-full border border-white/10 bg-white/10 text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
             >
               ← Dashboard
             </Link>
             <button
               type="button"
               onClick={openCreate}
-              className="btn-gradient min-h-[44px] px-5 py-2.5 text-sm"
+              className="btn-gradient admin-touch-btn"
             >
               + Create tournament
             </button>
-          </div>
+          </nav>
         </header>
 
         <div className="card-glass p-4 shadow-lg sm:p-6 md:p-8">
@@ -203,22 +203,22 @@ export default function AdminTournamentsPage() {
               <button
                 type="button"
                 onClick={openCreate}
-                className="btn-gradient mt-4 px-5 py-2.5 text-sm"
+                className="btn-gradient admin-touch-btn mt-4"
               >
                 + Create tournament
               </button>
             </div>
           ) : (
-            <div className="card-glass overflow-x-auto">
+            <div className="card-glass admin-table-wrap">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-white/10 dark:border-white/10">
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Name</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Type</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Date</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Teams</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Actions</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Name</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Type</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Date</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Teams</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Status</th>
+                    <th className="px-3 py-3 font-semibold text-slate-700 sm:px-4 dark:text-slate-200">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,40 +227,40 @@ export default function AdminTournamentsPage() {
                       key={t._id}
                       className="border-b border-white/10 transition last:border-0 hover:bg-white/5 dark:border-white/10 dark:hover:bg-white/5"
                     >
-                      <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">
+                      <td className="px-3 py-3 font-medium text-slate-800 sm:px-4 dark:text-slate-200">
                         {t.name}
                       </td>
-                      <td className="px-4 py-3 capitalize text-slate-600 dark:text-slate-400">
+                      <td className="px-3 py-3 capitalize text-slate-600 sm:px-4 dark:text-slate-400">
                         {t.type ?? "squad"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                      <td className="px-3 py-3 text-slate-600 sm:px-4 dark:text-slate-400">
                         {t.date} {t.startTime}
                       </td>
-                      <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                      <td className="px-3 py-3 text-slate-700 sm:px-4 dark:text-slate-300">
                         {t.registeredTeams} / {t.maxTeams}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 sm:px-4">
                         <StatusBadge status={t.status} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 sm:px-4">
                         <div className="flex flex-wrap gap-2">
                           <Link
                             href={`/admin/tournaments/${t._id}/rounds`}
-                            className="rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-1.5 text-xs font-medium text-slate-900 transition hover:opacity-90"
+                            className="min-h-[44px] flex items-center rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-2 text-xs font-medium text-slate-900 transition hover:opacity-90 sm:min-h-[36px] sm:py-1.5"
                           >
                             Rounds
                           </Link>
                           <button
                             type="button"
                             onClick={() => openEdit(t)}
-                            className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/15 dark:text-slate-400 dark:hover:bg-white/15"
+                            className="min-h-[44px] rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/15 dark:text-slate-400 dark:hover:bg-white/15 sm:min-h-[36px] sm:py-1.5"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => setDeleteTournament(t)}
-                            className="rounded-full border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/30 dark:text-red-300"
+                            className="min-h-[44px] rounded-full border border-red-400/50 bg-red-500/20 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/30 dark:text-red-300 sm:min-h-[36px] sm:py-1.5"
                           >
                             Delete
                           </button>

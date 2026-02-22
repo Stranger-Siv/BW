@@ -66,7 +66,7 @@ export function TeamsTable({
   const allSelected = teams.length > 0 && teams.every((t) => selectedIds.has(t._id));
 
   return (
-    <div className="card-glass overflow-x-auto [-webkit-overflow-scrolling:touch]">
+    <div className="card-glass admin-table-wrap">
       <table className="w-full min-w-[640px] text-left text-sm">
         <thead>
           <tr className="border-b border-white/10 dark:border-white/10">
@@ -146,14 +146,14 @@ export function TeamsTable({
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                   {formatDateTime(team.createdAt)}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-3 sm:px-4">
                   <div className="flex flex-wrap gap-2">
                     {team.status !== "approved" && (
                       <button
                         type="button"
                         onClick={() => onApprove(team)}
                         disabled={loading}
-                        className="min-h-[36px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-1.5 text-xs font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-60"
+                        className="min-h-[44px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-2 text-xs font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-60 sm:min-h-[36px] sm:py-1.5"
                       >
                         Approve
                       </button>
@@ -163,7 +163,7 @@ export function TeamsTable({
                         type="button"
                         onClick={() => onReject(team)}
                         disabled={loading}
-                        className="min-h-[36px] rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300"
+                        className="min-h-[44px] rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-2 text-xs font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300 sm:min-h-[36px] sm:py-1.5"
                       >
                         Reject
                       </button>
@@ -172,7 +172,7 @@ export function TeamsTable({
                       type="button"
                       onClick={() => onChangeDate(team)}
                       disabled={loading}
-                      className="min-h-[36px] rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/15 disabled:opacity-60 dark:text-slate-400 dark:hover:bg-white/15"
+                      className="min-h-[44px] rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-medium text-slate-300 transition hover:bg-white/15 disabled:opacity-60 dark:text-slate-400 dark:hover:bg-white/15 sm:min-h-[36px] sm:py-1.5"
                     >
                       Change date
                     </button>
@@ -180,7 +180,7 @@ export function TeamsTable({
                       type="button"
                       onClick={() => onDisband(team)}
                       disabled={loading}
-                      className="min-h-[36px] rounded-full border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-60 dark:text-red-300"
+                      className="min-h-[44px] rounded-full border border-red-400/50 bg-red-500/20 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-60 dark:text-red-300 sm:min-h-[36px] sm:py-1.5"
                     >
                       Disband
                     </button>

@@ -56,17 +56,19 @@ export function TeamsCards({
         return (
           <div
             key={team._id}
-            className={`card-glass p-4 transition-all duration-300 hover:shadow-lg ${isSelected ? "ring-2 ring-emerald-400/50 dark:ring-emerald-500/50" : ""}`}
+            className={`card-glass p-4 transition-all duration-300 hover:shadow-lg sm:p-5 ${isSelected ? "ring-2 ring-emerald-400/50 dark:ring-emerald-500/50" : ""}`}
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => onToggleSelect(team._id)}
-                  aria-label={`Select ${team.teamName}`}
-                  className="h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-400/50 dark:border-white/20"
-                />
+                <label className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded sm:min-h-0 sm:min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(team._id)}
+                    aria-label={`Select ${team.teamName}`}
+                    className="h-5 w-5 shrink-0 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-400/50 sm:h-4 sm:w-4 dark:border-white/20"
+                  />
+                </label>
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200">
                   {team.teamName}
                 </h3>

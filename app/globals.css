@@ -106,6 +106,13 @@
   .pb-bottom-nav {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
   }
+  /* Admin: horizontal scroll for tables on small screens; touch-friendly */
+  .admin-table-wrap {
+    @apply overflow-x-auto rounded-xl [-webkit-overflow-scrolling:touch];
+  }
+  .admin-touch-btn {
+    @apply min-h-[44px] min-w-[44px] items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium;
+  }
 }
 
 @keyframes fadeIn {

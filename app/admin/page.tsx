@@ -470,29 +470,29 @@ export default function AdminPage() {
   }));
 
   return (
-    <main className="page">
-      <div className="page-inner-wide">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 sm:mb-8">
-          <h1 className="page-title">Admin Dashboard</h1>
-          <div className="flex flex-wrap items-center gap-3">
+    <main className="page pb-bottom-nav">
+      <div className="page-inner-wide max-w-7xl">
+        <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <h1 className="page-title text-xl sm:text-2xl md:text-3xl">Admin Dashboard</h1>
+          <nav className="flex flex-wrap items-center gap-2 sm:gap-3">
             {isSuperAdmin && (
               <Link
                 href="/admin/users"
-                className="min-h-[44px] flex items-center rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 dark:text-amber-300"
+                className="admin-touch-btn flex border border-amber-400/50 bg-amber-500/20 text-amber-400 transition hover:bg-amber-500/30 dark:text-amber-300"
               >
                 Manage users
               </Link>
             )}
             <Link
               href="/admin/tournaments"
-              className="btn-gradient min-h-[44px] flex items-center"
+              className="btn-gradient admin-touch-btn flex"
             >
               Manage tournaments
             </Link>
-            <Link href="/tournaments" className="back-link min-h-[44px] flex items-center">
+            <Link href="/tournaments" className="back-link admin-touch-btn flex">
               ← Tournaments
             </Link>
-          </div>
+          </nav>
         </header>
 
         <div className="card mb-6">
@@ -504,8 +504,8 @@ export default function AdminPage() {
           </Link>
         </div>
 
-        <div className="card-lg shadow-lg">
-          <h2 className="section-title mb-4 !normal-case !text-xl text-slate-800 dark:text-slate-100 md:!text-2xl">
+        <div className="card-lg shadow-lg p-4 sm:p-6 md:p-8">
+          <h2 className="section-title mb-4 !normal-case text-lg text-slate-800 dark:text-slate-100 sm:!text-xl md:!text-2xl">
             Registrations by tournament
           </h2>
 
@@ -522,7 +522,8 @@ export default function AdminPage() {
               <select
                 value={selectedTournamentId}
                 onChange={(e) => setSelectedTournamentId(e.target.value)}
-                className="input-glass w-full max-w-md min-h-[48px] rounded-xl sm:min-h-0"
+                className="input-glass w-full max-w-md min-h-[48px] rounded-xl py-3 sm:min-h-0 sm:py-2.5"
+                aria-label="Select tournament"
               >
                 <option value="">Choose a tournament</option>
                 {tournaments.map((t) => (
@@ -662,46 +663,48 @@ export default function AdminPage() {
               )}
 
               <div className="mt-6 space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100 sm:text-lg">
                     Registered teams
                   </h3>
                   {selectedTeamIds.size > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                      <span className="w-full text-sm text-slate-500 dark:text-slate-400 sm:w-auto">
                         {selectedTeamIds.size} selected
                       </span>
-                      <button
-                        type="button"
-                        onClick={bulkApprove}
-                        disabled={bulkLoading || selectedTeams.every((t) => t.status === "approved")}
-                        className="min-h-[36px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-1.5 text-xs font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-50"
-                      >
-                        {bulkLoading ? "Processing…" : "Approve selected"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={bulkReject}
-                        disabled={bulkLoading || selectedTeams.every((t) => t.status === "rejected")}
-                        className="min-h-[36px] rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-300"
-                      >
-                        {bulkLoading ? "Processing…" : "Reject selected"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={openBulkDisband}
-                        disabled={bulkLoading}
-                        className="min-h-[36px] rounded-full border border-red-400/50 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/30 disabled:opacity-50 dark:text-red-300"
-                      >
-                        Disband selected
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTeamIds(new Set())}
-                        className="min-h-[36px] rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/15 dark:text-slate-500 dark:hover:bg-white/15"
-                      >
-                        Clear selection
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={bulkApprove}
+                          disabled={bulkLoading || selectedTeams.every((t) => t.status === "approved")}
+                          className="admin-touch-btn rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 text-slate-900 transition hover:opacity-90 disabled:opacity-50"
+                        >
+                          {bulkLoading ? "Processing…" : "Approve selected"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={bulkReject}
+                          disabled={bulkLoading || selectedTeams.every((t) => t.status === "rejected")}
+                          className="admin-touch-btn rounded-full border border-amber-400/50 bg-amber-500/20 text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-300"
+                        >
+                          {bulkLoading ? "Processing…" : "Reject selected"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={openBulkDisband}
+                          disabled={bulkLoading}
+                          className="admin-touch-btn rounded-full border border-red-400/50 bg-red-500/20 text-red-400 transition hover:bg-red-500/30 disabled:opacity-50 dark:text-red-300"
+                        >
+                          Disband selected
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTeamIds(new Set())}
+                          className="admin-touch-btn rounded-full border border-white/10 bg-white/10 text-slate-400 transition hover:bg-white/15 dark:text-slate-500 dark:hover:bg-white/15"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
