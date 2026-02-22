@@ -5,6 +5,8 @@ export const SITE = {
   serverName: "MCFleet",
   serverIp: "play.mcfleet.net",
   discordUrl: "https://discord.gg/6zyEsX854m",
+  /** Discord server invite code or server ID, shown on maintenance page */
+  discordId: "6zyEsX854m",
   hostedBy: "Baba Tillu",
   /** Path to Baba Tillu host/sponsor logo (in public/) */
   hostedByLogo: "/baba-tillu-logo.png",

@@ -118,3 +118,44 @@
     transform: translateY(0);
   }
 }
+
+/* Maintenance page */
+@keyframes maintenanceGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 40px -10px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 60px -5px rgba(245, 158, 11, 0.35);
+  }
+}
+@keyframes maintenanceGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.animate-maintenance-glow {
+  animation: maintenanceGlow 3s ease-in-out infinite;
+}
+.animate-maintenance-bg {
+  background-size: 200% 200%;
+  animation: maintenanceGradient 12s ease infinite;
+}
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
