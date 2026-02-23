@@ -1,9 +1,9 @@
-/** Site-wide links and info for BedWars Dominion / MCFleet tournament */
+/** Site-wide links and info for BedWars tournament */
 
 export const SITE = {
   name: "BedWars Tournament",
-  serverName: "MCFleet",
-  serverIp: "play.mcfleet.net",
+  serverName: "",
+  serverIp: "",
   discordUrl: "https://discord.gg/6zyEsX854m",
   /** Discord server invite code or server ID, shown on maintenance page */
   discordId: "6zyEsX854m",

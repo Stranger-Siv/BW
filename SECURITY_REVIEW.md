@@ -8,7 +8,7 @@ Browsers (e.g. Chrome) or Google Safe Browsing may show a "Dangerous" or "Decept
 
 - Go to: **https://safebrowsing.google.com/safebrowsing/report_error/**
 - Enter your URL: `https://bedwarstournament.online`
-- Describe that this is your legitimate tournament site (e.g. "BedWars tournament registration and match management for MCFleet. We use Google OAuth only; no phishing or malware.")
+- Describe that this is your legitimate tournament site (e.g. "BedWars tournament registration and match management. We use Google OAuth only; no phishing or malware.")
 - Submit. Google may take from a few hours to a few days to re-check and remove the warning if the site is clean.
 
 ---
