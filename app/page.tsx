@@ -104,36 +104,15 @@ export default function HomePage() {
         {/* Server & where to play */}
         <section className="mb-10 sm:mb-16 md:mb-20">
           <FadeInUpInView>
-          <div className="card-glass p-4 sm:p-6 md:p-8">
-            <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl">
-              Where we play
-            </h2>
-            <p className="text-slate-400">
-              All BedWars tournament matches are hosted on <strong className="text-slate-200">{SITE.serverName}</strong>. Join the server to compete and practise.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <code className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-lg font-mono text-emerald-400">
-                {SITE.serverIp}
-              </code>
-              <span className="text-sm text-slate-500">Minecraft Java · As supported by server</span>
+            <div className="card-glass p-4 sm:p-6 md:p-8">
+              <h2 className="mb-3 text-xl font-semibold text-white sm:mb-4 sm:text-2xl">
+                Where we play
+              </h2>
+              <p className="text-slate-400">
+                The exact server for upcoming tournaments is <strong className="text-slate-200">to be decided</strong>.
+                We&apos;ll announce the final IP and version details on the tournaments page and in Discord before each event.
+              </p>
             </div>
-          </div>
-          </FadeInUpInView>
-        </section>
-
-        {/* What is Bedwars */}
-        <section className="mb-10 sm:mb-16 md:mb-20">
-          <FadeInUpInView>
-          <div className="card-glass p-4 sm:p-6 md:p-8 lg:p-10">
-            <h2 className="mb-4 text-2xl font-semibold text-white md:text-3xl">
-              What is Bedwars?
-            </h2>
-            <p className="text-slate-400 leading-relaxed">
-              Bedwars is a team-based PvP game where you defend your bed, gather resources, and eliminate opponents. 
-              Our tournaments run competitive matches with clear brackets: register your team, play your rounds, and advance to the top. 
-              All events are organized with scheduled rounds, admin-managed brackets, and live slot tracking so you know exactly when and who you’re facing.
-            </p>
-          </div>
           </FadeInUpInView>
         </section>
 
@@ -248,7 +227,7 @@ export default function HomePage() {
             <ul className="space-y-2 text-slate-400">
               <li className="flex gap-2"><span className="text-red-400">No</span> hacks, mods, macros, auto-clickers, or unfair advantages</li>
               <li className="flex gap-2"><span className="text-red-400">No</span> glitch abusing or stream sniping</li>
-              <li>Only allowed clients/mods as per {SITE.serverName} rules</li>
+              <li>Only allowed clients/mods as per posted tournament rules</li>
               <li>Team members must remain the same throughout the tournament</li>
               <li>Respect all players and staff — toxicity or abuse is not tolerated</li>
               <li>Be on time for matches; only registered players are allowed</li>
