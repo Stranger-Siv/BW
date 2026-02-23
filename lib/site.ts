@@ -8,7 +8,7 @@ export const SITE = {
   /** Discord server invite code or server ID, shown on maintenance page */
   discordId: "6zyEsX854m",
   hostedBy: "BABA TILLU",
-  /** Path to Baba Tillu host/sponsor logo (in public/) */
+  /** Path to BABA TILLU host/sponsor logo (in public/) */
   hostedByLogo: "/baba-tillu-logo.png",
   /** Shown in footer on every page. Set url to make the name a link. */
   developedBy: "DevInBlocks",

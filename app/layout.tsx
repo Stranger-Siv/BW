@@ -12,7 +12,7 @@ import { OnboardingGate } from "@/components/OnboardingGate";
 export const metadata: Metadata = {
   title: "BedWars Tournament",
   description:
-    "Register for BedWars tournaments. Defend your bed, break theirs, claim victory. Sponsored by Baba Tillu.",
+    "Register for BedWars tournaments. Defend your bed, break theirs, claim victory. Sponsored by BABA TILLU.",
   icons: {
     icon: [
       { url: "/favicon-new.png", sizes: "32x32", type: "image/png" },
