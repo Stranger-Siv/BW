@@ -310,9 +310,13 @@ export default function AdminPage() {
     (data: unknown) => {
       const payload = data as { maintenanceMode?: boolean };
       if (typeof payload.maintenanceMode !== "boolean") return;
+      const mode = !!payload.maintenanceMode;
       setSiteStatus((prev) => ({
-        maintenanceMode: payload.maintenanceMode,
-        announcement: prev?.announcement ?? { message: "", active: false },
+        maintenanceMode: mode,
+        announcement:
+          prev && prev.announcement
+            ? prev.announcement
+            : { message: "", active: false },
       }));
     }
   );
@@ -321,7 +325,7 @@ export default function AdminPage() {
     isSuperAdmin ? "site" : null,
     "announcement_changed",
     (data: unknown) => {
-      const payload = data as { message?: string; active?: boolean };
+      const payload = data as { message: string; active: boolean };
       if (typeof payload.message !== "string" || typeof payload.active !== "boolean") return;
       setSiteStatus((prev) => ({
         maintenanceMode: prev?.maintenanceMode ?? false,
