@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Tournament, { type TournamentStatus, type TournamentType } from "@/models/Tournament";
+import Team from "@/models/Team";
 import { authOptions } from "@/lib/auth";
-import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { isAdminOrSuperAdmin, isSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
@@ -225,10 +226,18 @@ export async function DELETE(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    if (existing.registeredTeams !== 0) {
+    // Recalculate registeredTeams from actual Team documents to avoid stale counts
+    const teamCount = await Team.countDocuments({ tournamentId: existing._id });
+    if (existing.registeredTeams !== teamCount) {
+      existing.registeredTeams = teamCount;
+      await existing.save();
+    }
+
+    const superAdmin = isSuperAdmin(session);
+    if (!superAdmin && teamCount !== 0) {
       return NextResponse.json(
         {
-          error: `Cannot delete: ${existing.registeredTeams} team(s) registered. Remove teams first.`,
+          error: `Cannot delete: ${teamCount} team(s) registered. Remove teams first, or ask a super admin to delete the tournament.`,
         },
         { status: 400 }
       );

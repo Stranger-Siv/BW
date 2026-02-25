@@ -307,7 +307,9 @@ export default function AdminTournamentsPage() {
         title="Delete tournament"
         message={
           deleteTournament
-            ? `Delete "${deleteTournament.name}"? This cannot be undone. Only allowed when no teams are registered.`
+            ? deleteTournament.registeredTeams > 0
+              ? `Delete "${deleteTournament.name}"? This cannot be undone.\n\nThere are currently ${deleteTournament.registeredTeams} team(s) registered. Super admins can delete the tournament even with teams attached.\n\nIf you want to disband or move teams instead, cancel and use the Admin dashboard or Rounds view for this tournament.`
+              : `Delete "${deleteTournament.name}"? This cannot be undone.`
             : ""
         }
         confirmLabel="Delete"

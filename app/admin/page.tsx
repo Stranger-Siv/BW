@@ -50,6 +50,13 @@ export default function AdminPage() {
   const [userStatsLoading, setUserStatsLoading] = useState(false);
   const [userStatsError, setUserStatsError] = useState<string | null>(null);
 
+  const [siteStatus, setSiteStatus] = useState<{
+    maintenanceMode: boolean;
+    announcement: { message: string; active: boolean };
+  } | null>(null);
+  const [siteStatusLoading, setSiteStatusLoading] = useState(false);
+  const [siteStatusError, setSiteStatusError] = useState<string | null>(null);
+
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [teamsError, setTeamsError] = useState<string | null>(null);
@@ -101,6 +108,32 @@ export default function AdminPage() {
     }
   }, [isSuperAdmin]);
 
+  const fetchSiteStatus = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setSiteStatusLoading(true);
+    setSiteStatusError(null);
+    try {
+      const res = await fetch("/api/super-admin/settings", { cache: "no-store" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to load site status");
+      }
+      const data = await res.json();
+      setSiteStatus({
+        maintenanceMode: Boolean(data.maintenanceMode),
+        announcement: {
+          message: data.announcement?.message ?? "",
+          active: Boolean(data.announcement?.active),
+        },
+      });
+    } catch (e) {
+      setSiteStatus(null);
+      setSiteStatusError(e instanceof Error ? e.message : "Failed to load site status");
+    } finally {
+      setSiteStatusLoading(false);
+    }
+  }, [isSuperAdmin]);
+
   const fetchTournaments = useCallback(async () => {
     setTournamentsLoading(true);
     try {
@@ -121,8 +154,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchUserStats();
+      fetchSiteStatus();
     }
-  }, [isSuperAdmin, fetchUserStats]);
+  }, [isSuperAdmin, fetchUserStats, fetchSiteStatus]);
 
   const fetchTeams = useCallback(async (tournamentId: string) => {
     if (!tournamentId.trim()) {
@@ -269,6 +303,32 @@ export default function AdminPage() {
     }
     return { total: tournaments.length, active, upcoming };
   }, [tournaments]);
+
+  usePusherChannel(
+    isSuperAdmin ? "site" : null,
+    "maintenance_changed",
+    (data: unknown) => {
+      const payload = data as { maintenanceMode?: boolean };
+      if (typeof payload.maintenanceMode !== "boolean") return;
+      setSiteStatus((prev) => ({
+        maintenanceMode: payload.maintenanceMode,
+        announcement: prev?.announcement ?? { message: "", active: false },
+      }));
+    }
+  );
+
+  usePusherChannel(
+    isSuperAdmin ? "site" : null,
+    "announcement_changed",
+    (data: unknown) => {
+      const payload = data as { message?: string; active?: boolean };
+      if (typeof payload.message !== "string" || typeof payload.active !== "boolean") return;
+      setSiteStatus((prev) => ({
+        maintenanceMode: prev?.maintenanceMode ?? false,
+        announcement: { message: payload.message, active: payload.active },
+      }));
+    }
+  );
 
   const handleApprove = useCallback(
     async (team: AdminTeam) => {
@@ -656,6 +716,51 @@ export default function AdminPage() {
                 <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {tournamentStats.upcoming}
                 </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Maintenance mode
+                </p>
+                {siteStatusError && (
+                  <p className="mt-1 text-xs text-red-300">{siteStatusError}</p>
+                )}
+                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  {siteStatusLoading && !siteStatus
+                    ? "Loading…"
+                    : siteStatus?.maintenanceMode
+                    ? "On"
+                    : "Off"}
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Changes here reflect the global maintenance switch in Settings.
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Announcement
+                </p>
+                {siteStatusError && (
+                  <p className="mt-1 text-xs text-red-300">{siteStatusError}</p>
+                )}
+                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
+                  {siteStatusLoading && !siteStatus
+                    ? "Loading…"
+                    : siteStatus?.announcement.active
+                    ? "Active"
+                    : "Hidden"}
+                </p>
+                {siteStatus?.announcement.message && (
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                    “
+                    {siteStatus.announcement.message.length > 140
+                      ? `${siteStatus.announcement.message.slice(0, 137)}…`
+                      : siteStatus.announcement.message}
+                    ”
+                  </p>
+                )}
               </div>
             </div>
           </section>
