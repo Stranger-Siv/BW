@@ -32,12 +32,23 @@ type TournamentDoc = {
   isClosed: boolean;
 };
 
+type UserSummary = {
+  _id: string;
+  createdAt: string;
+  role?: string;
+  banned?: boolean;
+};
+
 export default function AdminPage() {
   const { data: session } = useSession();
   const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === "super_admin";
   const [tournaments, setTournaments] = useState<TournamentDoc[]>([]);
   const [tournamentsLoading, setTournamentsLoading] = useState(true);
   const [selectedTournamentId, setSelectedTournamentId] = useState("");
+
+  const [userSummaries, setUserSummaries] = useState<UserSummary[]>([]);
+  const [userStatsLoading, setUserStatsLoading] = useState(false);
+  const [userStatsError, setUserStatsError] = useState<string | null>(null);
 
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
@@ -70,6 +81,26 @@ export default function AdminPage() {
 
   const selectedTournament = tournaments.find((t) => t._id === selectedTournamentId);
 
+  const fetchUserStats = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setUserStatsLoading(true);
+    setUserStatsError(null);
+    try {
+      const res = await fetch("/api/super-admin/users", { cache: "no-store" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to load users");
+      }
+      const data = await res.json();
+      setUserSummaries(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setUserSummaries([]);
+      setUserStatsError(e instanceof Error ? e.message : "Failed to load users");
+    } finally {
+      setUserStatsLoading(false);
+    }
+  }, [isSuperAdmin]);
+
   const fetchTournaments = useCallback(async () => {
     setTournamentsLoading(true);
     try {
@@ -86,6 +117,12 @@ export default function AdminPage() {
       setTournamentsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      fetchUserStats();
+    }
+  }, [isSuperAdmin, fetchUserStats]);
 
   const fetchTeams = useCallback(async (tournamentId: string) => {
     if (!tournamentId.trim()) {
@@ -187,6 +224,51 @@ export default function AdminPage() {
     if (selectedTournamentId) fetchTeams(selectedTournamentId);
     fetchTournaments();
   }, [selectedTournamentId, fetchTeams, fetchTournaments]);
+
+  const userStats = useMemo(() => {
+    if (!userSummaries.length) {
+      return {
+        totalUsers: 0,
+        usersToday: 0,
+        totalAdmins: 0,
+        bannedUsers: 0,
+      };
+    }
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let usersToday = 0;
+    let totalAdmins = 0;
+    let bannedUsers = 0;
+    for (const u of userSummaries) {
+      const created = u.createdAt ? new Date(u.createdAt) : null;
+      if (created && created >= todayStart) usersToday += 1;
+      if (u.role === "admin" || u.role === "super_admin") totalAdmins += 1;
+      if (u.banned) bannedUsers += 1;
+    }
+    return {
+      totalUsers: userSummaries.length,
+      usersToday,
+      totalAdmins,
+      bannedUsers,
+    };
+  }, [userSummaries]);
+
+  const tournamentStats = useMemo(() => {
+    if (!tournaments.length) {
+      return { total: 0, active: 0, upcoming: 0 };
+    }
+    let active = 0;
+    let upcoming = 0;
+    for (const t of tournaments) {
+      if (t.status === "completed") continue;
+      if (t.status === "draft" || t.status === "registration_open") {
+        upcoming += 1;
+      } else {
+        active += 1;
+      }
+    }
+    return { total: tournaments.length, active, upcoming };
+  }, [tournaments]);
 
   const handleApprove = useCallback(
     async (team: AdminTeam) => {
@@ -478,9 +560,16 @@ export default function AdminPage() {
   return (
     <main className="page pb-bottom-nav">
       <div className="page-inner-wide max-w-7xl">
-        <AdminBreadcrumbs items={[{ label: "Dashboard" }]} className="mb-4" />
+        <AdminBreadcrumbs
+          items={[
+            { label: isSuperAdmin ? "Super admin" : "Dashboard" },
+          ]}
+          className="mb-4"
+        />
         <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <h1 className="page-title text-xl sm:text-2xl md:text-3xl">Admin Dashboard</h1>
+          <h1 className="page-title text-xl sm:text-2xl md:text-3xl">
+            {isSuperAdmin ? "Super admin dashboard" : "Admin dashboard"}
+          </h1>
           <nav className="flex flex-wrap items-center gap-2 sm:gap-3">
             {isSuperAdmin && (
               <Link
@@ -501,6 +590,76 @@ export default function AdminPage() {
             </Link>
           </nav>
         </header>
+
+        {isSuperAdmin && (
+          <section className="mb-6">
+            {userStatsError && (
+              <div className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+                {userStatsError}
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Total users
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {userStatsLoading ? "…" : userStats.totalUsers}
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Joined today
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {userStatsLoading ? "…" : userStats.usersToday}
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Admins &amp; super admins
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {userStatsLoading ? "…" : userStats.totalAdmins}
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Banned users
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {userStatsLoading ? "…" : userStats.bannedUsers}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Total tournaments
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {tournamentStats.total}
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Active now
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {tournamentStats.active}
+                </p>
+              </div>
+              <div className="card-glass p-4 sm:p-5">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Upcoming / registration
+                </p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                  {tournamentStats.upcoming}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="card mb-6">
           <p className="text-sm text-slate-600 dark:text-slate-400">
