@@ -9,6 +9,7 @@ import { isAdminOrSuperAdmin, isSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
+  "scheduled",
   "registration_open",
   "registration_closed",
   "ongoing",
@@ -26,6 +27,7 @@ type PatchBody = {
   maxTeams?: number;
   teamSize?: number;
   status?: string;
+  scheduledAt?: string | null;
   isClosed?: boolean;
   description?: string;
   prize?: string;
@@ -97,6 +99,17 @@ function validatePatchBody(
     }
     updates.status = b.status;
   }
+  if (b.scheduledAt !== undefined) {
+    if (b.scheduledAt === null || b.scheduledAt === "") {
+      updates.scheduledAt = null;
+    } else {
+      const d = new Date(b.scheduledAt as string);
+      if (Number.isNaN(d.getTime())) {
+        return { ok: false, status: 400, message: "scheduledAt must be a valid ISO date string" };
+      }
+      updates.scheduledAt = d;
+    }
+  }
   if (b.isClosed !== undefined) {
     if (typeof b.isClosed !== "boolean") {
       return { ok: false, status: 400, message: "isClosed must be a boolean" };
@@ -121,7 +134,7 @@ function validatePatchBody(
       ok: false,
       status: 400,
       message:
-        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, isClosed, description, prize, serverIP, winnerTeamId",
+        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, scheduledAt, isClosed, description, prize, serverIP, winnerTeamId",
     };
   }
 

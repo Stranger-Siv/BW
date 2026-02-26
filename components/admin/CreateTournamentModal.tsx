@@ -14,6 +14,8 @@ export type TournamentFormData = {
   serverIP: string;
   description: string;
   status: string;
+  scheduleForLater: boolean;
+  scheduledAt: string;
 };
 
 const INITIAL_FORM: TournamentFormData = {
@@ -28,6 +30,8 @@ const INITIAL_FORM: TournamentFormData = {
   serverIP: "",
   description: "",
   status: "draft",
+  scheduleForLater: false,
+  scheduledAt: "",
 };
 
 const TYPE_OPTIONS = [
@@ -38,6 +42,7 @@ const TYPE_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
+  { value: "scheduled", label: "Scheduled" },
   { value: "registration_open", label: "Registration open" },
   { value: "registration_closed", label: "Registration closed" },
 ] as const;
@@ -54,6 +59,7 @@ export type TournamentSubmitPayload = {
   serverIP?: string;
   description?: string;
   status: string;
+  scheduledAt?: string | null;
 };
 
 type CreateTournamentModalProps = {
@@ -62,7 +68,7 @@ type CreateTournamentModalProps = {
   onSubmit: (data: TournamentSubmitPayload) => void;
   loading?: boolean;
   error?: string | null;
-  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string } | null;
+  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string; status?: string; scheduledAt?: string | Date } | null;
 };
 
 function toDateInput(dateStr: string) {
@@ -103,6 +109,7 @@ export function CreateTournamentModal({
       return;
     }
     if (editData?._id) {
+      const isScheduled = editData.status === "scheduled";
       setForm({
         name: editData.name ?? "",
         type: editData.type ?? "squad",
@@ -115,16 +122,18 @@ export function CreateTournamentModal({
         serverIP: editData.serverIP ?? "",
         description: editData.description ?? "",
         status: editData.status ?? "draft",
+        scheduleForLater: isScheduled,
+        scheduledAt: editData.scheduledAt != null ? toDateTimeLocal(editData.scheduledAt instanceof Date ? editData.scheduledAt.toISOString() : String(editData.scheduledAt)) : "",
       });
     } else {
       setForm({ ...INITIAL_FORM });
     }
   }, [open, editData]);
 
-  const update = useCallback((field: keyof TournamentFormData, value: string) => {
+  const update = useCallback((field: keyof TournamentFormData, value: string | boolean) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === "type") {
+      if (field === "type" && typeof value === "string") {
         const opt = TYPE_OPTIONS.find((o) => o.value === value);
         if (opt) next.teamSize = String(opt.teamSize);
       }
@@ -143,6 +152,8 @@ export function CreateTournamentModal({
       if (!form.registrationDeadline.trim()) return;
       if (!Number.isFinite(maxTeams) || maxTeams < 1) return;
       if (!Number.isFinite(teamSize) || teamSize < 1) return;
+      const scheduleForLater = form.scheduleForLater && form.scheduledAt.trim();
+      const status = scheduleForLater ? "scheduled" : form.status;
       const payload: TournamentSubmitPayload = {
         name: form.name.trim(),
         type: form.type || "squad",
@@ -154,7 +165,8 @@ export function CreateTournamentModal({
         prize: form.prize.trim() || undefined,
         serverIP: form.serverIP.trim() || undefined,
         description: form.description.trim() || undefined,
-        status: form.status,
+        status,
+        scheduledAt: scheduleForLater ? form.scheduledAt.trim() : null,
       };
       onSubmit(payload);
     },
@@ -245,6 +257,33 @@ export function CreateTournamentModal({
               className={inputClass}
               required
             />
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={form.scheduleForLater}
+                onChange={(e) => update("scheduleForLater", e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className={labelClass + " mb-0"}>Schedule for later</span>
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              When enabled, the tournament will appear as &quot;Scheduled&quot; and registration will open at the date/time below. You can open registration manually from the tournaments list when ready.
+            </p>
+            {form.scheduleForLater && (
+              <div>
+                <label className={labelClass}>Registration opens at *</label>
+                <input
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={(e) => update("scheduledAt", e.target.value)}
+                  className={inputClass}
+                  required={form.scheduleForLater}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

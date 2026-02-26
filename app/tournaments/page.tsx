@@ -7,7 +7,7 @@ import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { SITE } from "@/lib/site";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
-import { formatDateLabel } from "@/lib/formatDate";
+import { formatDateLabel, formatDateTime } from "@/lib/formatDate";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import type { IPlayer } from "@/models/Team";
 import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
@@ -22,6 +22,8 @@ type TournamentOption = {
   maxTeams: number;
   teamSize: number;
   registeredTeams: number;
+  status?: string;
+  scheduledAt?: string | null;
 };
 
 function getInitialPlayers(count: number): IPlayer[] {
@@ -395,39 +397,62 @@ export default function TournamentsPage() {
                 )}
                 <StaggerChildren className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {tournaments.map((t) => {
+                    const isScheduled = t.status === "scheduled";
                     const remaining = Math.max(0, t.maxTeams - t.registeredTeams);
                     const typeLabel = TYPE_LABEL[t.type ?? "squad"] ?? (t.type ?? "Squad");
+                    const cardContent = (
+                      <div className="w-full p-5 text-left">
+                        <span className="block font-semibold text-slate-800 dark:text-slate-100">
+                          {t.name}
+                        </span>
+                        <span className="mt-1 inline-block rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">
+                          {typeLabel}
+                        </span>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                          {formatDateLabel(t.date)} · {t.startTime}
+                        </p>
+                        {isScheduled ? (
+                          <p className="mt-2 text-sm font-medium text-violet-400 dark:text-violet-300">
+                            Registration opens at {t.scheduledAt ? formatDateTime(t.scheduledAt) : "—"}
+                          </p>
+                        ) : (
+                          <>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                              {remaining} slot{remaining !== 1 ? "s" : ""} left
+                            </p>
+                            {t.registrationDeadline && (
+                              <p className="mt-1 text-xs font-medium">
+                                <RegistrationCountdown
+                                  deadline={t.registrationDeadline}
+                                  className="text-emerald-400/90 dark:text-emerald-300"
+                                />
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
                     return (
                       <StaggerItem
                         key={t._id}
-                        className="card-glass transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                        className={`card-glass transition-all duration-300 ${isScheduled ? "opacity-95" : "hover:-translate-y-0.5 hover:shadow-xl"}`}
                       >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTournament(t)}
-                          className="w-full p-5 text-left"
-                        >
-                          <span className="block font-semibold text-slate-800 dark:text-slate-100">
-                            {t.name}
-                          </span>
-                          <span className="mt-1 inline-block rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-400 dark:text-emerald-300">
-                            {typeLabel}
-                          </span>
-                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                            {formatDateLabel(t.date)} · {t.startTime}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            {remaining} slot{remaining !== 1 ? "s" : ""} left
-                          </p>
-                          {t.registrationDeadline && (
-                            <p className="mt-1 text-xs font-medium">
-                              <RegistrationCountdown
-                                deadline={t.registrationDeadline}
-                                className="text-emerald-400/90 dark:text-emerald-300"
-                              />
-                            </p>
-                          )}
-                        </button>
+                        {isScheduled ? (
+                          <div className="rounded-t-2xl">
+                            {cardContent}
+                            <span className="mx-5 mb-2 inline-block rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-medium text-violet-400 dark:text-violet-300">
+                              Scheduled
+                            </span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTournament(t)}
+                            className="w-full rounded-t-2xl"
+                          >
+                            {cardContent}
+                          </button>
+                        )}
                         <Link
                           href={`/tournaments/${t._id}/rounds`}
                           onClick={(e) => e.stopPropagation()}

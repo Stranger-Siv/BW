@@ -295,7 +295,7 @@ export default function AdminPage() {
     let upcoming = 0;
     for (const t of tournaments) {
       if (t.status === "completed") continue;
-      if (t.status === "draft" || t.status === "registration_open") {
+      if (t.status === "draft" || t.status === "scheduled" || t.status === "registration_open") {
         upcoming += 1;
       } else {
         active += 1;

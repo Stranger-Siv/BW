@@ -2,6 +2,7 @@ import mongoose, { Schema, model, models } from "mongoose";
 
 export type TournamentStatus =
   | "draft"
+  | "scheduled"
   | "registration_open"
   | "registration_closed"
   | "ongoing"
@@ -30,6 +31,8 @@ export interface ITournament {
   serverIP?: string;
   isClosed: boolean;
   winnerTeamId?: mongoose.Types.ObjectId;
+  /** When set with status "scheduled", registration opens at this time */
+  scheduledAt?: Date;
   createdAt: Date;
 }
 
@@ -51,7 +54,7 @@ const tournamentSchema = new Schema<ITournament>(
     status: {
       type: String,
       required: true,
-      enum: ["draft", "registration_open", "registration_closed", "ongoing", "completed"],
+      enum: ["draft", "scheduled", "registration_open", "registration_closed", "ongoing", "completed"],
       default: "draft",
     },
     description: { type: String },
@@ -59,6 +62,7 @@ const tournamentSchema = new Schema<ITournament>(
     serverIP: { type: String },
     isClosed: { type: Boolean, default: false },
     winnerTeamId: { type: Schema.Types.ObjectId, ref: "Team" },
+    scheduledAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

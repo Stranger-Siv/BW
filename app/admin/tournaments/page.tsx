@@ -18,6 +18,7 @@ type TournamentDoc = {
   teamSize: number;
   registeredTeams: number;
   status: string;
+  scheduledAt?: string | Date;
   description?: string;
   prize?: string;
   serverIP?: string;
@@ -28,6 +29,7 @@ type TournamentDoc = {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     draft: "bg-slate-500/20 text-slate-400 dark:text-slate-300",
+    scheduled: "bg-violet-500/20 text-violet-400 dark:text-violet-300",
     registration_open: "bg-emerald-500/20 text-emerald-400 dark:text-emerald-300",
     registration_closed: "bg-amber-500/20 text-amber-400 dark:text-amber-300",
     ongoing: "bg-blue-500/20 text-blue-400 dark:text-blue-300",
@@ -54,6 +56,7 @@ export default function AdminTournamentsPage() {
 
   const [deleteTournament, setDeleteTournament] = useState<TournamentDoc | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [openRegTournamentId, setOpenRegTournamentId] = useState<string | null>(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -108,6 +111,7 @@ export default function AdminTournamentsPage() {
               maxTeams: data.maxTeams,
               teamSize: data.teamSize,
               status: data.status,
+              scheduledAt: data.scheduledAt ?? undefined,
               description: data.description,
               prize: data.prize,
               serverIP: data.serverIP,
@@ -133,6 +137,28 @@ export default function AdminTournamentsPage() {
       }
     },
     [editTournament, fetchList]
+  );
+
+  const handleOpenRegistration = useCallback(
+    async (t: TournamentDoc) => {
+      if (t.status !== "scheduled") return;
+      setOpenRegTournamentId(t._id);
+      try {
+        const res = await fetch(`/api/admin/tournaments/${t._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "registration_open" }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error ?? "Update failed");
+        fetchList();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to open registration");
+      } finally {
+        setOpenRegTournamentId(null);
+      }
+    },
+    [fetchList]
   );
 
   const handleDeleteConfirm = useCallback(async () => {
@@ -249,6 +275,16 @@ export default function AdminTournamentsPage() {
                       </td>
                       <td className="px-3 py-3 sm:px-4">
                         <div className="flex flex-wrap gap-2">
+                          {t.status === "scheduled" && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRegistration(t)}
+                              disabled={openRegTournamentId === t._id}
+                              className="min-h-[44px] flex items-center rounded-full bg-emerald-500/80 px-3 py-2 text-xs font-medium text-slate-900 transition hover:bg-emerald-500 disabled:opacity-60 sm:min-h-[36px] sm:py-1.5"
+                            >
+                              {openRegTournamentId === t._id ? "Opening…" : "Open registration"}
+                            </button>
+                          )}
                           <Link
                             href={`/admin/tournaments/${t._id}/rounds`}
                             className="min-h-[44px] flex items-center rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-3 py-2 text-xs font-medium text-slate-900 transition hover:opacity-90 sm:min-h-[36px] sm:py-1.5"
@@ -299,6 +335,7 @@ export default function AdminTournamentsPage() {
           serverIP: editTournament.serverIP ?? "",
           description: editTournament.description ?? "",
           status: editTournament.status,
+          scheduledAt: editTournament.scheduledAt,
         } : null}
       />
 

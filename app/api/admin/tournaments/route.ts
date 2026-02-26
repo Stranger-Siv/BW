@@ -11,6 +11,7 @@ import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
+  "scheduled",
   "registration_open",
   "registration_closed",
   "ongoing",
@@ -28,6 +29,7 @@ type CreateBody = {
   maxTeams?: number;
   teamSize?: number;
   status?: string;
+  scheduledAt?: string | null;
   description?: string;
   prize?: string;
   serverIP?: string;
@@ -84,6 +86,11 @@ function validateCreateBody(
     registeredTeams: 0,
     isClosed: false,
   };
+  const scheduledAtRaw = b.scheduledAt;
+  if (scheduledAtRaw != null && scheduledAtRaw !== "") {
+    const d = new Date(scheduledAtRaw as string);
+    if (!Number.isNaN(d.getTime())) data.scheduledAt = d;
+  }
   const desc = typeof b.description === "string" ? b.description.trim() : "";
   const prize = typeof b.prize === "string" ? b.prize.trim() : "";
   const serverIP = typeof b.serverIP === "string" ? b.serverIP.trim() : "";
