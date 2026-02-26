@@ -881,11 +881,13 @@ export default function TournamentsPage() {
                 <div
                   ref={teamDetailPanelRef}
                   onTransitionEnd={handleTeamDetailTransitionEnd}
-                  className="mt-4 card-glass w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-xl origin-top"
+                  className="mt-4 card-glass w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-xl origin-top overflow-hidden"
                   style={{
-                    transform: teamDetailPanelVisible && !teamDetailPanelClosing ? "scale(1)" : "scale(0.92)",
                     opacity: teamDetailPanelVisible && !teamDetailPanelClosing ? 1 : 0,
-                    transition: "transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.28s ease-out",
+                    maxHeight: teamDetailPanelVisible && !teamDetailPanelClosing ? 500 : 0,
+                    transform: teamDetailPanelVisible && !teamDetailPanelClosing ? "scale(1)" : "scale(0.96)",
+                    transition:
+                      "opacity 0.22s ease-out, max-height 0.28s ease-out, transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1)",
                   }}
                 >
                   {teamDetailLoading ? (
