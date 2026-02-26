@@ -335,7 +335,9 @@ export default function AdminTournamentsPage() {
           serverIP: editTournament.serverIP ?? "",
           description: editTournament.description ?? "",
           status: editTournament.status,
-          scheduledAt: editTournament.scheduledAt,
+          scheduledAt: editTournament.scheduledAt != null
+            ? (editTournament.scheduledAt instanceof Date ? editTournament.scheduledAt.toISOString() : editTournament.scheduledAt)
+            : undefined,
         } : null}
       />
 

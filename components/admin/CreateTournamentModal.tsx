@@ -68,7 +68,7 @@ type CreateTournamentModalProps = {
   onSubmit: (data: TournamentSubmitPayload) => void;
   loading?: boolean;
   error?: string | null;
-  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string; status?: string; scheduledAt?: string | Date } | null;
+  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string; status?: string; scheduledAt?: string } | null;
 };
 
 function toDateInput(dateStr: string) {
@@ -123,7 +123,7 @@ export function CreateTournamentModal({
         description: editData.description ?? "",
         status: editData.status ?? "draft",
         scheduleForLater: isScheduled,
-        scheduledAt: editData.scheduledAt != null ? toDateTimeLocal(editData.scheduledAt instanceof Date ? editData.scheduledAt.toISOString() : String(editData.scheduledAt)) : "",
+        scheduledAt: editData.scheduledAt != null ? toDateTimeLocal(String(editData.scheduledAt)) : "",
       });
     } else {
       setForm({ ...INITIAL_FORM });
