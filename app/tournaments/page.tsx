@@ -258,7 +258,7 @@ export default function TournamentsPage() {
 
   const handleTeamDetailTransitionEnd = useCallback(
     (e: React.TransitionEvent<HTMLDivElement>) => {
-      if (e.target !== teamDetailPanelRef.current || e.propertyName !== "transform") return;
+      if (e.target !== teamDetailPanelRef.current || e.propertyName !== "opacity") return;
       if (!teamDetailPanelClosing) return;
       setSelectedTeamIdForModal(null);
       setTeamDetail(null);
@@ -866,6 +866,100 @@ export default function TournamentsPage() {
                   )}
                   </>
                 )}
+
+                {selectedTeamIdForModal && (
+                  <div
+                    ref={teamDetailPanelRef}
+                    onTransitionEnd={handleTeamDetailTransitionEnd}
+                    className="overflow-hidden rounded-xl border border-white/10 bg-slate-800/80 shadow-inner"
+                    style={{
+                      opacity: teamDetailPanelVisible && !teamDetailPanelClosing ? 1 : 0,
+                      maxHeight: teamDetailPanelVisible && !teamDetailPanelClosing ? 420 : 0,
+                      marginTop: teamDetailPanelVisible && !teamDetailPanelClosing ? 16 : 0,
+                      transformOrigin: "top",
+                      transform: teamDetailPanelVisible && !teamDetailPanelClosing ? "scaleY(1)" : "scaleY(0.85)",
+                      transition:
+                        "opacity 0.26s ease-out, max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.28s ease-out, transform 0.28s cubic-bezier(0.34, 1.1, 0.64, 1)",
+                    }}
+                  >
+                    <div className="p-4">
+                      {teamDetailLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="h-7 w-7 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+                        </div>
+                      ) : teamDetail ? (
+                        <div className="space-y-4 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                Team
+                              </p>
+                              <p className="mt-0.5 text-sm font-medium text-white">
+                                {teamDetail.teamName}
+                              </p>
+                            </div>
+                            {teamDetail.isWinner && (
+                              <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300">
+                                🏆 Winner
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 gap-3 border-y border-white/10 py-3 text-xs">
+                            <div className="flex justify-between gap-3">
+                              <span className="text-slate-500">Registered</span>
+                              <span className="text-slate-200">
+                                {formatDateTime(teamDetail.createdAt)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-3">
+                              <span className="text-slate-500">Round</span>
+                              <span className="text-slate-200">
+                                {teamDetail.roundInfo
+                                  ? `${teamDetail.roundInfo.name} (Round ${teamDetail.roundInfo.roundNumber})`
+                                  : slotStatus !== "registration_open"
+                                    ? "Not in current round"
+                                    : "—"}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              Players
+                            </p>
+                            <ul className="mt-2 space-y-1.5">
+                              {teamDetail.players.map((p, i) => (
+                                <li key={i} className="flex justify-between gap-3 text-xs text-slate-200">
+                                  <span className="font-medium">{p.minecraftIGN}</span>
+                                  <span className="text-slate-500">{p.discordUsername}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              Reward receiver
+                            </p>
+                            <p className="mt-1 text-xs font-medium text-emerald-300">
+                              {teamDetail.rewardReceiverIGN}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleCloseTeamDetail}
+                            className="mt-2 w-full rounded-xl border border-white/20 bg-transparent px-3 py-2 text-xs font-medium text-slate-100 transition hover:border-white/30 hover:bg-white/10"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="py-4 text-center text-xs text-slate-400">
+                          Could not load team details.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-5 border-t border-white/10 pt-5 dark:border-white/10">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Rules
@@ -883,110 +977,6 @@ export default function TournamentsPage() {
           </div>
         </section>
       </div>
-
-      {selectedTeamIdForModal && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-            style={{
-              opacity: teamDetailPanelVisible && !teamDetailPanelClosing ? 1 : 0,
-              transition: "opacity 0.25s ease-out",
-            }}
-            onClick={handleCloseTeamDetail}
-            aria-hidden
-          />
-          <div
-            ref={teamDetailPanelRef}
-            onTransitionEnd={handleTeamDetailTransitionEnd}
-            className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto border-l border-white/10 bg-slate-900 shadow-2xl sm:max-w-md"
-            style={{
-              transform: teamDetailPanelVisible && !teamDetailPanelClosing ? "translateX(0)" : "translateX(100%)",
-              opacity: teamDetailPanelVisible && !teamDetailPanelClosing ? 1 : 0,
-              transition: "transform 0.3s ease-out, opacity 0.25s ease-out",
-            }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="team-drawer-title"
-          >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-slate-900/95 px-4 py-3 backdrop-blur-sm">
-              <h2 id="team-drawer-title" className="text-sm font-semibold text-white">
-                Team details
-              </h2>
-              <button
-                type="button"
-                onClick={handleCloseTeamDetail}
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-                aria-label="Close"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-4">
-              {teamDetailLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
-                </div>
-              ) : teamDetail ? (
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Team</p>
-                      <p className="mt-0.5 text-base font-medium text-white">{teamDetail.teamName}</p>
-                    </div>
-                    {teamDetail.isWinner && (
-                      <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300">
-                        🏆 Winner
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 border-y border-white/10 py-3 text-xs">
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">Registered</span>
-                      <span className="text-slate-200">{formatDateTime(teamDetail.createdAt)}</span>
-                    </div>
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">Round</span>
-                      <span className="text-slate-200">
-                        {teamDetail.roundInfo
-                          ? `${teamDetail.roundInfo.name} (Round ${teamDetail.roundInfo.roundNumber})`
-                          : slotStatus !== "registration_open"
-                            ? "Not in current round"
-                            : "—"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Players</p>
-                    <ul className="mt-2 space-y-2">
-                      {teamDetail.players.map((p, i) => (
-                        <li key={i} className="flex justify-between gap-3 text-xs text-slate-200">
-                          <span className="font-medium">{p.minecraftIGN}</span>
-                          <span className="text-slate-500">{p.discordUsername}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Reward receiver</p>
-                    <p className="mt-1 text-sm font-medium text-emerald-300">{teamDetail.rewardReceiverIGN}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCloseTeamDetail}
-                    className="mt-4 w-full rounded-xl border-2 border-white/20 bg-transparent py-2.5 text-sm font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/10"
-                  >
-                    Close
-                  </button>
-                </div>
-              ) : (
-                <p className="py-8 text-center text-slate-400">Could not load team details.</p>
-              )}
-            </div>
-          </div>
-        </>
-      )}
     </main>
   );
 }
