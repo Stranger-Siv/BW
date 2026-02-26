@@ -484,8 +484,8 @@ export default function TournamentsPage() {
           </a>
         </div>
         </FadeInUp>
-        <section>
-          <div className="card-glass mx-auto max-w-5xl p-6 sm:p-8 md:p-10">
+        <section className="w-full">
+          <div className="card-glass w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <img
@@ -775,7 +775,7 @@ export default function TournamentsPage() {
               </div>
             </div>
 
-            <aside className="w-full shrink-0 lg:w-80 lg:sticky lg:top-6">
+            <aside className="min-w-0 w-full shrink-0 lg:w-80 lg:sticky lg:top-6">
               <div className="card-glass w-full p-5 sm:p-6">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Slots & info
