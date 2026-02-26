@@ -154,12 +154,19 @@ export function CreateTournamentModal({
       if (!Number.isFinite(teamSize) || teamSize < 1) return;
       const scheduleForLater = form.scheduleForLater && form.scheduledAt.trim();
       const status = scheduleForLater ? "scheduled" : form.status;
-      // Send scheduledAt as ISO so server stores the correct moment (datetime-local is in user's local time)
+      // Parse datetime-local (always local time) and send as ISO so server stores the correct moment
       const scheduledAtIso =
         scheduleForLater
           ? (() => {
-              const d = new Date(form.scheduledAt.trim());
-              return Number.isNaN(d.getTime()) ? null : d.toISOString();
+              const s = form.scheduledAt.trim();
+              const [datePart, timePart] = s.split("T");
+              if (!datePart || !timePart) return null;
+              const [y, m, d] = datePart.split("-").map(Number);
+              const [hh, mm] = timePart.split(":").map(Number);
+              if (![y, m, d, hh, mm].every(Number.isFinite)) return null;
+              const dLocal = new Date(y, m - 1, d, hh, mm, 0, 0);
+              if (Number.isNaN(dLocal.getTime())) return null;
+              return dLocal.toISOString();
             })()
           : null;
       const payload: TournamentSubmitPayload = {

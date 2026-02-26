@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
@@ -8,6 +8,17 @@ import { SITE } from "@/lib/site";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
 import { formatDateLabel, formatDateTime } from "@/lib/formatDate";
+
+type SlotTeam = { _id: string; teamName: string; createdAt: string };
+type RoundForSlots = { roundNumber: number; name: string; teamIds: string[] };
+type TeamDetail = {
+  teamName: string;
+  createdAt: string;
+  players: { minecraftIGN: string; discordUsername: string }[];
+  rewardReceiverIGN: string;
+  roundInfo: { roundNumber: number; name: string } | null;
+  isWinner: boolean;
+};
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import type { IPlayer } from "@/models/Team";
 import { FadeInUp, StaggerChildren, StaggerItem } from "@/components/ui/animations";
@@ -80,6 +91,15 @@ export default function TournamentsPage() {
   const [playerErrors, setPlayerErrors] = useState<Record<number, string>>({});
   const [playersCheckLoading, setPlayersCheckLoading] = useState(false);
 
+  const [slotTeams, setSlotTeams] = useState<SlotTeam[]>([]);
+  const [slotStatus, setSlotStatus] = useState<string>("");
+  const [rounds, setRounds] = useState<RoundForSlots[]>([]);
+  const [slotLoading, setSlotLoading] = useState(false);
+  const [selectedTeamIdForModal, setSelectedTeamIdForModal] = useState<string | null>(null);
+  const [teamDetail, setTeamDetail] = useState<TeamDetail | null>(null);
+  const [teamDetailLoading, setTeamDetailLoading] = useState(false);
+  const selectedTournamentIdRef = useRef<string | null>(null);
+
   const duplicateWithinForm = useMemo(() => {
     const key = (ign: string, discord: string) => `${(ign || "").trim().toLowerCase()}|${(discord || "").trim()}`;
     const seen = new Map<string, number>();
@@ -123,7 +143,77 @@ export default function TournamentsPage() {
     fetchTournaments();
   }, [fetchTournaments]);
 
-  usePusherChannel("tournaments", "tournaments_changed", () => fetchTournaments());
+  const fetchSlotData = useCallback(async (tournamentId: string) => {
+    setSlotLoading(true);
+    try {
+      const [teamsRes, roundsRes] = await Promise.all([
+        fetch(`/api/tournaments/${tournamentId}/teams`, { cache: "no-store" }),
+        fetch(`/api/tournaments/${tournamentId}/rounds`, { cache: "no-store" }),
+      ]);
+      if (teamsRes.ok) {
+        const teamsData = await teamsRes.json();
+        setSlotTeams(Array.isArray(teamsData.teams) ? teamsData.teams : []);
+        setSlotStatus(typeof teamsData.status === "string" ? teamsData.status : "");
+      } else {
+        setSlotTeams([]);
+        setSlotStatus("");
+      }
+      if (roundsRes.ok) {
+        const roundsData = await roundsRes.json();
+        const list = Array.isArray(roundsData.rounds) ? roundsData.rounds : [];
+        setRounds(
+          list.map((r: { roundNumber: number; name: string; teamIds?: string[] }) => ({
+            roundNumber: r.roundNumber,
+            name: r.name,
+            teamIds: Array.isArray(r.teamIds) ? r.teamIds : [],
+          }))
+        );
+      } else {
+        setRounds([]);
+      }
+    } catch {
+      setSlotTeams([]);
+      setSlotStatus("");
+      setRounds([]);
+    } finally {
+      setSlotLoading(false);
+    }
+  }, []);
+
+  const fetchTeamDetail = useCallback(async (tournamentId: string, teamId: string) => {
+    setTeamDetailLoading(true);
+    setTeamDetail(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/teams/${teamId}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json();
+      setTeamDetail(data);
+    } catch {
+      setTeamDetail(null);
+    } finally {
+      setTeamDetailLoading(false);
+    }
+  }, []);
+
+  selectedTournamentIdRef.current = selectedTournament?._id ?? null;
+
+  usePusherChannel("tournaments", "tournaments_changed", () => {
+    fetchTournaments();
+    const id = selectedTournamentIdRef.current;
+    if (id) fetchSlotData(id);
+  });
+
+  useEffect(() => {
+    if (!selectedTournament?._id) {
+      setSlotTeams([]);
+      setSlotStatus("");
+      setRounds([]);
+      setSelectedTeamIdForModal(null);
+      setTeamDetail(null);
+      return;
+    }
+    fetchSlotData(selectedTournament._id);
+  }, [selectedTournament?._id, fetchSlotData]);
 
   useEffect(() => {
     if (selectedTournament) {
@@ -636,12 +726,85 @@ export default function TournamentsPage() {
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Slots & info
                 </h3>
-                <div className="mt-4 space-y-2 text-sm text-slate-700 dark:text-slate-300">
-                  <p>
-                    <span className="font-medium">Remaining slots:</span>{" "}
-                    {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} / {selectedTournament.maxTeams}
-                  </p>
-                </div>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  {selectedTournament.maxTeams} total · {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} open
+                </p>
+                {slotLoading ? (
+                  <div className="mt-4 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
+                    {Array.from({ length: Math.min(selectedTournament.maxTeams, 24) }).map((_, i) => (
+                      <div key={i} className="aspect-square animate-pulse rounded-lg bg-white/10" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                  <div
+                    className="mt-4 grid gap-1.5 gap-y-2 sm:gap-2"
+                    style={{
+                      gridTemplateColumns: `repeat(auto-fill, minmax(2rem, 1fr))`,
+                      maxWidth: "100%",
+                    }}
+                  >
+                    {Array.from({ length: selectedTournament.maxTeams }).map((_, index) => {
+                      const team = slotTeams[index];
+                      const isFilled = !!team;
+                      const registrationClosed = slotStatus !== "registration_open";
+                      const round1 = rounds.find((r) => r.roundNumber === 1);
+                      const teamIdsInRound1 = new Set(round1?.teamIds ?? []);
+                      const inCurrentRound = team ? teamIdsInRound1.has(team._id) : false;
+                      const slotState =
+                        !isFilled ? "empty" : registrationClosed ? (inCurrentRound ? "in_round" : "out") : "filled";
+                      return (
+                        <div
+                          key={team?._id ?? index}
+                          className="group relative aspect-square rounded-lg transition-all duration-300 ease-out"
+                        >
+                          {isFilled ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedTeamIdForModal(team._id);
+                                fetchTeamDetail(selectedTournament._id, team._id);
+                              }}
+                              className={`absolute inset-0 flex items-center justify-center rounded-lg border-2 text-[10px] font-medium transition-all duration-300 ease-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                                slotState === "empty"
+                                  ? ""
+                                  : slotState === "filled"
+                                    ? "border-white/20 bg-white/10 text-slate-300 hover:border-white/30 hover:bg-white/15"
+                                    : slotState === "in_round"
+                                      ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-200 hover:border-emerald-400 hover:bg-emerald-500/30"
+                                      : "border-red-400/50 bg-red-500/15 text-red-200 hover:border-red-400/70 hover:bg-red-500/25"
+                              }`}
+                              title={team.teamName}
+                            >
+                              <span className="pointer-events-none flex h-full w-full items-center justify-center px-0.5 transition-opacity duration-200 group-hover:opacity-0">
+                                •
+                              </span>
+                              <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/90 px-2 py-1 text-center text-xs font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                {team.teamName}
+                              </span>
+                            </button>
+                          ) : (
+                            <div
+                              className={`absolute inset-0 rounded-lg border-2 border-dashed border-white/15 bg-white/5 transition-colors duration-300`}
+                              aria-label={`Slot ${index + 1} empty`}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {slotStatus !== "registration_open" && slotTeams.length > 0 && rounds.length > 0 && (
+                    <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> In current round
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Not in current round
+                      </span>
+                    </p>
+                  )}
+                  </>
+                )}
                 <div className="mt-5 border-t border-white/10 pt-5 dark:border-white/10">
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Rules
@@ -654,6 +817,104 @@ export default function TournamentsPage() {
                 </div>
               </div>
             </aside>
+
+            {selectedTeamIdForModal && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="team-detail-title"
+              >
+                <div
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                  onClick={() => {
+                    setSelectedTeamIdForModal(null);
+                    setTeamDetail(null);
+                  }}
+                  aria-hidden
+                />
+                <div
+                  className="card-glass relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl p-6 shadow-xl transition-all duration-300 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h2 id="team-detail-title" className="text-lg font-semibold text-white">
+                    Team details
+                  </h2>
+                  {teamDetailLoading ? (
+                    <div className="mt-4 flex items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+                    </div>
+                  ) : teamDetail ? (
+                    <div className="mt-4 space-y-4 text-sm">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Team name
+                        </p>
+                        <p className="mt-0.5 font-medium text-white">{teamDetail.teamName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Registered
+                        </p>
+                        <p className="mt-0.5 text-slate-300">
+                          {formatDateTime(teamDetail.createdAt)}
+                        </p>
+                      </div>
+                      {teamDetail.isWinner && (
+                        <p className="rounded-lg bg-amber-500/20 px-3 py-2 text-amber-300">
+                          🏆 Winner
+                        </p>
+                      )}
+                      {teamDetail.roundInfo ? (
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Round
+                          </p>
+                          <p className="mt-0.5 text-slate-300">
+                            {teamDetail.roundInfo.name} (Round {teamDetail.roundInfo.roundNumber})
+                          </p>
+                        </div>
+                      ) : (
+                        slotStatus !== "registration_open" && (
+                          <p className="text-slate-500 dark:text-slate-400">Not in current round</p>
+                        )
+                      )}
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Players
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {teamDetail.players.map((p, i) => (
+                            <li key={i} className="flex justify-between gap-2 text-slate-300">
+                              <span>{p.minecraftIGN}</span>
+                              <span className="text-slate-500">{p.discordUsername}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Reward receiver
+                        </p>
+                        <p className="mt-0.5 text-emerald-300">{teamDetail.rewardReceiverIGN}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-slate-500">Could not load team details.</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTeamIdForModal(null);
+                      setTeamDetail(null);
+                    }}
+                    className="mt-6 w-full rounded-xl border border-white/10 bg-white/10 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/15"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
             )}
           </div>
