@@ -221,7 +221,7 @@ export default function AdminPage() {
       return;
     }
     const hasAnyFilled = addTeamPlayers.some(
-      (p) => (p.minecraftIGN ?? "").trim() && (p.discordUsername ?? "").trim()
+      (p) => (p.minecraftIGN ?? "").trim() || (p.discordUsername ?? "").trim()
     );
     if (!hasAnyFilled) {
       setAddTeamPlayerErrors({});

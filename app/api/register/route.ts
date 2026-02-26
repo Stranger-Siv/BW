@@ -58,20 +58,31 @@ function validateBody(body: unknown): {
   if (!igns.includes(b.rewardReceiverIGN.trim())) {
     return { ok: false, status: 400, message: "rewardReceiverIGN must be one of the players' Minecraft IGN" };
   }
-  const seenKeys = new Set<string>();
+  const seenIgns = new Map<string, number>();
+  const seenDiscords = new Map<string, number>();
   for (let i = 0; i < b.players.length; i++) {
     const ign = (b.players[i].minecraftIGN ?? "").trim().toLowerCase();
     const discord = (b.players[i].discordUsername ?? "").trim();
-    if (!ign || !discord) continue;
-    const key = `${ign}|${discord}`;
-    if (seenKeys.has(key)) {
-      return {
-        ok: false,
-        status: 400,
-        message: `Same Minecraft IGN and Discord cannot appear twice. Player ${i + 1} duplicates another.`,
-      };
+    if (ign) {
+      if (seenIgns.has(ign)) {
+        return {
+          ok: false,
+          status: 400,
+          message: `Same Minecraft IGN cannot appear twice. Player ${i + 1} duplicates player ${seenIgns.get(ign)! + 1}.`,
+        };
+      }
+      seenIgns.set(ign, i);
     }
-    seenKeys.add(key);
+    if (discord) {
+      if (seenDiscords.has(discord)) {
+        return {
+          ok: false,
+          status: 400,
+          message: `Same Discord username cannot appear twice. Player ${i + 1} duplicates player ${seenDiscords.get(discord)! + 1}.`,
+        };
+      }
+      seenDiscords.set(discord, i);
+    }
   }
 
   const hasId = typeof b.tournamentId === "string" && b.tournamentId.trim() && mongoose.Types.ObjectId.isValid(b.tournamentId.trim());
@@ -223,25 +234,38 @@ async function registerWithTournamentId(
     }
   }
 
-  // Same IGN is allowed if Discord is different (different people). Block only when IGN + Discord both match.
+  // Block if either Minecraft IGN or Discord username is already used in this tournament.
   const existingTeams = await Team.find(
     { tournamentId: tournamentIdObj },
     { "players.minecraftIGN": 1, "players.discordUsername": 1 }
   );
-  const usedPlayerKeys = new Set<string>();
+  const usedIgns = new Set<string>();
+  const usedDiscords = new Set<string>();
   for (const t of existingTeams) {
     for (const p of t.players) {
-      usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
+      const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
+      const discordKey = (p.discordUsername || "").trim();
+      if (ignKey) usedIgns.add(ignKey);
+      if (discordKey) usedDiscords.add(discordKey);
     }
   }
-  const duplicate = players.find(
-    (p) => usedPlayerKeys.has(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`)
-  );
+  const duplicate = players.find((p) => {
+    const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
+    const discordKey = (p.discordUsername || "").trim();
+    return (ignKey && usedIgns.has(ignKey)) || (discordKey && usedDiscords.has(discordKey));
+  });
   if (duplicate) {
-    return NextResponse.json(
-      { error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this tournament.` },
-      { status: 409 }
-    );
+    const ignKey = (duplicate.minecraftIGN || "").trim();
+    const discordKey = (duplicate.discordUsername || "").trim();
+    const ignTaken = ignKey && usedIgns.has(ignKey.toLowerCase());
+    const discordTaken = discordKey && usedDiscords.has(discordKey);
+    const reason =
+      ignTaken && discordTaken
+        ? `Minecraft IGN "${duplicate.minecraftIGN}" and Discord "${duplicate.discordUsername}" are already registered for this tournament.`
+        : ignTaken
+          ? `A player with Minecraft IGN "${duplicate.minecraftIGN}" is already registered for this tournament.`
+          : `A player with Discord "${duplicate.discordUsername}" is already registered for this tournament.`;
+    return NextResponse.json({ error: reason }, { status: 409 });
   }
 
   const session = await Team.startSession();
@@ -324,20 +348,33 @@ async function registerWithTournamentDate(
     { tournamentDate },
     { "players.minecraftIGN": 1, "players.discordUsername": 1 }
   );
-  const usedPlayerKeys = new Set<string>();
+  const usedIgns = new Set<string>();
+  const usedDiscords = new Set<string>();
   for (const t of existingTeamsForDate) {
     for (const p of t.players) {
-      usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
+      const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
+      const discordKey = (p.discordUsername || "").trim();
+      if (ignKey) usedIgns.add(ignKey);
+      if (discordKey) usedDiscords.add(discordKey);
     }
   }
-  const duplicate = players.find(
-    (p) => usedPlayerKeys.has(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`)
-  );
+  const duplicate = players.find((p) => {
+    const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
+    const discordKey = (p.discordUsername || "").trim();
+    return (ignKey && usedIgns.has(ignKey)) || (discordKey && usedDiscords.has(discordKey));
+  });
   if (duplicate) {
-    return NextResponse.json(
-      { error: `A player with Minecraft IGN "${duplicate.minecraftIGN}" and that Discord is already registered for this date.` },
-      { status: 409 }
-    );
+    const ignKey = (duplicate.minecraftIGN || "").trim();
+    const discordKey = (duplicate.discordUsername || "").trim();
+    const ignTaken = ignKey && usedIgns.has(ignKey.toLowerCase());
+    const discordTaken = discordKey && usedDiscords.has(discordKey);
+    const reason =
+      ignTaken && discordTaken
+        ? `Minecraft IGN "${duplicate.minecraftIGN}" and Discord "${duplicate.discordUsername}" are already registered for this date.`
+        : ignTaken
+          ? `A player with Minecraft IGN "${duplicate.minecraftIGN}" is already registered for this date.`
+          : `A player with Discord "${duplicate.discordUsername}" is already registered for this date.`;
+    return NextResponse.json({ error: reason }, { status: 409 });
   }
 
   const session = await Team.startSession();

@@ -98,20 +98,35 @@ export default function TournamentsPage() {
   const [selectedTeamIdForModal, setSelectedTeamIdForModal] = useState<string | null>(null);
   const [teamDetail, setTeamDetail] = useState<TeamDetail | null>(null);
   const [teamDetailLoading, setTeamDetailLoading] = useState(false);
+  const [teamDetailPanelVisible, setTeamDetailPanelVisible] = useState(false);
+  const [teamDetailPanelClosing, setTeamDetailPanelClosing] = useState(false);
+  const teamDetailPanelRef = useRef<HTMLDivElement>(null);
   const selectedTournamentIdRef = useRef<string | null>(null);
 
   const duplicateWithinForm = useMemo(() => {
-    const key = (ign: string, discord: string) => `${(ign || "").trim().toLowerCase()}|${(discord || "").trim()}`;
-    const seen = new Map<string, number>();
+    const seenIgns = new Map<string, number>();
+    const seenDiscords = new Map<string, number>();
     const err: Record<number, string> = {};
     players.forEach((p, i) => {
-      const k = key(p.minecraftIGN, p.discordUsername);
-      if (!k || k === "|") return;
-      if (seen.has(k)) {
-        err[seen.get(k)!] = "Same Minecraft IGN + Discord cannot appear twice.";
-        err[i] = "Same Minecraft IGN + Discord cannot appear twice.";
-      } else {
-        seen.set(k, i);
+      const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
+      const discordKey = (p.discordUsername || "").trim();
+      if (ignKey) {
+        if (seenIgns.has(ignKey)) {
+          const other = seenIgns.get(ignKey)!;
+          err[other] = "Same Minecraft IGN cannot appear twice.";
+          err[i] = "Same Minecraft IGN cannot appear twice.";
+        } else {
+          seenIgns.set(ignKey, i);
+        }
+      }
+      if (discordKey) {
+        if (seenDiscords.has(discordKey)) {
+          const other = seenDiscords.get(discordKey)!;
+          err[other] = "Same Discord username cannot appear twice.";
+          err[i] = "Same Discord username cannot appear twice.";
+        } else {
+          seenDiscords.set(discordKey, i);
+        }
       }
     });
     return err;
@@ -217,10 +232,41 @@ export default function TournamentsPage() {
       setRounds([]);
       setSelectedTeamIdForModal(null);
       setTeamDetail(null);
+      setTeamDetailPanelVisible(false);
+      setTeamDetailPanelClosing(false);
       return;
     }
     fetchSlotData(selectedTournament._id);
   }, [selectedTournament?._id, fetchSlotData]);
+
+  useEffect(() => {
+    if (!selectedTeamIdForModal) {
+      setTeamDetailPanelVisible(false);
+      setTeamDetailPanelClosing(false);
+      return;
+    }
+    setTeamDetailPanelVisible(false);
+    const t = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setTeamDetailPanelVisible(true));
+    });
+    return () => cancelAnimationFrame(t);
+  }, [selectedTeamIdForModal]);
+
+  const handleCloseTeamDetail = useCallback(() => {
+    setTeamDetailPanelClosing(true);
+  }, []);
+
+  const handleTeamDetailTransitionEnd = useCallback(
+    (e: React.TransitionEvent<HTMLDivElement>) => {
+      if (e.target !== teamDetailPanelRef.current || e.propertyName !== "opacity") return;
+      if (!teamDetailPanelClosing) return;
+      setSelectedTeamIdForModal(null);
+      setTeamDetail(null);
+      setTeamDetailPanelClosing(false);
+      setTeamDetailPanelVisible(false);
+    },
+    [teamDetailPanelClosing]
+  );
 
   useEffect(() => {
     if (selectedTournament) {
@@ -299,7 +345,8 @@ export default function TournamentsPage() {
         .then((data: { taken?: { index: number; minecraftIGN: string; discordUsername: string }[] }) => {
           const next: Record<number, string> = {};
           for (const t of data.taken ?? []) {
-            next[t.index] = "This Minecraft IGN + Discord is already registered for this tournament. Each player can only be on one team.";
+            next[t.index] =
+              "This Minecraft IGN or Discord is already registered for this tournament. Each player can only be on one team.";
           }
           setPlayerErrors(next);
         })
@@ -785,8 +832,8 @@ export default function TournamentsPage() {
                                 } ${isSelected ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-slate-900" : ""}`}
                                 title={team.teamName}
                               >
-                                <span className="pointer-events-none flex h-full w-full items-center justify-center transition-opacity duration-200 group-hover:opacity-0">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                                <span className="pointer-events-none flex h-full w-full items-center justify-center text-[11px] font-semibold text-slate-50 transition-opacity duration-200 group-hover:opacity-0">
+                                  {index + 1}
                                 </span>
                               </button>
                               <div
@@ -830,113 +877,93 @@ export default function TournamentsPage() {
                   </ul>
                 </div>
               </div>
-            </aside>
-
-            {selectedTeamIdForModal && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="team-detail-title"
-              >
+              {selectedTeamIdForModal && (
                 <div
-                  className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
-                  onClick={() => {
-                    setSelectedTeamIdForModal(null);
-                    setTeamDetail(null);
+                  ref={teamDetailPanelRef}
+                  onTransitionEnd={handleTeamDetailTransitionEnd}
+                  className="mt-4 card-glass w-full rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-xl origin-top"
+                  style={{
+                    transform: teamDetailPanelVisible && !teamDetailPanelClosing ? "scale(1)" : "scale(0.92)",
+                    opacity: teamDetailPanelVisible && !teamDetailPanelClosing ? 1 : 0,
+                    transition: "transform 0.32s cubic-bezier(0.34, 1.2, 0.64, 1), opacity 0.28s ease-out",
                   }}
-                  aria-hidden
-                />
-                <div
-                  className="card-glass relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 p-0 shadow-2xl transition-all duration-300 ease-out"
-                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-900/80 px-5 py-4 backdrop-blur-sm">
-                    <h2 id="team-detail-title" className="text-base font-semibold text-white">
-                      Team details
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-400">Click outside or use Close to dismiss</p>
-                  </div>
-                  <div className="p-5">
-                    {teamDetailLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+                  {teamDetailLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+                    </div>
+                  ) : teamDetail ? (
+                    <div className="space-y-4 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Team
+                          </p>
+                          <p className="mt-0.5 text-sm font-medium text-white">
+                            {teamDetail.teamName}
+                          </p>
+                        </div>
+                        {teamDetail.isWinner && (
+                          <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-300">
+                            🏆 Winner
+                          </span>
+                        )}
                       </div>
-                    ) : teamDetail ? (
-                      <div className="space-y-5 text-sm">
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Team information
-                          </h3>
-                          <ul className="mt-2.5 space-y-2 pl-0">
-                            <li className="flex justify-between gap-3 border-b border-white/5 pb-2">
-                              <span className="text-slate-500">Name</span>
-                              <span className="font-medium text-white">{teamDetail.teamName}</span>
-                            </li>
-                            <li className="flex justify-between gap-3 border-b border-white/5 pb-2">
-                              <span className="text-slate-500">Registered</span>
-                              <span className="text-slate-300">{formatDateTime(teamDetail.createdAt)}</span>
-                            </li>
-                            {teamDetail.isWinner && (
-                              <li className="rounded-lg bg-amber-500/15 px-3 py-2 text-amber-300">
-                                🏆 Winner
-                              </li>
-                            )}
-                          </ul>
-                        </section>
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Round status
-                          </h3>
-                          <div className="mt-2.5 pl-0">
-                            {teamDetail.roundInfo ? (
-                              <p className="text-slate-300">
-                                {teamDetail.roundInfo.name} <span className="text-slate-500">(Round {teamDetail.roundInfo.roundNumber})</span>
-                              </p>
-                            ) : slotStatus !== "registration_open" ? (
-                              <p className="text-slate-500">Not in current round</p>
-                            ) : (
-                              <p className="text-slate-500">—</p>
-                            )}
-                          </div>
-                        </section>
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Players
-                          </h3>
-                          <ul className="mt-2.5 space-y-2 pl-0">
-                            {teamDetail.players.map((p, i) => (
-                              <li key={i} className="flex justify-between gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                                <span className="font-medium text-slate-200">{p.minecraftIGN}</span>
-                                <span className="text-slate-500">{p.discordUsername}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Reward receiver
-                          </h3>
-                          <p className="mt-2.5 font-medium text-emerald-300">{teamDetail.rewardReceiverIGN}</p>
-                        </section>
+                      <div className="grid grid-cols-1 gap-3 border-y border-white/10 py-3 text-xs">
+                        <div className="flex justify-between gap-3">
+                          <span className="text-slate-500">Registered</span>
+                          <span className="text-slate-200">
+                            {formatDateTime(teamDetail.createdAt)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-3">
+                          <span className="text-slate-500">Round</span>
+                          <span className="text-slate-200">
+                            {teamDetail.roundInfo
+                              ? `${teamDetail.roundInfo.name} (Round ${teamDetail.roundInfo.roundNumber})`
+                              : slotStatus !== "registration_open"
+                                ? "Not in current round"
+                                : "—"}
+                          </span>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="py-8 text-center text-slate-500">Could not load team details.</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedTeamIdForModal(null);
-                        setTeamDetail(null);
-                      }}
-                      className="mt-6 w-full rounded-xl border-2 border-white/20 bg-transparent py-2.5 text-sm font-medium text-slate-200 transition duration-200 hover:border-white/30 hover:bg-white/10"
-                    >
-                      Close
-                    </button>
-                  </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          Players
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {teamDetail.players.map((p, i) => (
+                            <li key={i} className="flex justify-between gap-3 text-xs text-slate-200">
+                              <span className="font-medium">{p.minecraftIGN}</span>
+                              <span className="text-slate-500">{p.discordUsername}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          Reward receiver
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-emerald-300">
+                          {teamDetail.rewardReceiverIGN}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCloseTeamDetail}
+                        className="mt-2 w-full rounded-xl border border-white/20 bg-transparent px-3 py-2 text-xs font-medium text-slate-100 transition hover:border-white/30 hover:bg-white/10"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="py-4 text-center text-xs text-slate-400">
+                      Could not load team details.
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+            </aside>
           </div>
             )}
           </div>

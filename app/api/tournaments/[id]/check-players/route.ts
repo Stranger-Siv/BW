@@ -6,10 +6,6 @@ import Tournament from "@/models/Tournament";
 
 export const dynamic = "force-dynamic";
 
-function playerKey(ign: string, discord: string): string {
-  return `${(ign || "").trim().toLowerCase()}|${(discord || "").trim()}`;
-}
-
 /**
  * POST /api/tournaments/[id]/check-players
  * Body: { players: [{ minecraftIGN, discordUsername }], teamName?: string, captainId?: string }
@@ -63,11 +59,15 @@ export async function POST(
       );
     }
 
-    const usedKeys = new Set<string>();
+    const usedIgns = new Set<string>();
+    const usedDiscords = new Set<string>();
     for (const t of teams) {
       const players = (t as { players?: { minecraftIGN?: string; discordUsername?: string }[] }).players ?? [];
       for (const p of players) {
-        usedKeys.add(playerKey(p.minecraftIGN ?? "", p.discordUsername ?? ""));
+        const ignKey = (p.minecraftIGN ?? "").trim().toLowerCase();
+        const discordKey = (p.discordUsername ?? "").trim();
+        if (ignKey) usedIgns.add(ignKey);
+        if (discordKey) usedDiscords.add(discordKey);
       }
     }
 
@@ -76,8 +76,12 @@ export async function POST(
     for (let i = 0; i < list.length; i++) {
       const ign = (list[i]?.minecraftIGN ?? "").trim();
       const discord = (list[i]?.discordUsername ?? "").trim();
-      if (!ign || !discord) continue;
-      if (usedKeys.has(playerKey(ign, discord))) {
+      if (!ign && !discord) continue;
+      const ignKey = ign.toLowerCase();
+      const discordKey = discord;
+      const ignTaken = ignKey && usedIgns.has(ignKey);
+      const discordTaken = discordKey && usedDiscords.has(discordKey);
+      if (ignTaken || discordTaken) {
         taken.push({ index: i, minecraftIGN: ign, discordUsername: discord });
       }
     }
