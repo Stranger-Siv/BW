@@ -143,6 +143,13 @@ export default function TournamentsPage() {
     fetchTournaments();
   }, [fetchTournaments]);
 
+  const hasScheduled = tournaments.some((t) => t.status === "scheduled");
+  useEffect(() => {
+    if (!hasScheduled) return;
+    const interval = setInterval(fetchTournaments, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [hasScheduled, fetchTournaments]);
+
   const fetchSlotData = useCallback(async (tournamentId: string) => {
     setSlotLoading(true);
     try {
@@ -738,9 +745,9 @@ export default function TournamentsPage() {
                 ) : (
                   <>
                   <div
-                    className="mt-4 grid gap-1.5 gap-y-2 sm:gap-2"
+                    className="mt-4 grid gap-2 gap-y-2.5 sm:gap-2.5"
                     style={{
-                      gridTemplateColumns: `repeat(auto-fill, minmax(2rem, 1fr))`,
+                      gridTemplateColumns: `repeat(auto-fill, minmax(2.25rem, 1fr))`,
                       maxWidth: "100%",
                     }}
                   >
@@ -753,39 +760,46 @@ export default function TournamentsPage() {
                       const inCurrentRound = team ? teamIdsInRound1.has(team._id) : false;
                       const slotState =
                         !isFilled ? "empty" : registrationClosed ? (inCurrentRound ? "in_round" : "out") : "filled";
+                      const isSelected = selectedTeamIdForModal === team?._id;
                       return (
                         <div
                           key={team?._id ?? index}
-                          className="group relative aspect-square rounded-lg transition-all duration-300 ease-out"
+                          className="group relative aspect-square transition-all duration-300 ease-out"
                         >
                           {isFilled ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedTeamIdForModal(team._id);
-                                fetchTeamDetail(selectedTournament._id, team._id);
-                              }}
-                              className={`absolute inset-0 flex items-center justify-center rounded-lg border-2 text-[10px] font-medium transition-all duration-300 ease-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                                slotState === "empty"
-                                  ? ""
-                                  : slotState === "filled"
-                                    ? "border-white/20 bg-white/10 text-slate-300 hover:border-white/30 hover:bg-white/15"
-                                    : slotState === "in_round"
-                                      ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-200 hover:border-emerald-400 hover:bg-emerald-500/30"
-                                      : "border-red-400/50 bg-red-500/15 text-red-200 hover:border-red-400/70 hover:bg-red-500/25"
-                              }`}
-                              title={team.teamName}
-                            >
-                              <span className="pointer-events-none flex h-full w-full items-center justify-center px-0.5 transition-opacity duration-200 group-hover:opacity-0">
-                                •
-                              </span>
-                              <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/90 px-2 py-1 text-center text-xs font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTeamIdForModal(team._id);
+                                  fetchTeamDetail(selectedTournament._id, team._id);
+                                }}
+                                className={`absolute inset-0 flex items-center justify-center rounded-xl border-2 text-[10px] font-medium transition-all duration-300 ease-out hover:scale-[1.08] focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                                  slotState === "empty"
+                                    ? ""
+                                    : slotState === "filled"
+                                      ? "border-white/25 bg-white/10 text-slate-300 shadow-sm hover:border-white/40 hover:bg-white/15 hover:shadow-md"
+                                      : slotState === "in_round"
+                                        ? "border-emerald-400/70 bg-emerald-500/25 text-emerald-200 shadow-sm hover:border-emerald-400 hover:bg-emerald-500/35 hover:shadow-md"
+                                        : "border-red-400/60 bg-red-500/20 text-red-200 shadow-sm hover:border-red-400/80 hover:bg-red-500/30 hover:shadow-md"
+                                } ${isSelected ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-slate-900" : ""}`}
+                                title={team.teamName}
+                              >
+                                <span className="pointer-events-none flex h-full w-full items-center justify-center transition-opacity duration-200 group-hover:opacity-0">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+                                </span>
+                              </button>
+                              <div
+                                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 translate-y-1 rounded-lg border border-white/15 bg-slate-800/95 px-2.5 py-1.5 text-xs font-medium text-white shadow-xl backdrop-blur-sm transition-all duration-200 ease-out opacity-0 group-hover:translate-y-0 group-hover:opacity-100 sm:px-3 sm:py-2"
+                                role="tooltip"
+                              >
                                 {team.teamName}
-                              </span>
-                            </button>
+                                <span className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-slate-800/95" aria-hidden />
+                              </div>
+                            </>
                           ) : (
                             <div
-                              className={`absolute inset-0 rounded-lg border-2 border-dashed border-white/15 bg-white/5 transition-colors duration-300`}
+                              className="absolute inset-0 rounded-xl border-2 border-dashed border-white/12 bg-white/[0.04] transition-colors duration-300"
                               aria-label={`Slot ${index + 1} empty`}
                             />
                           )}
@@ -795,10 +809,10 @@ export default function TournamentsPage() {
                   </div>
                   {slotStatus !== "registration_open" && slotTeams.length > 0 && rounds.length > 0 && (
                     <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> In current round
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Not in current round
                       </span>
                     </p>
@@ -826,7 +840,7 @@ export default function TournamentsPage() {
                 aria-labelledby="team-detail-title"
               >
                 <div
-                  className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+                  className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
                   onClick={() => {
                     setSelectedTeamIdForModal(null);
                     setTeamDetail(null);
@@ -834,84 +848,92 @@ export default function TournamentsPage() {
                   aria-hidden
                 />
                 <div
-                  className="card-glass relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl p-6 shadow-xl transition-all duration-300 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out"
+                  className="card-glass relative max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 p-0 shadow-2xl transition-all duration-300 ease-out"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h2 id="team-detail-title" className="text-lg font-semibold text-white">
-                    Team details
-                  </h2>
-                  {teamDetailLoading ? (
-                    <div className="mt-4 flex items-center justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
-                    </div>
-                  ) : teamDetail ? (
-                    <div className="mt-4 space-y-4 text-sm">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Team name
-                        </p>
-                        <p className="mt-0.5 font-medium text-white">{teamDetail.teamName}</p>
+                  <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-900/80 px-5 py-4 backdrop-blur-sm">
+                    <h2 id="team-detail-title" className="text-base font-semibold text-white">
+                      Team details
+                    </h2>
+                    <p className="mt-0.5 text-xs text-slate-400">Click outside or use Close to dismiss</p>
+                  </div>
+                  <div className="p-5">
+                    {teamDetailLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
                       </div>
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Registered
-                        </p>
-                        <p className="mt-0.5 text-slate-300">
-                          {formatDateTime(teamDetail.createdAt)}
-                        </p>
-                      </div>
-                      {teamDetail.isWinner && (
-                        <p className="rounded-lg bg-amber-500/20 px-3 py-2 text-amber-300">
-                          🏆 Winner
-                        </p>
-                      )}
-                      {teamDetail.roundInfo ? (
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            Round
-                          </p>
-                          <p className="mt-0.5 text-slate-300">
-                            {teamDetail.roundInfo.name} (Round {teamDetail.roundInfo.roundNumber})
-                          </p>
-                        </div>
-                      ) : (
-                        slotStatus !== "registration_open" && (
-                          <p className="text-slate-500 dark:text-slate-400">Not in current round</p>
-                        )
-                      )}
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Players
-                        </p>
-                        <ul className="mt-2 space-y-1.5">
-                          {teamDetail.players.map((p, i) => (
-                            <li key={i} className="flex justify-between gap-2 text-slate-300">
-                              <span>{p.minecraftIGN}</span>
-                              <span className="text-slate-500">{p.discordUsername}</span>
+                    ) : teamDetail ? (
+                      <div className="space-y-5 text-sm">
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Team information
+                          </h3>
+                          <ul className="mt-2.5 space-y-2 pl-0">
+                            <li className="flex justify-between gap-3 border-b border-white/5 pb-2">
+                              <span className="text-slate-500">Name</span>
+                              <span className="font-medium text-white">{teamDetail.teamName}</span>
                             </li>
-                          ))}
-                        </ul>
+                            <li className="flex justify-between gap-3 border-b border-white/5 pb-2">
+                              <span className="text-slate-500">Registered</span>
+                              <span className="text-slate-300">{formatDateTime(teamDetail.createdAt)}</span>
+                            </li>
+                            {teamDetail.isWinner && (
+                              <li className="rounded-lg bg-amber-500/15 px-3 py-2 text-amber-300">
+                                🏆 Winner
+                              </li>
+                            )}
+                          </ul>
+                        </section>
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Round status
+                          </h3>
+                          <div className="mt-2.5 pl-0">
+                            {teamDetail.roundInfo ? (
+                              <p className="text-slate-300">
+                                {teamDetail.roundInfo.name} <span className="text-slate-500">(Round {teamDetail.roundInfo.roundNumber})</span>
+                              </p>
+                            ) : slotStatus !== "registration_open" ? (
+                              <p className="text-slate-500">Not in current round</p>
+                            ) : (
+                              <p className="text-slate-500">—</p>
+                            )}
+                          </div>
+                        </section>
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Players
+                          </h3>
+                          <ul className="mt-2.5 space-y-2 pl-0">
+                            {teamDetail.players.map((p, i) => (
+                              <li key={i} className="flex justify-between gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                                <span className="font-medium text-slate-200">{p.minecraftIGN}</span>
+                                <span className="text-slate-500">{p.discordUsername}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Reward receiver
+                          </h3>
+                          <p className="mt-2.5 font-medium text-emerald-300">{teamDetail.rewardReceiverIGN}</p>
+                        </section>
                       </div>
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Reward receiver
-                        </p>
-                        <p className="mt-0.5 text-emerald-300">{teamDetail.rewardReceiverIGN}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-4 text-slate-500">Could not load team details.</p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTeamIdForModal(null);
-                      setTeamDetail(null);
-                    }}
-                    className="mt-6 w-full rounded-xl border border-white/10 bg-white/10 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/15"
-                  >
-                    Close
-                  </button>
+                    ) : (
+                      <p className="py-8 text-center text-slate-500">Could not load team details.</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeamIdForModal(null);
+                        setTeamDetail(null);
+                      }}
+                      className="mt-6 w-full rounded-xl border-2 border-white/20 bg-transparent py-2.5 text-sm font-medium text-slate-200 transition duration-200 hover:border-white/30 hover:bg-white/10"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

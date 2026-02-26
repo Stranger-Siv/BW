@@ -13,6 +13,11 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await connectDB();
+    const now = new Date();
+    await Tournament.updateMany(
+      { status: "scheduled", scheduledAt: { $lte: now } },
+      { $set: { status: "registration_open" } }
+    );
     const list = await Tournament.find({
       isClosed: false,
       $or: [
