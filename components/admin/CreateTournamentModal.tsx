@@ -154,6 +154,14 @@ export function CreateTournamentModal({
       if (!Number.isFinite(teamSize) || teamSize < 1) return;
       const scheduleForLater = form.scheduleForLater && form.scheduledAt.trim();
       const status = scheduleForLater ? "scheduled" : form.status;
+      // Send scheduledAt as ISO so server stores the correct moment (datetime-local is in user's local time)
+      const scheduledAtIso =
+        scheduleForLater
+          ? (() => {
+              const d = new Date(form.scheduledAt.trim());
+              return Number.isNaN(d.getTime()) ? null : d.toISOString();
+            })()
+          : null;
       const payload: TournamentSubmitPayload = {
         name: form.name.trim(),
         type: form.type || "squad",
@@ -166,7 +174,7 @@ export function CreateTournamentModal({
         serverIP: form.serverIP.trim() || undefined,
         description: form.description.trim() || undefined,
         status,
-        scheduledAt: scheduleForLater ? form.scheduledAt.trim() : null,
+        scheduledAt: scheduledAtIso,
       };
       onSubmit(payload);
     },

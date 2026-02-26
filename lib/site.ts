@@ -2,8 +2,8 @@
 
 export const SITE = {
   name: "BedWars Tournament",
-  serverName: "",
-  serverIp: "",
+  serverName: "mcfleet",
+  serverIp: "play.mcfleet.net",
   discordUrl: "https://discord.gg/6zyEsX854m",
   /** Discord server invite code or server ID, shown on maintenance page */
   discordId: "6zyEsX854m",

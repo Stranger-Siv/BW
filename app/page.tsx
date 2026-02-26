@@ -109,8 +109,9 @@ export default function HomePage() {
                 Where we play
               </h2>
               <p className="text-slate-400">
-                The exact server for upcoming tournaments is <strong className="text-slate-200">to be decided</strong>.
-                We&apos;ll announce the final IP and version details on the tournaments page and in Discord before each event.
+                Tournaments are hosted on <strong className="text-slate-200">{SITE.serverName}</strong> at{" "}
+                <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>.
+                Version and match details are posted on the tournaments page and in Discord before each event.
               </p>
             </div>
           </FadeInUpInView>
