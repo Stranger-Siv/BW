@@ -968,6 +968,15 @@ export default function TournamentsPage() {
                     <li>{(selectedTournament.teamSize === 1 ? "Your" : "Team")} name must be unique for this tournament.</li>
                     <li>Each player needs Minecraft IGN and Discord.</li>
                     <li>One player is the reward receiver.</li>
+                    <li>Only add players who have agreed to be on the team. If a teammate opens a ticket stating they were added without their knowledge, the team will be disqualified.</li>
+                    <li>One Minecraft account and one Discord per player — no smurfing or shared accounts.</li>
+                    <li>The team captain is responsible for ensuring all members have agreed to play and that roster info is correct.</li>
+                    <li>Players must use their own Minecraft and Discord accounts. Using someone else&apos;s account or a fake identity can lead to disqualification.</li>
+                    <li>Disqualification for unauthorized roster addition applies when a valid ticket is opened via Discord/official channel before the tournament ends.</li>
+                    <li>If a player leaves or is removed after registration closes, the team must play with the remaining members; no substitutes unless admins allow it.</li>
+                    <li>Teams must be reachable on Discord for match calls and admin messages. Missing a match due to not checking Discord is not an excuse.</li>
+                    <li>Players must meet any age or eligibility requirements stated for the tournament.</li>
+                    <li>Only players listed on the registered roster at the end of the tournament are eligible for prizes; the reward receiver must be one of them.</li>
                   </ul>
                 </div>
               </div>

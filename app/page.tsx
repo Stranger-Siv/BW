@@ -230,6 +230,8 @@ export default function HomePage() {
               <li className="flex gap-2"><span className="text-red-400">No</span> glitch abusing or stream sniping</li>
               <li>Only allowed clients/mods as per posted tournament rules</li>
               <li>Team members must remain the same throughout the tournament</li>
+              <li><strong className="text-amber-400/90">Unauthorized roster:</strong> Only add players who have agreed to be on your team. If a player opens a ticket stating they were added without their knowledge, the team will be disqualified.</li>
+              <li>One Minecraft account and one Discord per player — no smurfing or shared accounts</li>
               <li>Respect all players and staff — toxicity or abuse is not tolerated</li>
               <li>Be on time for matches; only registered players are allowed</li>
               <li>Admin and staff decisions are final</li>
