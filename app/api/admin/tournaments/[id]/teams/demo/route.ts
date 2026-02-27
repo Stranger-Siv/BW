@@ -45,6 +45,7 @@ export async function POST(
       registeredTeams: number;
       maxTeams: number;
       isClosed: boolean;
+      status?: string;
     };
 
     if (t.isClosed) {
@@ -131,9 +132,15 @@ export async function POST(
     }));
 
     await Team.insertMany(docs);
+    const newCount = t.registeredTeams + count;
     await Tournament.updateOne(
       { _id: id },
-      { $inc: { registeredTeams: count } }
+      {
+        $inc: { registeredTeams: count },
+        ...(newCount >= t.maxTeams && (t.status ?? "registration_open") === "registration_open"
+          ? { $set: { status: "registration_closed" } }
+          : {}),
+      }
     );
 
     const pusher = getServerPusher();

@@ -284,9 +284,15 @@ async function registerWithTournamentId(
       ],
       { session }
     );
+    const newCount = t.registeredTeams + 1;
     await Tournament.updateOne(
       { _id: tournamentId },
-      { $inc: { registeredTeams: 1 } },
+      {
+        $inc: { registeredTeams: 1 },
+        ...(newCount >= t.maxTeams && t.status === "registration_open"
+          ? { $set: { status: "registration_closed" } }
+          : {}),
+      },
       { session }
     );
     await session.commitTransaction();

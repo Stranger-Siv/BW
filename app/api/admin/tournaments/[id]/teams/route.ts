@@ -115,7 +115,13 @@ export async function POST(
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
-    const t = tournament as unknown as { teamSize: number; registeredTeams: number; maxTeams: number; isClosed: boolean };
+    const t = tournament as unknown as {
+      teamSize: number;
+      registeredTeams: number;
+      maxTeams: number;
+      isClosed: boolean;
+      status?: string;
+    };
     const validation = validateBody(body, t.teamSize);
     if (!validation.ok) {
       return NextResponse.json({ error: validation.message }, { status: validation.status });
@@ -183,9 +189,15 @@ export async function POST(
         status: "pending",
       },
     ]);
+    const newCount = t.registeredTeams + 1;
     await Tournament.updateOne(
       { _id: id },
-      { $inc: { registeredTeams: 1 } }
+      {
+        $inc: { registeredTeams: 1 },
+        ...(newCount >= t.maxTeams && (t.status ?? "registration_open") === "registration_open"
+          ? { $set: { status: "registration_closed" } }
+          : {}),
+      }
     );
 
     const pusher = getServerPusher();
