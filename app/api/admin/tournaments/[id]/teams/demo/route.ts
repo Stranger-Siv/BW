@@ -41,7 +41,7 @@ export async function POST(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
     const t = tournament as unknown as {
-      teamSize: number;
+      teamSize?: number;
       registeredTeams: number;
       maxTeams: number;
       isClosed: boolean;
@@ -60,6 +60,11 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Ensure a valid team size (schema only allows 1–4 players)
+    const safeTeamSize = Number.isFinite(Number(t.teamSize))
+      ? Math.min(4, Math.max(1, Number(t.teamSize)))
+      : 4;
 
     const tournamentIdObj = new mongoose.Types.ObjectId(id);
 
@@ -83,7 +88,6 @@ export async function POST(
       }
     }
 
-    const teamSize = t.teamSize;
     const teamsToCreate: { teamName: string; players: IPlayer[]; rewardReceiverIGN: string }[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -96,7 +100,7 @@ export async function POST(
       usedTeamNames.add(teamName.toLowerCase());
 
       const players: IPlayer[] = [];
-      for (let p = 0; p < teamSize; p++) {
+      for (let p = 0; p < safeTeamSize; p++) {
         let ign = `demo_${i + 1}_p${p + 1}`;
         let discord = `demo_${i + 1}_p${p + 1}@discord`;
         let suffix2 = 0;
