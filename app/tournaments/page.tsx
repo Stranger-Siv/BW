@@ -837,10 +837,10 @@ export default function TournamentsPage() {
                                 </span>
                               </button>
                               <div
-                                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 translate-y-1 rounded-lg border border-white/15 bg-slate-800/95 px-2.5 py-1.5 text-xs font-medium text-white shadow-xl backdrop-blur-sm transition-all duration-200 ease-out opacity-0 group-hover:translate-y-0 group-hover:opacity-100 sm:px-3 sm:py-2"
+                                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 max-w-[14rem] -translate-x-1/2 translate-y-1 rounded-lg border border-white/15 bg-slate-800/95 px-2.5 py-1.5 text-xs font-medium text-white shadow-xl backdrop-blur-sm transition-all duration-200 ease-out opacity-0 group-hover:translate-y-0 group-hover:opacity-100 sm:max-w-[18rem] sm:px-3 sm:py-2"
                                 role="tooltip"
                               >
-                                {team.teamName}
+                                <span className="break-words">{team.teamName}</span>
                                 <span className="absolute left-1/2 top-full -translate-x-1/2 border-[5px] border-transparent border-t-slate-800/95" aria-hidden />
                               </div>
                             </>

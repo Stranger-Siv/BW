@@ -156,11 +156,16 @@ export default function TournamentRoundsPage() {
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">{winner.rewardReceiverIGN}</span>
                 </p>
                 {winner.players.length > 0 && (
-                  <ul className="mt-3 list-inside list-disc text-sm text-slate-600 dark:text-slate-400">
+                  <ul className="mt-3 list-inside list-disc text-sm text-slate-600 dark:text-slate-400 space-y-1.5">
                     {winner.players.map((p, i) => (
-                      <li key={i}>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">{p.minecraftIGN}</span>
-                        <span className="text-slate-500 dark:text-slate-500"> · {p.discordUsername}</span>
+                      <li key={i} className="break-words">
+                        <span className="font-medium text-slate-700 dark:text-slate-300 break-all">
+                          {p.minecraftIGN}
+                        </span>
+                        <span className="break-all text-slate-500 dark:text-slate-500">
+                          {" "}
+                          · {p.discordUsername}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -214,16 +219,27 @@ export default function TournamentRoundsPage() {
                                   return (
                                     <div
                                       key={t.id}
-                                      className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                                      className={`flex min-h-[2.5rem] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
                                         isWinner
                                           ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
                                           : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
                                       }`}
                                     >
-                                      <span className={isWinner ? "text-emerald-200" : "text-slate-500 dark:text-slate-400"}>
+                                      <span
+                                        className={
+                                          isWinner ? "text-emerald-200" : "text-slate-500 dark:text-slate-400"
+                                        }
+                                      >
                                         {i + 1}.
-                                      </span>{" "}
-                                      {t.name || "—"}
+                                      </span>
+                                      <span
+                                        className={`min-w-0 flex-1 truncate ${
+                                          isWinner ? "text-emerald-50" : "text-slate-800 dark:text-slate-200"
+                                        }`}
+                                        title={t.name || "—"}
+                                      >
+                                        {t.name || "—"}
+                                      </span>
                                       {isWinner && (
                                         <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
                                           Winner
@@ -279,9 +295,15 @@ export default function TournamentRoundsPage() {
                                 {matches[0].map((t, i) => (
                                   <div
                                     key={t.id}
-                                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200"
+                                    className="flex min-h-[2.75rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200"
                                   >
-                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span> {t.name || "—"}
+                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span>
+                                    <span
+                                      className="min-w-0 flex-1 truncate"
+                                      title={t.name || "—"}
+                                    >
+                                      {t.name || "—"}
+                                    </span>
                                   </div>
                                 ))}
                                 {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
