@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [addTeamSuccess, setAddTeamSuccess] = useState<string | null>(null);
   const [addTeamPlayerErrors, setAddTeamPlayerErrors] = useState<Record<number, string>>({});
   const [addTeamPlayersCheckLoading, setAddTeamPlayersCheckLoading] = useState(false);
+  const [demoTeamsLoading, setDemoTeamsLoading] = useState(false);
 
   const selectedTournament = tournaments.find((t) => t._id === selectedTournamentId);
 
@@ -608,6 +609,29 @@ export default function AdminPage() {
     [selectedTournamentId, selectedTournament, addTeamName, addTeamPlayers, addTeamRewardReceiver, addTeamRewardOptions, addTeamPlayerErrors, refetch]
   );
 
+  const handleAddDemoTeams = useCallback(
+    async (count: 16 | 32) => {
+      if (!selectedTournamentId || !selectedTournament) return;
+      setActionError(null);
+      setDemoTeamsLoading(true);
+      try {
+        const res = await fetch(`/api/admin/tournaments/${selectedTournamentId}/teams/demo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ count }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to add demo teams");
+        refetch();
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : "Failed to add demo teams");
+      } finally {
+        setDemoTeamsLoading(false);
+      }
+    },
+    [selectedTournamentId, selectedTournament, refetch]
+  );
+
   const tournamentOptionsForModal: TournamentOption[] = tournaments.map((t) => ({
     _id: t._id,
     name: t.name,
@@ -851,6 +875,38 @@ export default function AdminPage() {
                   isClosed={selectedTournament.isClosed}
                 />
               </div>
+
+              {isSuperAdmin &&
+                !selectedTournament.isClosed &&
+                selectedTournament.registeredTeams < selectedTournament.maxTeams && (
+                  <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 dark:border-amber-400/30 dark:bg-amber-500/10">
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Demo (testing):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddDemoTeams(16)}
+                      disabled={
+                        demoTeamsLoading ||
+                        selectedTournament.maxTeams - selectedTournament.registeredTeams < 16
+                      }
+                      className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-200 dark:hover:bg-amber-500/30"
+                    >
+                      {demoTeamsLoading ? "Adding…" : "Add 16 demo teams"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddDemoTeams(32)}
+                      disabled={
+                        demoTeamsLoading ||
+                        selectedTournament.maxTeams - selectedTournament.registeredTeams < 32
+                      }
+                      className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-800 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-200 dark:hover:bg-amber-500/30"
+                    >
+                      {demoTeamsLoading ? "Adding…" : "Add 32 demo teams"}
+                    </button>
+                  </div>
+                )}
 
               {!selectedTournament.isClosed &&
                 selectedTournament.registeredTeams < selectedTournament.maxTeams && (
