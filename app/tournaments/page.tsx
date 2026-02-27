@@ -484,8 +484,8 @@ export default function TournamentsPage() {
           </a>
         </div>
         </FadeInUp>
-        <section className="w-full">
-          <div className="card-glass w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10">
+        <section className="w-full scroll-mt-24">
+          <div className="card-glass w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 lg:p-10 overflow-x-hidden">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <img
