@@ -22,8 +22,8 @@ export function PlayerRow({
   error,
 }: PlayerRowProps) {
   return (
-    <div className={`rounded-xl border p-4 sm:p-5 ${error ? "border-red-400/50 bg-red-500/5 dark:border-red-500/50 dark:bg-red-500/5" : "border-white/10 bg-white/5 dark:border-white/10 dark:bg-white/5"}`}>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="space-y-3">
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${error ? "" : ""}`}>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
             Player {index + 1} – Minecraft IGN
