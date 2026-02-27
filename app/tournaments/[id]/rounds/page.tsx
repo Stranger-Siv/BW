@@ -67,6 +67,10 @@ export default function TournamentRoundsPage() {
     return round.teams.length > 0 ? [round.teams] : [];
   };
 
+  // Teams that reached the final (R2), used to highlight winners in earlier rounds
+  const finalRound = rounds.find((r) => r.name === "R2");
+  const finalTeamIds = new Set(finalRound?.teamIds ?? []);
+
   if (!id) {
     return (
       <main className="min-h-screen p-6">
@@ -177,9 +181,6 @@ export default function TournamentRoundsPage() {
                 </p>
               </div>
             )}
-
-            const finalRound = rounds.find((r) => r.name === "R2");
-            const finalTeamIds = new Set(finalRound?.teamIds ?? []);
 
             <div className="space-y-8">
               {rounds.length === 0 ? (

@@ -381,7 +381,7 @@ export function CreateTournamentModal({
           )}
         </form>
         </div>
-        <div className="shrink-0 flex flex-col-reverse gap-3 border-t border-white/10 bg-white/5 p-4 sm:flex-row sm:justify-end sm:bg-transparent sm:border-t-0 sm:p-0 sm:pt-4 sm:pb-0">
+        <div className="shrink-0 flex flex-col-reverse gap-3 border-t border-white/10 bg-white/5 p-4 sm:flex-row sm:justify-end sm:border-t-0 sm:bg-transparent sm:px-6 sm:pt-4 sm:pb-6">
           <button
             type="button"
             onClick={onClose}

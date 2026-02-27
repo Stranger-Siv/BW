@@ -231,8 +231,18 @@ export default function AdminTournamentRoundsPage() {
       const fromRound = rounds.find((r) => r._id === fromRoundId);
       const toRound = rounds.find((r) => r._id === toRoundId);
       if (!fromRound || !toRound) return;
-      const newFromIds = fromRound.teamIds.filter((tid) => tid !== teamId);
-      const newToIds = toRound.teamIds.includes(teamId) ? toRound.teamIds : [...toRound.teamIds, teamId];
+
+      const isR1Series = ["R11", "R12", "R13", "R14"].includes(fromRound.name);
+      const isToR2 = toRound.name === "R2";
+      const shouldCopyInsteadOfMove = isR1Series && isToR2;
+
+      const newFromIds = shouldCopyInsteadOfMove
+        ? fromRound.teamIds
+        : fromRound.teamIds.filter((tid) => tid !== teamId);
+      const newToIds = toRound.teamIds.includes(teamId)
+        ? toRound.teamIds
+        : [...toRound.teamIds, teamId];
+
       setRounds((prev) =>
         prev.map((r) => {
           if (r._id === fromRoundId) return { ...r, teamIds: newFromIds };
@@ -240,6 +250,7 @@ export default function AdminTournamentRoundsPage() {
           return r;
         })
       );
+
       moveQueueRef.current.push({ fromRoundId, newFromIds, toRoundId, newToIds });
       processMoveQueue();
     },
