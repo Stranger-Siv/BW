@@ -131,29 +131,43 @@ export default function AdminTournamentRoundsPage() {
     [id, fetchRounds]
   );
 
-  const createRound1WithAllTeams = useCallback(async () => {
+  /** Creates R11, R12, R13, R14 (4 teams each) and R2 (final). For 16-team squad. */
+  const createAll16TeamRounds = useCallback(async () => {
+    if (teams.length < 16) {
+      setError("Need exactly 16 registered teams. You have " + teams.length + ".");
+      return;
+    }
     setAddRoundLoading(true);
     setError(null);
     try {
-      const postRes = await fetch(`/api/admin/tournaments/${id}/rounds`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Round 1", roundNumber: 1 }),
-      });
-      const postData = await postRes.json().catch(() => ({}));
-      if (!postRes.ok && !String(postData.error ?? "").includes("already exists")) {
-        throw new Error(postData.error ?? "Failed to create Round 1");
-      }
-      const roundsRes = await fetch(`/api/admin/tournaments/${id}/rounds`);
-      const roundsList: RoundDoc[] = await roundsRes.json().catch(() => []);
-      const round1 = roundsList.find((r) => r.roundNumber === 1);
-      if (round1 && teams.length > 0) {
-        const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
+      const teamIds = teams.slice(0, 16).map((t) => t._id);
+      const roundsToCreate = [
+        { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
+        { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
+        { name: "R13", roundNumber: 3, teamIds: teamIds.slice(8, 12) },
+        { name: "R14", roundNumber: 4, teamIds: teamIds.slice(12, 16) },
+        { name: "R2", roundNumber: 5, teamIds: [] },
+      ];
+      for (const r of roundsToCreate) {
+        const postRes = await fetch(`/api/admin/tournaments/${id}/rounds`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: r.name, roundNumber: r.roundNumber }),
+        });
+        const postData = await postRes.json().catch(() => ({}));
+        if (!postRes.ok && !String(postData.error ?? "").includes("already exists")) {
+          throw new Error(postData.error ?? `Failed to create ${r.name}`);
+        }
+        const roundsRes = await fetch(`/api/admin/tournaments/${id}/rounds`);
+        const roundsList: RoundDoc[] = await roundsRes.json().catch(() => []);
+        const round = roundsList.find((x) => x.roundNumber === r.roundNumber);
+        if (!round) throw new Error(`Round ${r.name} not found after create`);
+        const patchRes = await fetch(`/api/admin/tournaments/${id}/rounds`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roundId: round1._id, teamIds: teams.map((t) => t._id) }),
+          body: JSON.stringify({ roundId: round._id, teamIds: r.teamIds }),
         });
-        if (!res.ok) throw new Error("Failed to add teams to Round 1");
+        if (!patchRes.ok) throw new Error(`Failed to add teams to ${r.name}`);
       }
       fetchRounds();
     } catch (e) {
@@ -442,7 +456,7 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              Drag teams between rounds to advance them. First round can be filled from registered teams below.
+              Drag winners from R11–R14 into R2, then drag the final winner to Tournament winner.
             </p>
 
             <div className="flex flex-wrap gap-6 overflow-x-auto pb-8">
@@ -574,15 +588,15 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                Create Round 1 and add all registered teams in one go, then drag teams to later rounds as they advance.
+                Create R11, R12, R13, R14 (4 teams each) and R2 (final). Drag winners from R11–R14 into R2, then to Tournament winner.
               </p>
               <button
                 type="button"
-                onClick={createRound1WithAllTeams}
-                disabled={addRoundLoading || teams.length === 0}
+                onClick={createAll16TeamRounds}
+                disabled={addRoundLoading || teams.length < 16}
                 className="mb-3 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-60"
               >
-                {addRoundLoading ? "Creating…" : "Create Round 1 and add all teams"}
+                {addRoundLoading ? "Creating…" : "Create R11, R12, R13, R14 & R2 (16 teams)"}
               </button>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (

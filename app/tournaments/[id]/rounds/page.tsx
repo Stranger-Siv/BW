@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/formatDate";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
+import { SITE } from "@/lib/site";
 
 type RoundPublic = {
   _id: string;
@@ -61,6 +62,11 @@ export default function TournamentRoundsPage() {
 
   const nextRound = rounds.find((r) => r.scheduledAt && new Date(r.scheduledAt) > new Date());
 
+  /** Each round = 1 match (4 teams). R11, R12, R13, R14, R2. */
+  const getMatchForRound = (round: RoundPublic) => {
+    return round.teams.length > 0 ? [round.teams] : [];
+  };
+
   if (!id) {
     return (
       <main className="min-h-screen p-6">
@@ -70,18 +76,49 @@ export default function TournamentRoundsPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 md:px-8">
-      <div className="mx-auto max-w-3xl">
+    <main className="min-h-screen">
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-8 lg:py-16">
+        {/* Top banner - matches tournaments page */}
+        <div className="card-glass mb-6 flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <img
+              src={SITE.hostedByLogo}
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-xl object-cover ring-2 ring-white/10"
+            />
+            <div>
+              <p className="text-sm font-medium text-slate-200">
+                All matches on <strong>{SITE.serverName}</strong> ·{" "}
+                <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Sponsored by <strong className="text-slate-300">{SITE.hostedBy}</strong> · Full rules &amp; updates on Discord
+              </p>
+            </div>
+          </div>
+          <a
+            href={SITE.discordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
+          >
+            Join Discord
+          </a>
+        </div>
+
         <div className="mb-6">
-          <Link href="/tournaments" className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300">
+          <Link
+            href="/tournaments"
+            className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
             ← Tournaments
           </Link>
         </div>
-        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
+        <h1 className="mb-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
           {tournamentName}
         </h1>
-        <p className="mb-6 text-slate-600 dark:text-slate-400">
-          Rounds and who advanced
+        <p className="mb-6 text-slate-400">
+          Rounds &amp; matches · 4 teams per match, 1 winner advances
         </p>
         {registrationDeadline && (
           <p className="mb-4 text-sm font-medium">
@@ -111,7 +148,8 @@ export default function TournamentRoundsPage() {
                   {winner.teamName}
                 </p>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                  Reward receiver: <span className="font-medium text-emerald-600 dark:text-emerald-400">{winner.rewardReceiverIGN}</span>
+                  Reward receiver:{" "}
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">{winner.rewardReceiverIGN}</span>
                 </p>
                 {winner.players.length > 0 && (
                   <ul className="mt-3 list-inside list-disc text-sm text-slate-600 dark:text-slate-400">
@@ -140,40 +178,109 @@ export default function TournamentRoundsPage() {
               </div>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               {rounds.length === 0 ? (
                 <p className="text-slate-500 dark:text-slate-500">
                   No rounds published yet. Check back later.
                 </p>
               ) : (
-                rounds.map((round) => (
-                  <div
-                    key={round._id}
-                    className="card-glass p-4 transition-all duration-300 hover:shadow-lg"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="font-semibold text-slate-800 dark:text-slate-200">
-                        {round.name}
-                      </h2>
-                      {round.scheduledAt && (
-                        <span className="text-sm text-slate-500 dark:text-slate-500">
-                          {formatDateTime(round.scheduledAt)}
-                        </span>
-                      )}
-                    </div>
-                    {round.teams.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-500">
-                        No teams yet
-                      </p>
-                    ) : (
-                      <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                        {round.teams.map((t) => (
-                          <li key={t.id}>{t.name}</li>
-                        ))}
-                      </ul>
-                    )}
+                <>
+                  {/* R11–R14 in a grid */}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {rounds
+                      .filter((r) => ["R11", "R12", "R13", "R14"].includes(r.name))
+                      .map((round) => {
+                        const matches = getMatchForRound(round);
+                        return (
+                          <section key={round._id} className="card-glass p-4 sm:p-5">
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                              <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                              {round.scheduledAt && (
+                                <span className="text-xs text-slate-500 dark:text-slate-500">
+                                  {formatDateTime(round.scheduledAt)}
+                                </span>
+                              )}
+                            </div>
+                            {matches.length === 0 ? (
+                              <p className="text-sm text-slate-500 dark:text-slate-500">No teams yet</p>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-2">
+                                {matches[0].map((t, i) => (
+                                  <div
+                                    key={t.id}
+                                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-200"
+                                  >
+                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span> {t.name || "—"}
+                                  </div>
+                                ))}
+                                {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
+                                  <div
+                                    key={`empty-${i}`}
+                                    className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
+                                  >
+                                    TBD
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </section>
+                        );
+                      })}
                   </div>
-                ))
+                  {/* R2 Final */}
+                  {rounds.find((r) => r.name === "R2") && (
+                    <section
+                      key={rounds.find((r) => r.name === "R2")!._id}
+                      className="card-glass w-full ring-2 ring-amber-400/40 p-4 sm:p-5 md:p-6"
+                    >
+                      {(() => {
+                        const round = rounds.find((r) => r.name === "R2")!;
+                        const matches = getMatchForRound(round);
+                        return (
+                          <>
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 sm:text-xl">
+                                {round.name}
+                                <span className="ml-2 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                                  Final
+                                </span>
+                              </h2>
+                              {round.scheduledAt && (
+                                <span className="text-sm text-slate-500 dark:text-slate-500">
+                                  {formatDateTime(round.scheduledAt)}
+                                </span>
+                              )}
+                            </div>
+                            {matches.length === 0 ? (
+                              <p className="text-sm text-slate-500 dark:text-slate-500">
+                                Winners from R11–R14 advance here
+                              </p>
+                            ) : (
+                              <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+                                {matches[0].map((t, i) => (
+                                  <div
+                                    key={t.id}
+                                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200"
+                                  >
+                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span> {t.name || "—"}
+                                  </div>
+                                ))}
+                                {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
+                                  <div
+                                    key={`empty-${i}`}
+                                    className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 dark:text-slate-500"
+                                  >
+                                    TBD
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </section>
+                  )}
+                </>
               )}
             </div>
           </>
