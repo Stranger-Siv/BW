@@ -549,18 +549,21 @@ export default function AdminTournamentRoundsPage() {
                             {teamIdToName(tid)}
                           </Link>
                           <div className="flex items-center gap-1">
-                            {rounds.findIndex((r) => r._id === round._id) < rounds.length - 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const next = rounds[rounds.findIndex((r) => r._id === round._id) + 1];
-                                  if (next) moveTeam(tid, round._id, next._id);
-                                }}
-                                className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                              >
-                                →
-                              </button>
-                            )}
+                            {(() => {
+                              const r2 = rounds.find((r) => r.name === "R2");
+                              const isR1Series = ["R11", "R12", "R13", "R14"].includes(round.name);
+                              const advanceTo = isR1Series && r2 ? r2 : rounds[rounds.findIndex((r) => r._id === round._id) + 1];
+                              return advanceTo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => moveTeam(tid, round._id, advanceTo._id)}
+                                  className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                                  title={isR1Series ? "Advance to R2" : "Advance to next round"}
+                                >
+                                  →
+                                </button>
+                              ) : null;
+                            })()}
                             <button
                               type="button"
                               onClick={() => removeFromRound(round._id, tid)}
