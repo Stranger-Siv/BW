@@ -220,14 +220,16 @@ export default function TournamentRoundsPage() {
                                     <Link
                                       key={t.id}
                                       href={`/tournaments/${id}/teams/${t.id}`}
-                                      className={`flex min-h-[2.5rem] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
+                                      className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
                                         isWinner
                                           ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
                                           : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
                                       }`}
                                       title={t.name || "—"}
                                     >
-                                      <span className={`min-w-0 flex-1 break-words ${isWinner ? "text-emerald-50" : "text-slate-800 dark:text-slate-200"}`}>
+                                      <span
+                                        className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinner ? "text-emerald-50" : "text-slate-200"}`}
+                                      >
                                         {t.name || "—"}
                                       </span>
                                       {isWinner && (
@@ -286,10 +288,10 @@ export default function TournamentRoundsPage() {
                                   <Link
                                     key={t.id}
                                     href={`/tournaments/${id}/teams/${t.id}`}
-                                    className="flex min-h-[2.75rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
+                                    className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
                                     title={t.name || "—"}
                                   >
-                                    <span className="min-w-0 flex-1 break-words">
+                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">
                                       {t.name || "—"}
                                     </span>
                                   </Link>
