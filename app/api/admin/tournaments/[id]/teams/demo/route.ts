@@ -68,16 +68,19 @@ export async function POST(
 
     const tournamentIdObj = new mongoose.Types.ObjectId(id);
 
-    // Build unique player keys for each (IGN + Discord) to avoid duplicates
-    const existingTeams = await Team.find(
-      { tournamentId: tournamentIdObj },
-      { teamName: 1, players: 1 }
-    ).lean();
+    // Build unique team names globally (due to teamName+tournamentDate unique index),
+    // but only enforce unique players within this specific tournament.
+    const allTeamsForNames = await Team.find({}, { teamName: 1, tournamentDate: 1 }).lean();
     const usedTeamNames = new Set(
-      (existingTeams as { teamName?: string }[]).map((x) => (x.teamName ?? "").toLowerCase())
+      (allTeamsForNames as { teamName?: string }[]).map((x) => (x.teamName ?? "").toLowerCase())
     );
+
+    const existingTeamsForTournament = await Team.find(
+      { tournamentId: tournamentIdObj },
+      { players: 1 }
+    ).lean();
     const usedPlayerKeys = new Set<string>();
-    for (const team of existingTeams) {
+    for (const team of existingTeamsForTournament) {
       const list = (team as { players?: unknown[] }).players ?? [];
       for (const p of list) {
         const ign = (p as Record<string, unknown>).minecraftIGN;
