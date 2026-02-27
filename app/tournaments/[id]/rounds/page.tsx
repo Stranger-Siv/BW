@@ -214,30 +214,20 @@ export default function TournamentRoundsPage() {
                               <p className="text-sm text-slate-500 dark:text-slate-500">No teams yet</p>
                             ) : (
                               <div className="grid grid-cols-2 gap-2">
-                                {matches[0].map((t, i) => {
+                                {matches[0].map((t) => {
                                   const isWinner = finalTeamIds.has(t.id);
                                   return (
-                                    <div
+                                    <Link
                                       key={t.id}
-                                      className={`flex min-h-[2.5rem] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium ${
+                                      href={`/tournaments/${id}/teams/${t.id}`}
+                                      className={`flex min-h-[2.5rem] items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
                                         isWinner
                                           ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
                                           : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
                                       }`}
+                                      title={t.name || "—"}
                                     >
-                                      <span
-                                        className={
-                                          isWinner ? "text-emerald-200" : "text-slate-500 dark:text-slate-400"
-                                        }
-                                      >
-                                        {i + 1}.
-                                      </span>
-                                      <span
-                                        className={`min-w-0 flex-1 truncate ${
-                                          isWinner ? "text-emerald-50" : "text-slate-800 dark:text-slate-200"
-                                        }`}
-                                        title={t.name || "—"}
-                                      >
+                                      <span className={`min-w-0 flex-1 break-words ${isWinner ? "text-emerald-50" : "text-slate-800 dark:text-slate-200"}`}>
                                         {t.name || "—"}
                                       </span>
                                       {isWinner && (
@@ -245,7 +235,7 @@ export default function TournamentRoundsPage() {
                                           Winner
                                         </span>
                                       )}
-                                    </div>
+                                    </Link>
                                   );
                                 })}
                                 {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
@@ -292,19 +282,17 @@ export default function TournamentRoundsPage() {
                               </p>
                             ) : (
                               <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                                {matches[0].map((t, i) => (
-                                  <div
+                                {matches[0].map((t) => (
+                                  <Link
                                     key={t.id}
-                                    className="flex min-h-[2.75rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200"
+                                    href={`/tournaments/${id}/teams/${t.id}`}
+                                    className="flex min-h-[2.75rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
+                                    title={t.name || "—"}
                                   >
-                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span>
-                                    <span
-                                      className="min-w-0 flex-1 truncate"
-                                      title={t.name || "—"}
-                                    >
+                                    <span className="min-w-0 flex-1 break-words">
                                       {t.name || "—"}
                                     </span>
-                                  </div>
+                                  </Link>
                                 ))}
                                 {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
                                   <div
