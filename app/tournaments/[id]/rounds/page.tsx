@@ -178,6 +178,9 @@ export default function TournamentRoundsPage() {
               </div>
             )}
 
+            const finalRound = rounds.find((r) => r.name === "R2");
+            const finalTeamIds = new Set(finalRound?.teamIds ?? []);
+
             <div className="space-y-8">
               {rounds.length === 0 ? (
                 <p className="text-slate-500 dark:text-slate-500">
@@ -205,14 +208,29 @@ export default function TournamentRoundsPage() {
                               <p className="text-sm text-slate-500 dark:text-slate-500">No teams yet</p>
                             ) : (
                               <div className="grid grid-cols-2 gap-2">
-                                {matches[0].map((t, i) => (
-                                  <div
-                                    key={t.id}
-                                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-200"
-                                  >
-                                    <span className="text-slate-500 dark:text-slate-400">{i + 1}.</span> {t.name || "—"}
-                                  </div>
-                                ))}
+                                {matches[0].map((t, i) => {
+                                  const isWinner = finalTeamIds.has(t.id);
+                                  return (
+                                    <div
+                                      key={t.id}
+                                      className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                                        isWinner
+                                          ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                          : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
+                                      }`}
+                                    >
+                                      <span className={isWinner ? "text-emerald-200" : "text-slate-500 dark:text-slate-400"}>
+                                        {i + 1}.
+                                      </span>{" "}
+                                      {t.name || "—"}
+                                      {isWinner && (
+                                        <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
+                                          Winner
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                                 {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}
