@@ -200,18 +200,20 @@ export function CreateTournamentModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="create-tournament-title"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden
       />
-      <div className="card-glass relative max-h-[90vh] w-full overflow-y-auto rounded-t-2xl p-5 shadow-xl sm:max-w-lg sm:max-h-[85vh] sm:rounded-2xl sm:p-6">
-        <h2 id="create-tournament-title" className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-          {isEdit ? "Edit tournament" : "Create tournament"}
-        </h2>
+      <div className="card-glass relative flex max-h-[90vh] w-full flex-col rounded-t-2xl shadow-xl sm:max-w-lg sm:max-h-[85vh] sm:rounded-2xl">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+          <h2 id="create-tournament-title" className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+            {isEdit ? "Edit tournament" : "Create tournament"}
+          </h2>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <form id="create-tournament-form" onSubmit={handleSubmit} className="mt-4 space-y-4 pb-4">
           <div>
             <label className={labelClass}>Tournament name *</label>
             <input
@@ -377,25 +379,26 @@ export function CreateTournamentModal({
           {error && (
             <p className="text-sm text-red-400 dark:text-red-300">{error}</p>
           )}
-
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="rounded-full border border-white/10 bg-white/10 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15 sm:py-2 sm:text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-gradient rounded-xl px-4 py-3 text-base sm:py-2 sm:text-sm"
-            >
-              {loading ? "Saving…" : isEdit ? "Save changes" : "Create tournament"}
-            </button>
-          </div>
         </form>
+        </div>
+        <div className="shrink-0 flex flex-col-reverse gap-3 border-t border-white/10 bg-white/5 p-4 sm:flex-row sm:justify-end sm:bg-transparent sm:border-t-0 sm:p-0 sm:pt-4 sm:pb-0">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-full border border-white/10 bg-white/10 px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15 sm:py-2 sm:text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-tournament-form"
+            disabled={loading}
+            className="btn-gradient rounded-xl px-4 py-3 text-base sm:py-2 sm:text-sm"
+          >
+            {loading ? "Saving…" : isEdit ? "Save changes" : "Create tournament"}
+          </button>
+        </div>
       </div>
     </div>
   );
