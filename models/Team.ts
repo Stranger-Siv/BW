@@ -71,8 +71,16 @@ teamSchema.pre("validate", function (next) {
   next();
 });
 
-teamSchema.index({ teamName: 1, tournamentDate: 1 }, { unique: true, sparse: true });
-teamSchema.index({ teamName: 1, tournamentId: 1 }, { unique: true, sparse: true });
+// Uniqueness: legacy by (teamName, tournamentDate); modern by (teamName, tournamentId).
+// Partial indexes so teams with only tournamentId are not in the tournamentDate index (avoid dup key when tournamentDate is null).
+teamSchema.index(
+  { teamName: 1, tournamentDate: 1 },
+  { unique: true, partialFilterExpression: { tournamentDate: { $exists: true, $ne: null } } }
+);
+teamSchema.index(
+  { teamName: 1, tournamentId: 1 },
+  { unique: true, partialFilterExpression: { tournamentId: { $exists: true, $ne: null } } }
+);
 teamSchema.index({ tournamentDate: 1 });
 teamSchema.index({ tournamentId: 1 });
 teamSchema.index({ captainId: 1 });
