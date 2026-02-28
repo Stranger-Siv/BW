@@ -1,6 +1,7 @@
 /**
  * Discord webhook helpers. Sends embeds; never throws (logs and returns).
  * Set DISCORD_WEBHOOK_TOURNAMENTS and/or DISCORD_WEBHOOK_REGISTRATIONS in env.
+ * Optional: DISCORD_EMBED_LOGO_URL for thumbnail (absolute URL to your logo).
  */
 
 export type DiscordEmbed = {
@@ -8,8 +9,10 @@ export type DiscordEmbed = {
   description?: string;
   url?: string;
   color?: number;
+  author?: { name: string; url?: string; icon_url?: string };
+  thumbnail?: { url: string };
   fields?: { name: string; value: string; inline?: boolean }[];
-  footer?: { text: string };
+  footer?: { text: string; icon_url?: string };
   timestamp?: string;
 };
 
@@ -19,8 +22,31 @@ function getBaseUrl(): string {
   return u.startsWith("http") ? u : `https://${u}`;
 }
 
+const SITE_NAME = "BedWars Tournament";
+
 function buildBody(embed: DiscordEmbed): string {
   return JSON.stringify({ embeds: [embed] });
+}
+
+/** Build common embed decoration: author (links to site), optional thumbnail, footer with site. */
+function embedDecoration(baseUrl: string): Pick<DiscordEmbed, "author" | "thumbnail" | "footer"> {
+  const logoUrl = process.env.DISCORD_EMBED_LOGO_URL || (baseUrl ? `${baseUrl}/baba-tillu-logo.png` : "");
+  let footerText = SITE_NAME;
+  if (baseUrl) {
+    try {
+      footerText = `${new URL(baseUrl).hostname} • Click title for link`;
+    } catch {
+      footerText = "BedWars Tournament • Click title for link";
+    }
+  }
+  return {
+    author: {
+      name: SITE_NAME,
+      url: baseUrl || undefined,
+    },
+    ...(logoUrl ? { thumbnail: { url: logoUrl } } : {}),
+    footer: { text: footerText },
+  };
 }
 
 /**
@@ -37,13 +63,24 @@ export async function sendDiscordWebhook(
     return;
   }
   try {
+    new URL(webhookUrl);
+  } catch {
+    console.warn("Discord webhook skipped: invalid URL format.");
+    return;
+  }
+  try {
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: buildBody(embed),
     });
     if (!res.ok) {
-      console.warn("Discord webhook failed:", res.status, await res.text());
+      const text = await res.text();
+      if (res.status === 401) {
+        console.warn("Discord webhook 401: Invalid Webhook Token. In Discord, create a new webhook or re-copy the full URL (no spaces), then update DISCORD_WEBHOOK_* in your env.");
+      } else {
+        console.warn("Discord webhook failed:", res.status, text);
+      }
     }
   } catch (err) {
     console.warn("Discord webhook error:", err);
@@ -53,7 +90,6 @@ export async function sendDiscordWebhook(
 const TOURNAMENTS_WEBHOOK = process.env.DISCORD_WEBHOOK_TOURNAMENTS;
 const REGISTRATIONS_WEBHOOK = process.env.DISCORD_WEBHOOK_REGISTRATIONS;
 
-const FOOTER = { text: "BedWars Tournament" };
 const COLOR_BLUE = 0x3498db;
 const COLOR_GREEN = 0x2ecc71;
 const COLOR_AMBER = 0xf1c40f;
@@ -72,19 +108,24 @@ export async function notifyNewTournament(data: {
   status: string;
 }): Promise<void> {
   const base = getBaseUrl();
+  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
-    title: `New tournament: ${data.name}`,
-    url: base ? `${base}/tournaments/${data.tournamentId}` : undefined,
+    ...embedDecoration(base),
+    title: `🏆 New Tournament: ${data.name}`,
+    description: [
+      "A new tournament has been created.",
+      tournamentLink ? `\n🔗 **Click the title above** to open the tournament page and register.` : "",
+    ].join(""),
+    url: tournamentLink,
     color: COLOR_BLUE,
     fields: [
-      { name: "Mode", value: data.type, inline: true },
-      { name: "Date", value: data.date, inline: true },
-      { name: "Start", value: data.startTime, inline: true },
-      { name: "Registration until", value: data.registrationDeadline, inline: true },
-      { name: "Slots", value: `0 / ${data.maxTeams}`, inline: true },
-      { name: "Status", value: data.status, inline: true },
+      { name: "📅 Date", value: data.date, inline: true },
+      { name: "⏰ Start time", value: data.startTime, inline: true },
+      { name: "📋 Mode", value: data.type, inline: true },
+      { name: "📝 Registration until", value: data.registrationDeadline, inline: true },
+      { name: "👥 Slots", value: `0 / ${data.maxTeams}`, inline: true },
+      { name: "📌 Status", value: data.status, inline: true },
     ],
-    footer: FOOTER,
     timestamp: new Date().toISOString(),
   });
 }
@@ -116,17 +157,23 @@ export async function notifyNewRegistration(data: {
     return;
   }
   const base = getBaseUrl();
+  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const playersStr = data.playerIGNs.join(", ") || "—";
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
-    title: truncate(`New registration – ${data.tournamentName}`, TITLE_MAX),
-    url: base ? `${base}/tournaments/${data.tournamentId}` : undefined,
+    ...embedDecoration(base),
+    title: truncate(`✅ New Registration – ${data.tournamentName}`, TITLE_MAX),
+    description: [
+      "A new team has registered for the tournament.",
+      tournamentLink ? `\n🔗 **Click the title above** to view the tournament page.` : "",
+    ].join(""),
+    url: tournamentLink,
     color: COLOR_GREEN,
     fields: [
-      { name: "Team", value: truncate(data.teamName, FIELD_VALUE_MAX), inline: false },
-      { name: "Players", value: truncate(playersStr, FIELD_VALUE_MAX), inline: false },
-      { name: "Slot", value: data.slot, inline: true },
+      { name: "👥 Team", value: truncate(data.teamName, FIELD_VALUE_MAX), inline: false },
+      { name: "🎮 Players", value: truncate(playersStr, FIELD_VALUE_MAX), inline: false },
+      { name: "📌 Slot", value: data.slot, inline: true },
+      ...(tournamentLink ? [{ name: "🔗 Tournament", value: `[Open tournament](${tournamentLink})`, inline: false as const }] : []),
     ],
-    footer: FOOTER,
     timestamp: new Date().toISOString(),
   });
 }
@@ -140,12 +187,17 @@ export async function notifyRegistrationClosed(data: {
   slotText: string;
 }): Promise<void> {
   const base = getBaseUrl();
+  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
-    title: `Registration closed – ${data.tournamentName}`,
-    description: data.slotText,
-    url: base ? `${base}/tournaments/${data.tournamentId}` : undefined,
+    ...embedDecoration(base),
+    title: `🔒 Registration Closed – ${data.tournamentName}`,
+    description: [
+      data.slotText,
+      tournamentLink ? `\n🔗 **Click the title above** to view the tournament.` : "",
+    ].join(""),
+    url: tournamentLink,
     color: COLOR_AMBER,
-    footer: FOOTER,
+    fields: tournamentLink ? [{ name: "🔗 Tournament", value: `[Open tournament](${tournamentLink})`, inline: false }] : [],
     timestamp: new Date().toISOString(),
   });
 }
@@ -158,12 +210,17 @@ export async function notifyBracketLive(data: {
   tournamentName: string;
 }): Promise<void> {
   const base = getBaseUrl();
+  const roundsLink = base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
-    title: `Bracket is live – ${data.tournamentName}`,
-    description: "Rounds have been published. Check the bracket below.",
-    url: base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined,
+    ...embedDecoration(base),
+    title: `📋 Bracket Live – ${data.tournamentName}`,
+    description: [
+      "Rounds have been published. The bracket is ready to view.",
+      roundsLink ? `\n🔗 **Click the title above** to open the bracket.` : "",
+    ].join(""),
+    url: roundsLink,
     color: COLOR_GREEN,
-    footer: FOOTER,
+    fields: roundsLink ? [{ name: "🔗 Bracket", value: `[View bracket](${roundsLink})`, inline: false }] : [],
     timestamp: new Date().toISOString(),
   });
 }
