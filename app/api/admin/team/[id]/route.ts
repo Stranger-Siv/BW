@@ -391,37 +391,33 @@ export async function DELETE(
     const tournamentIdForPusher = team.tournamentId?.toString?.() ?? null;
 
     if (team.tournamentId) {
-      const tournament = await Tournament.findById(team.tournamentId).lean();
-      if (tournament) {
-        const t = tournament as unknown as { registeredTeams: number; maxTeams: number };
-        const newCount = Math.max(0, t.registeredTeams - 1);
-        const wasFull = t.registeredTeams >= t.maxTeams;
-        await Tournament.updateOne(
-          { _id: team.tournamentId },
-          {
-            $set: {
-              registeredTeams: newCount,
-              ...(wasFull && newCount < t.maxTeams ? { isClosed: false } : {}),
-            },
-          }
-        );
-      }
+      // Atomic decrement so bulk deletes don't race (each $inc -1).
+      await Tournament.updateOne(
+        { _id: team.tournamentId },
+        { $inc: { registeredTeams: -1 }, $max: { registeredTeams: 0 } }
+      );
+      // Reopen registration if was full and now has slots.
+      await Tournament.updateOne(
+        {
+          _id: team.tournamentId,
+          isClosed: true,
+          $expr: { $lt: ["$registeredTeams", "$maxTeams"] },
+        },
+        { $set: { isClosed: false } }
+      );
     } else if (team.tournamentDate) {
-      const dateDoc = await TournamentDate.findOne({ date: team.tournamentDate }).lean();
-      if (dateDoc) {
-        const d = dateDoc as unknown as { registeredTeams: number; maxTeams: number };
-        const newCount = Math.max(0, d.registeredTeams - 1);
-        const wasFull = d.registeredTeams >= d.maxTeams;
-        await TournamentDate.updateOne(
-          { date: team.tournamentDate },
-          {
-            $set: {
-              registeredTeams: newCount,
-              ...(wasFull && newCount < d.maxTeams ? { isClosed: false } : {}),
-            },
-          }
-        );
-      }
+      await TournamentDate.updateOne(
+        { date: team.tournamentDate },
+        { $inc: { registeredTeams: -1 }, $max: { registeredTeams: 0 } }
+      );
+      await TournamentDate.updateOne(
+        {
+          date: team.tournamentDate,
+          isClosed: true,
+          $expr: { $lt: ["$registeredTeams", "$maxTeams"] },
+        },
+        { $set: { isClosed: false } }
+      );
     }
 
     await Team.findByIdAndDelete(id);
