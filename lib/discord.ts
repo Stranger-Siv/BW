@@ -8,13 +8,14 @@
  */
 
 // ─── Animated emojis (same server as webhook required for these to render) ─────
+// Update IDs if needed: type \:Baba_Cute: in Discord and copy the ID from the link
 const E = {
   Stars: "<a:Gf_Stars:1426788119163961364>",
-  Cute: "<a:GF_Cute:1428611435122000023>",
+  Cute: "<a:Baba_Cute:1428611435122000023>",
   Arrow: "<a:Arrow:1426787645115076758>",
   Fire: "<a:Fire_yellow:1428616881727864832>",
   Rules: "<a:Rules:1428412802577727642>",
-  Updates: "<a:Spider_oh_updates:1428410120051626134>",
+  Updates: "<a:Baba_oh_updates:1428410120051626134>",
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -189,7 +190,10 @@ export async function notifyNewTournament(data: {
     color: COLOR_ORANGE,
   });
 
-  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
+  // Use registrations webhook when set so animated emojis render (same server as new team);
+  // otherwise fall back to tournaments webhook.
+  const webhook = REGISTRATIONS_WEBHOOK || TOURNAMENTS_WEBHOOK;
+  await sendDiscordWebhook(webhook, embed, components);
 }
 
 // ─── Notify: New team registration ───────────────────────────────────────────
