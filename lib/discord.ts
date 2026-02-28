@@ -8,14 +8,14 @@
  */
 
 // ─── Animated emojis (same server as webhook required for these to render) ─────
-// Use exact names as in Discord (with ~1/~6 if shown). Update IDs if one doesn’t render.
+// Match working message: Baba_Stars, Baba_Cute, Arrow~6, Rules~1, Baba_oh_updates, Fire_yellow~1
 const E = {
-  Stars: "<a:Gf_Stars~1:1426788119163961364>",
+  Stars: "<a:Baba_Stars:1426788119163961364>",
   Cute: "<a:Baba_Cute:1428611435122000023>",
   Arrow: "<a:Arrow~6:1426787645115076758>",
   Fire: "<a:Fire_yellow~1:1428616881727864832>",
   Rules: "<a:Rules~1:1428412802577727642>",
-  Updates: "<a:Baba_oh_updates~1:1428410120051626134>",
+  Updates: "<a:Baba_oh_updates:1428410120051626134>",
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
