@@ -2,9 +2,12 @@
  * Discord webhook notifications. Embeds only. No plain messages.
  * Set DISCORD_WEBHOOK_TOURNAMENTS and/or DISCORD_WEBHOOK_REGISTRATIONS.
  * Optional: DISCORD_EMBED_FOOTER to override the footer text.
+ *
+ * Custom emojis (<a:name:id>) only render in embed description/fields, not in
+ * title or footer. So titles are plain text; animated emojis are used in the body.
  */
 
-// ─── Emojis (exact IDs from spec) ─────────────────────────────────────────────
+// ─── Animated emojis (same server as webhook required for these to render) ─────
 const E = {
   Stars: "<a:Gf_Stars:1426788119163961364>",
   Cute: "<a:GF_Cute:1428611435122000023>",
@@ -156,6 +159,8 @@ export async function notifyNewTournament(data: {
     : undefined;
 
   const description = [
+    E.Stars + " NEW TOURNAMENT — BEDWARS MCF ELITE " + E.Stars,
+    "",
     E.Stars + " A new tournament is now live!",
     "",
     E.Arrow + " Tournament: **" + data.name + "**",
@@ -178,7 +183,7 @@ export async function notifyNewTournament(data: {
   const components = base ? linkButtons(base, ...buttons) : undefined;
 
   const embed = createEmbed({
-    title: E.Stars + " NEW TOURNAMENT — BEDWARS MCF ELITE " + E.Stars,
+    title: "NEW TOURNAMENT — BEDWARS MCF ELITE",
     description,
     url: tournamentLink ?? undefined,
     color: COLOR_ORANGE,
@@ -223,6 +228,8 @@ export async function notifyNewRegistration(data: {
   const playersDisplay = truncate(playersStr, FIELD_VALUE_MAX);
 
   const description = [
+    E.Cute + " NEW TEAM REGISTERED — BEDWARS MCF ELITE " + E.Stars,
+    "",
     E.Cute + " A new team has entered the arena!",
     "",
     E.Arrow + " Team: **" + teamName + "**",
@@ -244,7 +251,7 @@ export async function notifyNewRegistration(data: {
   const components = base ? linkButtons(base, ...buttons) : undefined;
 
   const embed = createEmbed({
-    title: E.Stars + " NEW TEAM REGISTERED — BEDWARS MCF ELITE " + E.Stars,
+    title: "NEW TEAM REGISTERED — BEDWARS MCF ELITE",
     description,
     url: tournamentLink ?? undefined,
     color: COLOR_GREEN,
@@ -266,6 +273,8 @@ export async function notifyRegistrationClosed(data: {
     : undefined;
 
   const description = [
+    E.Stars + " REGISTRATION CLOSED — BEDWARS MCF ELITE " + E.Stars,
+    "",
     E.Stars + " Registration has officially closed.",
     "",
     E.Arrow + " " + data.slotText,
@@ -284,7 +293,7 @@ export async function notifyRegistrationClosed(data: {
   const components = base ? linkButtons(base, ...buttons) : undefined;
 
   const embed = createEmbed({
-    title: E.Stars + " REGISTRATION CLOSED — BEDWARS MCF ELITE " + E.Stars,
+    title: "REGISTRATION CLOSED — BEDWARS MCF ELITE",
     description,
     url: tournamentLink ?? undefined,
     color: COLOR_AMBER,
@@ -305,6 +314,8 @@ export async function notifyBracketLive(data: {
     : undefined;
 
   const description = [
+    E.Stars + " BRACKET LIVE — BEDWARS MCF ELITE " + E.Stars,
+    "",
     E.Stars + " The bracket is now live!",
     "",
     E.Arrow + " Tournament: **" + data.tournamentName + "**",
@@ -323,7 +334,7 @@ export async function notifyBracketLive(data: {
   const components = base ? linkButtons(base, ...buttons) : undefined;
 
   const embed = createEmbed({
-    title: E.Stars + " BRACKET LIVE — BEDWARS MCF ELITE " + E.Stars,
+    title: "BRACKET LIVE — BEDWARS MCF ELITE",
     description,
     url: roundsLink ?? undefined,
     color: COLOR_GREEN,
