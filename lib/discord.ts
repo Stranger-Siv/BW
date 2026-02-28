@@ -3,19 +3,17 @@
  * Set DISCORD_WEBHOOK_TOURNAMENTS and/or DISCORD_WEBHOOK_REGISTRATIONS.
  * Optional: DISCORD_EMBED_FOOTER to override the footer text.
  *
- * Custom emojis (<a:name:id>) only render in embed description/fields, not in
- * title or footer. So titles are plain text; animated emojis are used in the body.
+ * Uses Unicode emojis so they render in any server (no custom emoji dependency).
  */
 
-// ─── Animated emojis (same server as webhook required for these to render) ─────
-// Match working message: Baba_Stars, Baba_Cute, Arrow~6, Rules~1, Baba_oh_updates, Fire_yellow~1
+// ─── Emojis (Unicode — render in every channel) ───────────────────────────────
 const E = {
-  Stars: "<a:Baba_Stars:1426788119163961364>",
-  Cute: "<a:Baba_Cute:1428611435122000023>",
-  Arrow: "<a:Arrow~6:1426787645115076758>",
-  Fire: "<a:Fire_yellow~1:1428616881727864832>",
-  Rules: "<a:Rules~1:1428412802577727642>",
-  Updates: "<a:Baba_oh_updates:1428410120051626134>",
+  Stars: "✨",
+  Cute: "🎮",
+  Arrow: "➡️",
+  Fire: "🔥",
+  Rules: "📜",
+  Updates: "📢",
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -190,8 +188,8 @@ export async function notifyNewTournament(data: {
     color: COLOR_ORANGE,
   });
 
-  // Use registrations webhook when set so animated emojis render (same server as new team);
-  // otherwise fall back to tournaments webhook.
+  // Must use the same webhook as NEW TEAM REGISTERED so the message goes to the server
+  // that has the custom emojis; otherwise Discord shows raw :Baba_Stars: and <a:...> text.
   const webhook = REGISTRATIONS_WEBHOOK || TOURNAMENTS_WEBHOOK;
   await sendDiscordWebhook(webhook, embed, components);
 }
