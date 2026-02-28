@@ -2,9 +2,22 @@
  * Discord webhook notifications. Webhooks only (no bot).
  * Set DISCORD_WEBHOOK_TOURNAMENTS and/or DISCORD_WEBHOOK_REGISTRATIONS.
  * Optional: DISCORD_EMBED_FOOTER to override the footer text.
+ * Custom animated emojis use <a:name:id> so they render in Discord.
  */
 
-const DIVIDER = "_________";
+/** BEDWARS MCF ELITE server animated emojis (format: <a:name:id>). Update IDs if your server uses different. */
+const E = {
+  Gf_Stars: "<a:Gf_Stars:1426788119163961364>",
+  GF_Cute: "<a:GF_Cute:1428611435122000023>",
+  GF_Khush: "<a:GF_Khush:1426788948956414032>",
+  Arrow: "<a:Arrow:1426787645115076758>",
+  Fire_yellow: "<a:Fire_yellow:1428616881727864832>",
+  A_Tada: "<a:A_Tada:1426997134120583259>",
+  Basu_chatting: "<a:Basu_chatting:1428620806325276755>",
+  Rules: "<a:Rules:1428412802577727642>",
+  Blue_lightening: "<a:Blue_lightening:1212297471238209577>",
+  Spider_oh_updates: "<a:Spider_oh_updates:1428410120051626134>",
+} as const;
 
 export type DiscordEmbed = {
   type?: "rich";
@@ -116,24 +129,24 @@ export async function notifyNewTournament(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const lines = [
-    ":Gf_Stars: **Welcome to BEDWARS MCF ELITE** — a new tournament is live! :Gf_Stars:",
+    E.Gf_Stars + " **Welcome to BEDWARS MCF ELITE** — a new tournament is live! " + E.Gf_Stars,
     "",
-    ":Arrow: **" + data.name + "** — where strategy meets domination :Fire_yellow:",
-    ":Arrow: 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime + " ⚔️",
+    E.Arrow + " **" + data.name + "** — where strategy meets domination " + E.Fire_yellow,
+    E.Arrow + " 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime + " ⚔️",
     "",
-    ":Arrow: 🎮 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams + " 🏆",
-    ":Arrow: 📝 **Registration until:** " + data.registrationDeadline,
-    ":Arrow: 📌 **Status:** " + data.status,
+    E.Arrow + " 🎮 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams + " 🏆",
+    E.Arrow + " 📝 **Registration until:** " + data.registrationDeadline,
+    E.Arrow + " 📌 **Status:** " + data.status,
     "",
     "🎤 **Register & compete:** Open the link below to join.",
-    ":Arrow: Team up, grind hard, and dominate every match. 💬",
+    E.Arrow + " Team up, grind hard, and dominate every match. 💬",
     "",
-    ":Rules: **Rules & Fair Play:** No hacks. No toxicity. Only skill. :Blue_lightening:",
-    ":Arrow: Respect teammates. Play smart.",
+    E.Rules + " **Rules & Fair Play:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
+    E.Arrow + " Respect teammates. Play smart.",
     "",
-    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for brackets & events :rocket_gif:",
+    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for brackets & events 🚀",
     "",
-    ":Fire_yellow: Gear up soldier — we conquer MCFleet together ⚔️🔥",
+    E.Fire_yellow + " Gear up soldier — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
   const components =
     base && tournamentLink
@@ -143,7 +156,7 @@ export async function notifyNewTournament(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: ":Gf_Stars: 𝐍𝐄𝐖 𝐓𝐎𝐔𝐑𝐍𝐀𝐌𝐄𝐍𝐓 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
+    title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐓𝐎𝐔𝐑𝐍𝐀𝐌𝐄𝐍𝐓 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_ORANGE,
@@ -187,22 +200,22 @@ export async function notifyNewRegistration(data: {
   const playersStr = data.playerIGNs.join(", ") || "—";
   const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
   const lines = [
-    ":GF_Cute: **A new team has joined the arena!** :GF_Khush:",
+    E.GF_Cute + " **A new team has joined the arena!** " + E.GF_Khush,
     "",
-    ":Arrow: Welcome to **BEDWARS MCF ELITE**, where strategy meets domination :Fire_yellow:",
-    ":Arrow: **Team:** " + teamName + " ⚔️",
+    E.Arrow + " Welcome to **BEDWARS MCF ELITE**, where strategy meets domination " + E.Fire_yellow,
+    E.Arrow + " **Team:** " + teamName + " ⚔️",
     "",
-    ":Arrow: 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
-    ":Arrow: 📌 **Slot:** " + data.slot + " • 🏆 **Tournament:** " + data.tournamentName,
+    E.Arrow + " 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
+    E.Arrow + " 📌 **Slot:** " + data.slot + " • 🏆 **Tournament:** " + data.tournamentName,
     "",
-    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 :Basu_chatting:",
-    ":Arrow: Open the links below to view the team or tournament.",
+    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 " + E.Basu_chatting,
+    E.Arrow + " Open the links below to view the team or tournament.",
     "",
-    ":Rules: **Rules & Discipline:** Respect teammates. No toxicity. Play smart. :Blue_lightening:",
+    E.Rules + " **Rules & Discipline:** Respect teammates. No toxicity. Play smart. " + E.Blue_lightening,
     "",
-    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for brackets & events :rocket_gif:",
+    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for brackets & events 🚀",
     "",
-    ":Fire_yellow: Another warrior enters — we conquer MCFleet together ⚔️🔥",
+    E.Fire_yellow + " Another warrior enters — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
   const extraButtons: { label: string; url: string }[] = [];
   if (tournamentLink) extraButtons.push({ label: "🏆 View Tournament", url: tournamentLink });
@@ -211,7 +224,7 @@ export async function notifyNewRegistration(data: {
     base ? linkButtons(base, ...extraButtons) : undefined;
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
     type: "rich",
-    title: ":Gf_Stars: 𝐍𝐄𝐖 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
+    title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_GREEN,
@@ -232,19 +245,19 @@ export async function notifyRegistrationClosed(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const lines = [
-    ":Gf_Stars: **Registration is now closed for BEDWARS MCF ELITE** :Gf_Stars:",
+    E.Gf_Stars + " **Registration is now closed for BEDWARS MCF ELITE** " + E.Gf_Stars,
     "",
-    ":Arrow: " + data.slotText + " :Fire_yellow:",
-    ":Arrow: **Tournament:** " + data.tournamentName + " ⚔️",
+    E.Arrow + " " + data.slotText + " " + E.Fire_yellow,
+    E.Arrow + " **Tournament:** " + data.tournamentName + " ⚔️",
     "",
-    "🎤 **Team Chat & Strategy:** Brackets and matches coming next. :Basu_chatting:",
-    ":Arrow: Stay ready for the bracket — discuss tactics with your squad 💬",
+    "🎤 **Team Chat & Strategy:** Brackets and matches coming next. " + E.Basu_chatting,
+    E.Arrow + " Stay ready for the bracket — discuss tactics with your squad 💬",
     "",
-    ":Rules: **Rules & Discipline:** No hacks. No toxicity. Only skill. :Blue_lightening:",
+    E.Rules + " **Rules & Discipline:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
     "",
-    ":Spider_oh_updates: **Match Updates & Announcements:** Bracket will be published soon :rocket_gif:",
+    E.Spider_oh_updates + " **Match Updates & Announcements:** Bracket will be published soon 🚀",
     "",
-    ":Fire_yellow: Slots filled. The battlefield is set. We conquer MCFleet together ⚔️🔥",
+    E.Fire_yellow + " Slots filled. The battlefield is set. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
   const components =
     base && tournamentLink
@@ -254,7 +267,7 @@ export async function notifyRegistrationClosed(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: ":Gf_Stars: 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
+    title: E.Gf_Stars + " 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_AMBER,
@@ -274,19 +287,19 @@ export async function notifyBracketLive(data: {
   const base = getBaseUrl();
   const roundsLink = base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined;
   const lines = [
-    ":Gf_Stars: **Bracket is live for BEDWARS MCF ELITE** :Gf_Stars:",
+    E.Gf_Stars + " **Bracket is live for BEDWARS MCF ELITE** " + E.Gf_Stars,
     "",
-    ":Arrow: **" + data.tournamentName + "** — rounds published, time to dominate :Fire_yellow:",
-    ":Arrow: 🏆 **Bracket:** Ready to view ⚔️",
+    E.Arrow + " **" + data.tournamentName + "** — rounds published, time to dominate " + E.Fire_yellow,
+    E.Arrow + " 🏆 **Bracket:** Ready to view ⚔️",
     "",
-    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 :Basu_chatting:",
-    ":Arrow: Open the link below to view the bracket.",
+    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 " + E.Basu_chatting,
+    E.Arrow + " Open the link below to view the bracket.",
     "",
-    ":Rules: **Rules & Discipline:** No hacks. No toxicity. Only skill. :Blue_lightening:",
+    E.Rules + " **Rules & Discipline:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
     "",
-    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for matches & events :rocket_gif:",
+    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for matches & events 🚀",
     "",
-    ":Fire_yellow: Defend your bed. Break theirs. We conquer MCFleet together ⚔️🔥",
+    E.Fire_yellow + " Defend your bed. Break theirs. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
   const components =
     base && roundsLink
@@ -296,7 +309,7 @@ export async function notifyBracketLive(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: ":Gf_Stars: 𝐁𝐑𝐀𝐂𝐊𝐄𝐓 𝐋𝐈𝐕𝐄 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
+    title: E.Gf_Stars + " 𝐁𝐑𝐀𝐂𝐊𝐄𝐓 𝐋𝐈𝐕𝐄 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
     description: lines.join("\n"),
     url: roundsLink || undefined,
     color: COLOR_GREEN,
