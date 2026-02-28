@@ -40,6 +40,23 @@ async function connectDB(): Promise<typeof mongoose> {
     throw e;
   }
 
+  // One-time migration: drop old team unique indexes so partial indexes from Team model can apply
+  const migrationKey = "teams_index_migration_v1";
+  if (!(global as Record<string, unknown>)[migrationKey]) {
+    (global as Record<string, unknown>)[migrationKey] = true;
+    const coll = cached.conn.connection.db?.collection("teams");
+    if (coll) {
+      for (const name of ["teamName_1_tournamentDate_1", "teamName_1_tournamentId_1"]) {
+        try {
+          await coll.dropIndex(name);
+        } catch (e: unknown) {
+          const err = e as { code?: number };
+          if (err?.code !== 27) throw e; // 27 = index not found
+        }
+      }
+    }
+  }
+
   return cached.conn;
 }
 
