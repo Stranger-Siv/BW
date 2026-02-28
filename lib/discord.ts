@@ -31,6 +31,9 @@ export async function sendDiscordWebhook(
   embed: DiscordEmbed
 ): Promise<void> {
   if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn("Discord webhook skipped: URL not set or invalid. Add DISCORD_WEBHOOK_TOURNAMENTS / DISCORD_WEBHOOK_REGISTRATIONS in your deployment env.");
+    }
     return;
   }
   try {
@@ -86,8 +89,18 @@ export async function notifyNewTournament(data: {
   });
 }
 
+/** Discord embed field value max length */
+const FIELD_VALUE_MAX = 1024;
+const TITLE_MAX = 256;
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3) + "...";
+}
+
 /**
  * Notify #registrations: new team registered.
+ * Requires DISCORD_WEBHOOK_REGISTRATIONS to be set in env (separate from DISCORD_WEBHOOK_TOURNAMENTS).
  */
 export async function notifyNewRegistration(data: {
   tournamentId: string;
@@ -96,14 +109,21 @@ export async function notifyNewRegistration(data: {
   playerIGNs: string[];
   slot: string;
 }): Promise<void> {
+  if (!REGISTRATIONS_WEBHOOK || !REGISTRATIONS_WEBHOOK.startsWith("https://discord.com/api/webhooks/")) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn("Discord registrations webhook skipped: DISCORD_WEBHOOK_REGISTRATIONS not set or invalid. Add it in your deployment env (e.g. Render → Environment).");
+    }
+    return;
+  }
   const base = getBaseUrl();
+  const playersStr = data.playerIGNs.join(", ") || "—";
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
-    title: `New registration – ${data.tournamentName}`,
+    title: truncate(`New registration – ${data.tournamentName}`, TITLE_MAX),
     url: base ? `${base}/tournaments/${data.tournamentId}` : undefined,
     color: COLOR_GREEN,
     fields: [
-      { name: "Team", value: data.teamName, inline: false },
-      { name: "Players", value: data.playerIGNs.join(", ") || "—", inline: false },
+      { name: "Team", value: truncate(data.teamName, FIELD_VALUE_MAX), inline: false },
+      { name: "Players", value: truncate(playersStr, FIELD_VALUE_MAX), inline: false },
       { name: "Slot", value: data.slot, inline: true },
     ],
     footer: FOOTER,
