@@ -7,6 +7,7 @@ import TournamentDate from "@/models/TournamentDate";
 import Team, { type IPlayer } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
+import { notifyNewRegistration, notifyRegistrationClosed } from "@/lib/discord";
 
 type RegisterBody = {
   teamName?: string;
@@ -301,6 +302,21 @@ async function registerWithTournamentId(
     if (pusherNew) {
       pusherNew.trigger(tournamentChannel(tournamentId), PUSHER_EVENTS.TEAMS_CHANGED, {});
       pusherNew.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
+    const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
+    notifyNewRegistration({
+      tournamentId,
+      tournamentName,
+      teamName,
+      playerIGNs: players.map((p) => (p.minecraftIGN ?? "").trim()).filter(Boolean),
+      slot: `${newCount} / ${t.maxTeams}`,
+    }).catch(() => {});
+    if (newCount >= t.maxTeams) {
+      notifyRegistrationClosed({
+        tournamentId,
+        tournamentName,
+        slotText: `${newCount} / ${t.maxTeams} slots filled.`,
+      }).catch(() => {});
     }
     return NextResponse.json(
       {

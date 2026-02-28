@@ -7,6 +7,7 @@ import Team from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { isSuperAdmin } from "@/lib/adminAuth";
 import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
+import { notifyRegistrationClosed } from "@/lib/discord";
 import type { IPlayer } from "@/models/Team";
 
 /**
@@ -147,6 +148,15 @@ export async function POST(
     if (pusher) {
       pusher.trigger(tournamentChannel(id), PUSHER_EVENTS.TEAMS_CHANGED, {});
       pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
+
+    if (newCount >= t.maxTeams) {
+      const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
+      notifyRegistrationClosed({
+        tournamentId: id,
+        tournamentName,
+        slotText: `${newCount} / ${t.maxTeams} slots filled (demo teams).`,
+      }).catch(() => {});
     }
 
     return NextResponse.json(

@@ -7,6 +7,7 @@ import Team from "@/models/Team";
 import Tournament from "@/models/Tournament";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { notifyBracketLive } from "@/lib/discord";
 
 export async function GET(
   _request: NextRequest,
@@ -82,6 +83,10 @@ export async function POST(
       scheduledAt: scheduledAt ?? undefined,
       teamIds: [],
     });
+    if (name === "R2") {
+      const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
+      notifyBracketLive({ tournamentId: id, tournamentName }).catch(() => {});
+    }
     return NextResponse.json(round.toObject(), { status: 201 });
   } catch (err) {
     console.error("POST round error:", err);

@@ -8,6 +8,7 @@ import Tournament, {
 } from "@/models/Tournament";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { notifyNewTournament } from "@/lib/discord";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
@@ -147,6 +148,26 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
     const doc = await Tournament.create(validation.data);
+    const obj = doc.toObject() as Record<string, unknown> & {
+      _id: { toString(): string };
+      name: string;
+      type: string;
+      date: string;
+      startTime: string;
+      registrationDeadline: string;
+      maxTeams: number;
+      status: string;
+    };
+    notifyNewTournament({
+      tournamentId: obj._id.toString(),
+      name: obj.name,
+      type: obj.type,
+      date: obj.date,
+      startTime: obj.startTime,
+      registrationDeadline: obj.registrationDeadline,
+      maxTeams: obj.maxTeams,
+      status: obj.status,
+    }).catch(() => {});
     return NextResponse.json(doc.toObject(), { status: 201 });
   } catch (err) {
     console.error("POST /api/admin/tournaments error:", err);

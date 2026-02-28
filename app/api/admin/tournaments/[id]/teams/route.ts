@@ -7,6 +7,7 @@ import Team, { type IPlayer } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
 import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
+import { notifyNewRegistration, notifyRegistrationClosed } from "@/lib/discord";
 
 function isPlayer(obj: unknown): obj is IPlayer {
   return (
@@ -204,6 +205,22 @@ export async function POST(
     if (pusher) {
       pusher.trigger(tournamentChannel(id), PUSHER_EVENTS.TEAMS_CHANGED, {});
       pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    }
+
+    const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
+    notifyNewRegistration({
+      tournamentId: id,
+      tournamentName,
+      teamName,
+      playerIGNs: players.map((p) => (p.minecraftIGN ?? "").trim()).filter(Boolean),
+      slot: `${newCount} / ${t.maxTeams}`,
+    }).catch(() => {});
+    if (newCount >= t.maxTeams) {
+      notifyRegistrationClosed({
+        tournamentId: id,
+        tournamentName,
+        slotText: `${newCount} / ${t.maxTeams} slots filled.`,
+      }).catch(() => {});
     }
 
     return NextResponse.json(
