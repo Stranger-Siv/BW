@@ -6,6 +6,8 @@
  * Uses Unicode emojis so they render in any server (no custom emoji dependency).
  */
 
+import { formatDateDDMMYYYY } from "@/lib/formatDate";
+
 // ─── Emojis (Unicode — render in every channel) ───────────────────────────────
 const E = {
   Stars: "✨",
@@ -151,11 +153,20 @@ export async function notifyNewTournament(data: {
   registrationDeadline: string;
   maxTeams: number;
   status: string;
+  /** Optional: when registration opens (shown in Discord). */
+  registrationStarts?: string;
 }): Promise<void> {
   const base = getBaseUrl();
   const tournamentLink = base
     ? `${base}/tournaments/${data.tournamentId}`
     : undefined;
+
+  const tournamentDateFormatted =
+    formatDateDDMMYYYY(data.date) + " • Start: " + data.startTime;
+  const registrationUntilFormatted = formatDateDDMMYYYY(data.registrationDeadline);
+  const registrationStartsFormatted = data.registrationStarts
+    ? formatDateDDMMYYYY(data.registrationStarts)
+    : null;
 
   const description = [
     E.Stars + " NEW TOURNAMENT — BEDWARS MCF ELITE " + E.Stars,
@@ -163,10 +174,13 @@ export async function notifyNewTournament(data: {
     E.Stars + " A new tournament is now live!",
     "",
     E.Arrow + " Tournament: **" + data.name + "**",
-    E.Arrow + " Date: **" + data.date + "** • Start: **" + data.startTime + "**",
+    ...(registrationStartsFormatted
+      ? [E.Arrow + " Registration starts: **" + registrationStartsFormatted + "**"]
+      : []),
+    E.Arrow + " Tournament date: **" + tournamentDateFormatted + "**",
     E.Arrow + " Mode: **" + data.type + "**",
     E.Arrow + " Slots: **0 / " + data.maxTeams + "**",
-    E.Arrow + " Registration until: **" + data.registrationDeadline + "**",
+    E.Arrow + " Registration until: **" + registrationUntilFormatted + "**",
     E.Arrow + " Status: **" + data.status + "**",
     "",
     "Register now and secure your squad's position.",

@@ -35,6 +35,9 @@ type TournamentOption = {
   registeredTeams: number;
   status?: string;
   scheduledAt?: string | null;
+  description?: string;
+  prize?: string;
+  serverIP?: string;
 };
 
 function getInitialPlayers(count: number): IPlayer[] {
@@ -410,7 +413,7 @@ export default function TournamentsPage() {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!selectedTournament) return;
+      if (!selectedTournament || selectedTournament.status === "scheduled") return;
       setSubmitError(null);
       setSuccessMessage(null);
 
@@ -591,24 +594,18 @@ export default function TournamentsPage() {
                     return (
                       <StaggerItem
                         key={t._id}
-                        className={`card-glass transition-all duration-300 ${isScheduled ? "opacity-95" : "hover:-translate-y-0.5 hover:shadow-xl"}`}
+                        className={`card-glass transition-all duration-300 ${isScheduled ? "opacity-95 hover:-translate-y-0.5 hover:shadow-xl" : "hover:-translate-y-0.5 hover:shadow-xl"}`}
                       >
-                        {isScheduled ? (
-                          <div className="rounded-t-2xl">
-                            {cardContent}
-                            <span className="mx-5 mb-2 inline-block rounded-full bg-violet-500/20 px-2.5 py-0.5 text-xs font-medium text-violet-400 dark:text-violet-300">
-                              Scheduled
-                            </span>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedTournament(t)}
-                            className="w-full rounded-t-2xl"
-                          >
-                            {cardContent}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTournament(t)}
+                          className="w-full rounded-t-2xl text-left"
+                        >
+                          {cardContent}
+                          <span className={`mx-5 mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${isScheduled ? "bg-violet-500/20 text-violet-400 dark:text-violet-300" : "bg-emerald-500/20 text-emerald-400 dark:text-emerald-300"}`}>
+                            {isScheduled ? "Scheduled" : "Register"}
+                          </span>
+                        </button>
                         <Link
                           href={`/tournaments/${t._id}/rounds`}
                           onClick={(e) => e.stopPropagation()}
@@ -650,10 +647,15 @@ export default function TournamentsPage() {
               </div>
 
               <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm dark:border-white/10 dark:bg-white/5 sm:p-6 md:p-8">
+                {selectedTournament.status === "scheduled" && (
+                  <div className="mb-5 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-sm text-violet-200 dark:border-violet-500/30 dark:bg-violet-500/10 sm:mb-6">
+                    Registration opens at <strong>{selectedTournament.scheduledAt ? formatDateTime(selectedTournament.scheduledAt) : "—"}</strong>. You can view details but cannot register yet.
+                  </div>
+                )}
                 <h2 className="mb-5 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 sm:text-2xl">
                   {selectedTournament.teamSize === 1 ? "Register your entry" : "Team details"}
                 </h2>
-                {session?.user && meDisplayName && (
+                {session?.user && meDisplayName && selectedTournament.status !== "scheduled" && (
                   <p className="mb-5 text-sm text-slate-500 dark:text-slate-400 sm:mb-6">
                     Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
                   </p>
@@ -670,12 +672,13 @@ export default function TournamentsPage() {
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder={selectedTournament.teamSize === 1 ? "e.g. Your IGN or nickname" : "e.g. Dragon Slayers"}
-                      className={`w-full min-h-[48px] rounded-lg border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:min-h-[44px] sm:py-2.5 ${
+                      disabled={selectedTournament.status === "scheduled"}
+                      className={`w-full min-h-[48px] rounded-lg border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:min-h-[44px] sm:py-2.5 ${
                         teamNameAvailable === false
                           ? "border-red-400 dark:border-red-500"
                           : "border-white/10 dark:border-white/10 focus:border-emerald-400/50"
                       }`}
-                      aria-required
+                      aria-required={selectedTournament.status !== "scheduled"}
                     />
                     {teamNameCheckLoading && teamName.trim() && (
                       <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Checking name…</p>
@@ -718,6 +721,7 @@ export default function TournamentsPage() {
                             onIGNChange={(v) => updatePlayer(0, "minecraftIGN", v)}
                             onDiscordChange={(v) => updatePlayer(0, "discordUsername", v)}
                             error={allPlayerErrors[0]}
+                            disabled={selectedTournament.status === "scheduled"}
                           />
                         </div>
                       </div>
@@ -728,7 +732,7 @@ export default function TournamentsPage() {
                           igns={rewardReceiverOptions}
                           value={rewardReceiverIGN}
                           onChange={setRewardReceiverIGN}
-                          disabled={rewardReceiverOptions.length === 0}
+                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled"}
                         />
                       </div>
                       {submitError && (
@@ -737,7 +741,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
+                      <button type="submit" disabled={selectedTournament.status === "scheduled" || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
@@ -757,19 +761,20 @@ export default function TournamentsPage() {
                               discordUsername={player.discordUsername}
                               onIGNChange={(v) => updatePlayer(idx, "minecraftIGN", v)}
                               onDiscordChange={(v) => updatePlayer(idx, "discordUsername", v)}
+                              disabled={selectedTournament.status === "scheduled"}
                               error={allPlayerErrors[idx]}
                             />
                           ))}
                         </div>
                       </div>
                       <div className="w-full">
-                        <label htmlFor="reward-receiver" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
+                        <label htmlFor="reward-receiver-duo" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">Reward receiver</label>
                         <RewardReceiverSelect
-                          id="reward-receiver"
+                          id="reward-receiver-duo"
                           igns={rewardReceiverOptions}
                           value={rewardReceiverIGN}
                           onChange={setRewardReceiverIGN}
-                          disabled={rewardReceiverOptions.length === 0}
+                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled"}
                         />
                       </div>
                       {submitError && (
@@ -778,7 +783,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px]">
+                      <button type="submit" disabled={selectedTournament.status === "scheduled" || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
@@ -795,6 +800,30 @@ export default function TournamentsPage() {
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                   {selectedTournament.maxTeams} total · {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} open
                 </p>
+                {(selectedTournament.description || selectedTournament.prize || selectedTournament.serverIP) && (
+                  <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-xs">
+                    {selectedTournament.description && (
+                      <div>
+                        <span className="font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Description</span>
+                        <p className="mt-1 text-slate-200 dark:text-slate-300 whitespace-pre-wrap">{selectedTournament.description}</p>
+                      </div>
+                    )}
+                    {selectedTournament.prize && (
+                      <div>
+                        <span className="font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gift / Prize</span>
+                        <p className="mt-1 text-slate-200 dark:text-slate-300 whitespace-pre-wrap">{selectedTournament.prize}</p>
+                      </div>
+                    )}
+                    {selectedTournament.serverIP && (
+                      <div>
+                        <span className="font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Server IP</span>
+                        <p className="mt-1">
+                          <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{selectedTournament.serverIP}</code>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {slotLoading ? (
                   <div className="mt-4 grid grid-cols-5 gap-1.5 sm:grid-cols-6">
                     {Array.from({ length: Math.min(selectedTournament.maxTeams, 24) }).map((_, i) => (

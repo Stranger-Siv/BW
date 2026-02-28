@@ -1,4 +1,18 @@
 /**
+ * Format a date string as DD-MM-YYYY (e.g. "2026-03-07" → "07-03-2026").
+ * Handles "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm" (date part only).
+ * If not parseable, returns the original string.
+ */
+export function formatDateDDMMYYYY(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+/**
  * Format a date string for display (e.g. "2026-03-10" → "March 10, 2026").
  * If not parseable as ISO, returns the original string.
  */

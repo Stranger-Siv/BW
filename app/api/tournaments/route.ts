@@ -29,7 +29,7 @@ export async function GET() {
       ],
     })
       .sort({ date: 1, startTime: 1 })
-      .select("name type date startTime registrationDeadline maxTeams teamSize registeredTeams status scheduledAt")
+      .select("name type date startTime registrationDeadline maxTeams teamSize registeredTeams status scheduledAt description prize serverIP")
       .lean();
     return NextResponse.json(list, { status: 200 });
   } catch (err) {
