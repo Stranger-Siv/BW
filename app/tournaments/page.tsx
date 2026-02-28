@@ -290,8 +290,12 @@ export default function TournamentsPage() {
       setTeamNameCheckLoading(true);
       fetch(`/api/tournaments/${selectedTournament._id}/check-name?name=${encodeURIComponent(t)}`)
         .then((r) => r.json())
-        .then((data: { available?: boolean }) => {
-          setTeamNameAvailable(data.available === true);
+        .then((data: { available?: boolean; error?: string }) => {
+          if (data.error !== undefined) {
+            setTeamNameAvailable(null);
+            return;
+          }
+          setTeamNameAvailable(data.available === false ? false : data.available === true ? true : null);
         })
         .catch(() => setTeamNameAvailable(null))
         .finally(() => setTeamNameCheckLoading(false));
@@ -362,12 +366,20 @@ export default function TournamentsPage() {
       return;
     }
     let cancelled = false;
+    setTeamNameSuggestions([]);
     fetch(`/api/tournaments/${selectedTournament._id}/suggest-names?limit=5`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((data: { suggestions?: string[] }) => {
-        if (!cancelled && Array.isArray(data.suggestions)) setTeamNameSuggestions(data.suggestions);
+      .then((data: { suggestions?: string[]; error?: string }) => {
+        if (cancelled) return;
+        if (data.error !== undefined || !Array.isArray(data.suggestions)) {
+          setTeamNameSuggestions([]);
+          return;
+        }
+        setTeamNameSuggestions(data.suggestions);
       })
-      .catch(() => setTeamNameSuggestions([]));
+      .catch(() => {
+        if (!cancelled) setTeamNameSuggestions([]);
+      });
     return () => {
       cancelled = true;
     };
