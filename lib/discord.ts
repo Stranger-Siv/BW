@@ -4,12 +4,15 @@
  * Optional: DISCORD_EMBED_FOOTER to override the footer text.
  */
 
+const DIVIDER = "_________";
+
 export type DiscordEmbed = {
   type?: "rich";
   title?: string;
   description?: string;
   url?: string;
   color?: number;
+  thumbnail?: { url: string };
   fields?: { name: string; value: string; inline?: boolean }[] | null;
   footer?: { text: string };
   timestamp?: string;
@@ -32,6 +35,11 @@ const EMBED_FOOTER =
 const COLOR_ORANGE = 16753920;
 const COLOR_GREEN = 0x2ecc71;
 const COLOR_AMBER = 0xf1c40f;
+
+function getThumbnailUrl(baseUrl: string): string | undefined {
+  const logo = process.env.DISCORD_EMBED_LOGO_URL || (baseUrl ? `${baseUrl}/baba-tillu-logo.png` : "");
+  return logo || undefined;
+}
 
 /**
  * Sends a single embed to the given webhook URL. Does not throw; logs errors.
@@ -84,21 +92,36 @@ export async function notifyNewTournament(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const lines = [
-    "🎮 **A new tournament has been created.**",
+    "🔥 **A new tournament has been created.**",
+    "**Strategy meets domination — time to compete.** 🔥",
     "",
-    `📅 **Date:** ${data.date} • ⏰ **Start:** ${data.startTime}`,
-    `📋 **Mode:** ${data.type} • 👥 **Slots:** 0 / ${data.maxTeams}`,
-    `📝 **Registration until:** ${data.registrationDeadline}`,
-    `📌 **Status:** ${data.status}`,
+    "> 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime,
+    "> 📋 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams,
+    "> 📝 **Registration until:** " + data.registrationDeadline,
+    "> 📌 **Status:** " + data.status,
     "",
-    tournamentLink ? `🔗 **Register here:** ${tournamentLink}` : "",
+    DIVIDER,
+    "",
+    "✨ **Register now:**",
+    "> ⚔️ Team up, grind hard, and dominate every match.",
+    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    "",
+    DIVIDER,
+    "",
+    "⚔️ Defend your bed.",
+    "⛏️ Break theirs.",
+    "👑 Become unstoppable.",
+    "",
+    "✨ The arena is open. Welcome to **" + data.name + "**. ✨",
   ].filter(Boolean);
+  const thumb = getThumbnailUrl(base);
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `🏆 New Tournament: ${data.name}`,
+    title: `⭐ >> • NEW TOURNAMENT • ⭐`,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_ORANGE,
+    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -132,21 +155,33 @@ export async function notifyNewRegistration(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const playersStr = data.playerIGNs.join(", ") || "—";
+  const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
   const lines = [
-    "✅ **A new team has registered.**",
+    "🧋 **A new team has joined the arena!** 🧐",
     "",
-    `👥 **Team:** ${truncate(data.teamName, FIELD_VALUE_MAX)}`,
-    `🎮 **Players:** ${truncate(playersStr, FIELD_VALUE_MAX)}`,
-    `📌 **Slot:** ${data.slot}`,
+    "> 👥 **Team:** " + teamName,
+    "> 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
+    "> 📌 **Slot:** " + data.slot,
+    "> 🏆 **Tournament:** " + data.tournamentName,
     "",
-    tournamentLink ? `🔗 **Tournament:** ${tournamentLink}` : "",
+    DIVIDER,
+    "",
+    "✨ **View tournament:**",
+    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    "",
+    DIVIDER,
+    "",
+    "⚔️ Another warrior enters. No mercy, only victories. 👑",
+    "✨ The squad grows stronger. ✨",
   ].filter(Boolean);
+  const thumb = getThumbnailUrl(base);
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
     type: "rich",
-    title: truncate(`✅ New Registration – ${data.tournamentName}`, TITLE_MAX),
+    title: `⭐ >> • NEW REGISTRATION • ⭐`,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_GREEN,
+    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -166,16 +201,27 @@ export async function notifyRegistrationClosed(data: {
   const lines = [
     "🔒 **Registration is now closed.**",
     "",
-    data.slotText,
+    "> " + data.slotText,
+    "> **Tournament:** " + data.tournamentName,
     "",
-    tournamentLink ? `🔗 **View tournament:** ${tournamentLink}` : "",
+    DIVIDER,
+    "",
+    "📢 **Bracket and matches coming next.**",
+    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    "",
+    DIVIDER,
+    "",
+    "⚔️ Slots filled. The battlefield is set. 👑",
+    "✨ Stay ready for the bracket. ✨",
   ].filter(Boolean);
+  const thumb = getThumbnailUrl(base);
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `🔒 Registration Closed – ${data.tournamentName}`,
+    title: `⭐ >> • REGISTRATION CLOSED • ⭐`,
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_AMBER,
+    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -192,16 +238,34 @@ export async function notifyBracketLive(data: {
   const base = getBaseUrl();
   const roundsLink = base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined;
   const lines = [
-    "📋 **Rounds have been published. The bracket is ready.**",
+    "📢 **Rounds have been published.**",
+    "**The bracket is live — time to see who dominates.** 🎨",
     "",
-    roundsLink ? `🔗 **View bracket:** ${roundsLink}` : "",
+    "> 📋 **Tournament:** " + data.tournamentName,
+    "> 🏆 **Bracket:** Ready to view",
+    "",
+    DIVIDER,
+    "",
+    "✨ **View bracket:**",
+    roundsLink ? "> 🔗 " + roundsLink : "",
+    "",
+    DIVIDER,
+    "",
+    "⚔️ Defend your bed.",
+    "⛏️ Break theirs.",
+    "👑 Become unstoppable.",
+    "",
+    "✨ The grind begins now. **Bracket is live.** ✨",
+    "⚔️ Undefeated. Unmatched. Unstoppable. 👑",
   ].filter(Boolean);
+  const thumb = getThumbnailUrl(base);
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `📋 Bracket Live – ${data.tournamentName}`,
+    title: `⭐ >> • BRACKET LIVE • ⭐`,
     description: lines.join("\n"),
     url: roundsLink || undefined,
     color: COLOR_GREEN,
+    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
