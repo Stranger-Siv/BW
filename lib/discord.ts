@@ -8,13 +8,13 @@
  */
 
 // ─── Animated emojis (same server as webhook required for these to render) ─────
-// Update IDs if needed: type \:Baba_Cute: in Discord and copy the ID from the link
+// Arrow~6, Baba_Cute, Rules~1, Baba_oh_updates, Fire_yellow~1. Update IDs if one doesn’t render.
 const E = {
   Stars: "<a:Gf_Stars:1426788119163961364>",
   Cute: "<a:Baba_Cute:1428611435122000023>",
-  Arrow: "<a:Arrow:1426787645115076758>",
-  Fire: "<a:Fire_yellow:1428616881727864832>",
-  Rules: "<a:Rules:1428412802577727642>",
+  Arrow: "<a:Arrow~6:1426787645115076758>",
+  Fire: "<a:Fire_yellow~1:1428616881727864832>",
+  Rules: "<a:Rules~1:1428412802577727642>",
   Updates: "<a:Baba_oh_updates:1428410120051626134>",
 } as const;
 
