@@ -101,6 +101,7 @@ const REGISTRATIONS_WEBHOOK = process.env.DISCORD_WEBHOOK_REGISTRATIONS;
 
 /**
  * Notify #tournaments: new tournament created.
+ * Style matches BEDWARS MCF ELITE welcome ( :Gf_Stars: :Arrow: etc. ).
  */
 export async function notifyNewTournament(data: {
   tournamentId: string;
@@ -115,29 +116,25 @@ export async function notifyNewTournament(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const lines = [
-    "🔥 **A new tournament has been created.**",
-    "**Strategy meets domination — time to compete.** 🔥",
+    ":Gf_Stars: **Welcome to BEDWARS MCF ELITE** — a new tournament is live! :Gf_Stars:",
     "",
-    "> 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime,
-    "> 📋 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams,
-    "> 📝 **Registration until:** " + data.registrationDeadline,
-    "> 📌 **Status:** " + data.status,
+    ":Arrow: **" + data.name + "** — where strategy meets domination :Fire_yellow:",
+    ":Arrow: 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime + " ⚔️",
     "",
-    DIVIDER,
+    ":Arrow: 🎮 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams + " 🏆",
+    ":Arrow: 📝 **Registration until:** " + data.registrationDeadline,
+    ":Arrow: 📌 **Status:** " + data.status,
     "",
-    "✨ **Register now:**",
-    "> ⚔️ Team up, grind hard, and dominate every match.",
-    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    "🎤 **Register & compete:** Open the link below to join.",
+    ":Arrow: Team up, grind hard, and dominate every match. 💬",
     "",
-    DIVIDER,
+    ":Rules: **Rules & Fair Play:** No hacks. No toxicity. Only skill. :Blue_lightening:",
+    ":Arrow: Respect teammates. Play smart.",
     "",
-    "⚔️ Defend your bed.",
-    "⛏️ Break theirs.",
-    "👑 Become unstoppable.",
+    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for brackets & events :rocket_gif:",
     "",
-    "✨ The arena is open. Welcome to **" + data.name + "**. ✨",
+    ":Fire_yellow: Gear up soldier — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
-  const thumb = getThumbnailUrl(base);
   const components =
     base && tournamentLink
       ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
@@ -146,11 +143,10 @@ export async function notifyNewTournament(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `⭐ >> • NEW TOURNAMENT • ⭐`,
+    title: ":Gf_Stars: 𝐍𝐄𝐖 𝐓𝐎𝐔𝐑𝐍𝐀𝐌𝐄𝐍𝐓 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_ORANGE,
-    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -191,24 +187,23 @@ export async function notifyNewRegistration(data: {
   const playersStr = data.playerIGNs.join(", ") || "—";
   const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
   const lines = [
-    "🧋 **A new team has joined the arena!** 🧐",
+    ":GF_Cute: **A new team has joined the arena!** :GF_Khush:",
     "",
-    "> 👥 **Team:** " + teamName,
-    "> 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
-    "> 📌 **Slot:** " + data.slot,
-    "> 🏆 **Tournament:** " + data.tournamentName,
+    ":Arrow: Welcome to **BEDWARS MCF ELITE**, where strategy meets domination :Fire_yellow:",
+    ":Arrow: **Team:** " + teamName + " ⚔️",
     "",
-    DIVIDER,
+    ":Arrow: 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
+    ":Arrow: 📌 **Slot:** " + data.slot + " • 🏆 **Tournament:** " + data.tournamentName,
     "",
-    "✨ **View tournament:**",
-    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 :Basu_chatting:",
+    ":Arrow: Open the links below to view the team or tournament.",
     "",
-    DIVIDER,
+    ":Rules: **Rules & Discipline:** Respect teammates. No toxicity. Play smart. :Blue_lightening:",
     "",
-    "⚔️ Another warrior enters. No mercy, only victories. 👑",
-    "✨ The squad grows stronger. ✨",
+    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for brackets & events :rocket_gif:",
+    "",
+    ":Fire_yellow: Another warrior enters — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
-  const thumb = getThumbnailUrl(base);
   const extraButtons: { label: string; url: string }[] = [];
   if (tournamentLink) extraButtons.push({ label: "🏆 View Tournament", url: tournamentLink });
   if (teamDetailLink) extraButtons.push({ label: "👥 View Team", url: teamDetailLink });
@@ -216,11 +211,10 @@ export async function notifyNewRegistration(data: {
     base ? linkButtons(base, ...extraButtons) : undefined;
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
     type: "rich",
-    title: `⭐ >> • NEW REGISTRATION • ⭐`,
+    title: ":Gf_Stars: 𝐍𝐄𝐖 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_GREEN,
-    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -238,22 +232,20 @@ export async function notifyRegistrationClosed(data: {
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
   const lines = [
-    "🔒 **Registration is now closed.**",
+    ":Gf_Stars: **Registration is now closed for BEDWARS MCF ELITE** :Gf_Stars:",
     "",
-    "> " + data.slotText,
-    "> **Tournament:** " + data.tournamentName,
+    ":Arrow: " + data.slotText + " :Fire_yellow:",
+    ":Arrow: **Tournament:** " + data.tournamentName + " ⚔️",
     "",
-    DIVIDER,
+    "🎤 **Team Chat & Strategy:** Brackets and matches coming next. :Basu_chatting:",
+    ":Arrow: Stay ready for the bracket — discuss tactics with your squad 💬",
     "",
-    "📢 **Bracket and matches coming next.**",
-    tournamentLink ? "> 🔗 " + tournamentLink : "",
+    ":Rules: **Rules & Discipline:** No hacks. No toxicity. Only skill. :Blue_lightening:",
     "",
-    DIVIDER,
+    ":Spider_oh_updates: **Match Updates & Announcements:** Bracket will be published soon :rocket_gif:",
     "",
-    "⚔️ Slots filled. The battlefield is set. 👑",
-    "✨ Stay ready for the bracket. ✨",
+    ":Fire_yellow: Slots filled. The battlefield is set. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
-  const thumb = getThumbnailUrl(base);
   const components =
     base && tournamentLink
       ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
@@ -262,11 +254,10 @@ export async function notifyRegistrationClosed(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `⭐ >> • REGISTRATION CLOSED • ⭐`,
+    title: ":Gf_Stars: 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
     description: lines.join("\n"),
     url: tournamentLink || undefined,
     color: COLOR_AMBER,
-    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
@@ -283,27 +274,20 @@ export async function notifyBracketLive(data: {
   const base = getBaseUrl();
   const roundsLink = base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined;
   const lines = [
-    "📢 **Rounds have been published.**",
-    "**The bracket is live — time to see who dominates.** 🎨",
+    ":Gf_Stars: **Bracket is live for BEDWARS MCF ELITE** :Gf_Stars:",
     "",
-    "> 📋 **Tournament:** " + data.tournamentName,
-    "> 🏆 **Bracket:** Ready to view",
+    ":Arrow: **" + data.tournamentName + "** — rounds published, time to dominate :Fire_yellow:",
+    ":Arrow: 🏆 **Bracket:** Ready to view ⚔️",
     "",
-    DIVIDER,
+    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 :Basu_chatting:",
+    ":Arrow: Open the link below to view the bracket.",
     "",
-    "✨ **View bracket:**",
-    roundsLink ? "> 🔗 " + roundsLink : "",
+    ":Rules: **Rules & Discipline:** No hacks. No toxicity. Only skill. :Blue_lightening:",
     "",
-    DIVIDER,
+    ":Spider_oh_updates: **Match Updates & Announcements:** Stay ready for matches & events :rocket_gif:",
     "",
-    "⚔️ Defend your bed.",
-    "⛏️ Break theirs.",
-    "👑 Become unstoppable.",
-    "",
-    "✨ The grind begins now. **Bracket is live.** ✨",
-    "⚔️ Undefeated. Unmatched. Unstoppable. 👑",
+    ":Fire_yellow: Defend your bed. Break theirs. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
-  const thumb = getThumbnailUrl(base);
   const components =
     base && roundsLink
       ? linkButtons(base, { label: "📋 View Bracket", url: roundsLink })
@@ -312,11 +296,10 @@ export async function notifyBracketLive(data: {
         : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
-    title: `⭐ >> • BRACKET LIVE • ⭐`,
+    title: ":Gf_Stars: 𝐁𝐑𝐀𝐂𝐊𝐄𝐓 𝐋𝐈𝐕𝐄 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 :Gf_Stars:",
     description: lines.join("\n"),
     url: roundsLink || undefined,
     color: COLOR_GREEN,
-    thumbnail: thumb ? { url: thumb } : undefined,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
