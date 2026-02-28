@@ -5,7 +5,8 @@
  * Custom animated emojis use <a:name:id> so they render in Discord.
  */
 
-/** BEDWARS MCF ELITE server animated emojis (format: <a:name:id>). Update IDs if your server uses different. */
+// ─── Animated emojis (BEDWARS MCF ELITE) ─────────────────────────────────────
+/** Format: <a:name:id>. Update IDs if your server uses different. */
 const E = {
   Gf_Stars: "<a:Gf_Stars:1426788119163961364>",
   GF_Cute: "<a:GF_Cute:1428611435122000023>",
@@ -19,6 +20,8 @@ const E = {
   Spider_oh_updates: "<a:Spider_oh_updates:1428410120051626134>",
 } as const;
 
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 export type DiscordEmbed = {
   type?: "rich";
   title?: string;
@@ -31,17 +34,50 @@ export type DiscordEmbed = {
   timestamp?: string;
 };
 
+/** Discord link button (style 5). Max 5 per row, max 5 rows. */
+type DiscordLinkButton = { type: 2; style: 5; label: string; url: string };
+type DiscordActionRow = { type: 1; components: DiscordLinkButton[] };
+
+// ─── Config & constants ──────────────────────────────────────────────────────
+
+const EMBED_FOOTER =
+  process.env.DISCORD_EMBED_FOOTER ||
+  "🏆 BEDWARS MCF ELITE • Break Beds • Win Games • Repeat";
+
+const COLOR_ORANGE = 16753920;
+const COLOR_GREEN = 0x2ecc71;
+const COLOR_AMBER = 0xf1c40f;
+
+const FIELD_VALUE_MAX = 1024;
+const TITLE_MAX = 256;
+
+const TOURNAMENTS_WEBHOOK = process.env.DISCORD_WEBHOOK_TOURNAMENTS;
+const REGISTRATIONS_WEBHOOK = process.env.DISCORD_WEBHOOK_REGISTRATIONS;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getBaseUrl(): string {
   const u = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL ?? "";
   if (!u) return "";
   return u.startsWith("http") ? u : `https://${u}`;
 }
 
-/** Discord link button (style 5). Max 5 per row, max 5 rows. */
-type DiscordLinkButton = { type: 2; style: 5; label: string; url: string };
-type DiscordActionRow = { type: 1; components: DiscordLinkButton[] };
+function getThumbnailUrl(baseUrl: string): string | undefined {
+  const logo =
+    process.env.DISCORD_EMBED_LOGO_URL ||
+    (baseUrl ? `${baseUrl}/baba-tillu-logo.png` : "");
+  return logo || undefined;
+}
 
-function buildBody(embed: DiscordEmbed, components?: DiscordActionRow[]): string {
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 3) + "...";
+}
+
+function buildBody(
+  embed: DiscordEmbed,
+  components?: DiscordActionRow[]
+): string {
   return JSON.stringify({
     content: null,
     embeds: [embed],
@@ -58,33 +94,27 @@ function linkButtons(
     { type: 2, style: 5, label: "🌐 Visit Website", url: websiteUrl },
   ];
   for (const b of extra) {
-    if (b?.url && row.length < 5) row.push({ type: 2, style: 5, label: b.label, url: b.url });
+    if (b?.url && row.length < 5) {
+      row.push({ type: 2, style: 5, label: b.label, url: b.url });
+    }
   }
   return [{ type: 1, components: row }];
 }
 
-const EMBED_FOOTER =
-  process.env.DISCORD_EMBED_FOOTER ||
-  "🏆 BEDWARS MCF ELITE • Break Beds • Win Games • Repeat";
-
-const COLOR_ORANGE = 16753920;
-const COLOR_GREEN = 0x2ecc71;
-const COLOR_AMBER = 0xf1c40f;
-
-function getThumbnailUrl(baseUrl: string): string | undefined {
-  const logo = process.env.DISCORD_EMBED_LOGO_URL || (baseUrl ? `${baseUrl}/baba-tillu-logo.png` : "");
-  return logo || undefined;
-}
+// ─── Webhook send ─────────────────────────────────────────────────────────────
 
 /**
- * Sends a single embed (and optional link buttons) to the given webhook URL. Does not throw; logs errors.
+ * Sends a single embed (and optional link buttons) to the given webhook URL.
+ * Does not throw; logs errors.
  */
 export async function sendDiscordWebhook(
   webhookUrl: string | undefined,
   embed: DiscordEmbed,
   components?: DiscordActionRow[]
 ): Promise<void> {
-  if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) return;
+  if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+    return;
+  }
   try {
     new URL(webhookUrl);
   } catch {
@@ -99,7 +129,9 @@ export async function sendDiscordWebhook(
     if (!res.ok) {
       const text = await res.text();
       if (res.status === 401) {
-        console.warn("Discord webhook 401: Invalid Webhook Token. Re-copy the webhook URL.");
+        console.warn(
+          "Discord webhook 401: Invalid Webhook Token. Re-copy the webhook URL."
+        );
       } else {
         console.warn("Discord webhook failed:", res.status, text);
       }
@@ -109,8 +141,7 @@ export async function sendDiscordWebhook(
   }
 }
 
-const TOURNAMENTS_WEBHOOK = process.env.DISCORD_WEBHOOK_TOURNAMENTS;
-const REGISTRATIONS_WEBHOOK = process.env.DISCORD_WEBHOOK_REGISTRATIONS;
+// ─── Embed builders (notification content) ────────────────────────────────────
 
 /**
  * Notify #tournaments: new tournament created.
@@ -127,7 +158,10 @@ export async function notifyNewTournament(data: {
   status: string;
 }): Promise<void> {
   const base = getBaseUrl();
-  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
+  const tournamentLink = base
+    ? `${base}/tournaments/${data.tournamentId}`
+    : undefined;
+
   const lines = [
     E.Gf_Stars + " **Welcome to BEDWARS MCF ELITE** — a new tournament is live! " + E.Gf_Stars,
     "",
@@ -148,30 +182,28 @@ export async function notifyNewTournament(data: {
     "",
     E.Fire_yellow + " Gear up soldier — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
+
+  const description = lines.join("\n");
+
   const components =
     base && tournamentLink
       ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
       : base
         ? linkButtons(base)
         : undefined;
-  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
+
+  const embed: DiscordEmbed = {
     type: "rich",
     title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐓𝐎𝐔𝐑𝐍𝐀𝐌𝐄𝐍𝐓 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
-    description: lines.join("\n"),
+    description,
     url: tournamentLink || undefined,
     color: COLOR_ORANGE,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  }, components);
-}
+  };
 
-const FIELD_VALUE_MAX = 1024;
-const TITLE_MAX = 256;
-
-function truncate(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 3) + "...";
+  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
 
 /**
@@ -185,20 +217,30 @@ export async function notifyNewRegistration(data: {
   slot: string;
   teamId?: string;
 }): Promise<void> {
-  if (!REGISTRATIONS_WEBHOOK || !REGISTRATIONS_WEBHOOK.startsWith("https://discord.com/api/webhooks/")) {
+  if (
+    !REGISTRATIONS_WEBHOOK ||
+    !REGISTRATIONS_WEBHOOK.startsWith("https://discord.com/api/webhooks/")
+  ) {
     if (process.env.NODE_ENV === "production") {
-      console.warn("Discord registrations skipped: set DISCORD_WEBHOOK_REGISTRATIONS.");
+      console.warn(
+        "Discord registrations skipped: set DISCORD_WEBHOOK_REGISTRATIONS."
+      );
     }
     return;
   }
+
   const base = getBaseUrl();
-  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
+  const tournamentLink = base
+    ? `${base}/tournaments/${data.tournamentId}`
+    : undefined;
   const teamDetailLink =
     base && data.teamId
       ? `${base}/tournaments/${data.tournamentId}/teams/${data.teamId}`
       : undefined;
+
   const playersStr = data.playerIGNs.join(", ") || "—";
   const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
+
   const lines = [
     E.GF_Cute + " **A new team has joined the arena!** " + E.GF_Khush,
     "",
@@ -217,21 +259,27 @@ export async function notifyNewRegistration(data: {
     "",
     E.Fire_yellow + " Another warrior enters — we conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
+
+  const description = lines.join("\n");
+
   const extraButtons: { label: string; url: string }[] = [];
   if (tournamentLink) extraButtons.push({ label: "🏆 View Tournament", url: tournamentLink });
   if (teamDetailLink) extraButtons.push({ label: "👥 View Team", url: teamDetailLink });
-  const components =
-    base ? linkButtons(base, ...extraButtons) : undefined;
-  await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
+
+  const components = base ? linkButtons(base, ...extraButtons) : undefined;
+
+  const embed: DiscordEmbed = {
     type: "rich",
     title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
-    description: lines.join("\n"),
+    description,
     url: tournamentLink || undefined,
     color: COLOR_GREEN,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  }, components);
+  };
+
+  await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, embed, components);
 }
 
 /**
@@ -243,7 +291,10 @@ export async function notifyRegistrationClosed(data: {
   slotText: string;
 }): Promise<void> {
   const base = getBaseUrl();
-  const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
+  const tournamentLink = base
+    ? `${base}/tournaments/${data.tournamentId}`
+    : undefined;
+
   const lines = [
     E.Gf_Stars + " **Registration is now closed for BEDWARS MCF ELITE** " + E.Gf_Stars,
     "",
@@ -259,22 +310,28 @@ export async function notifyRegistrationClosed(data: {
     "",
     E.Fire_yellow + " Slots filled. The battlefield is set. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
+
+  const description = lines.join("\n");
+
   const components =
     base && tournamentLink
       ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
       : base
         ? linkButtons(base)
         : undefined;
-  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
+
+  const embed: DiscordEmbed = {
     type: "rich",
     title: E.Gf_Stars + " 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
-    description: lines.join("\n"),
+    description,
     url: tournamentLink || undefined,
     color: COLOR_AMBER,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  }, components);
+  };
+
+  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
 
 /**
@@ -285,7 +342,10 @@ export async function notifyBracketLive(data: {
   tournamentName: string;
 }): Promise<void> {
   const base = getBaseUrl();
-  const roundsLink = base ? `${base}/tournaments/${data.tournamentId}/rounds` : undefined;
+  const roundsLink = base
+    ? `${base}/tournaments/${data.tournamentId}/rounds`
+    : undefined;
+
   const lines = [
     E.Gf_Stars + " **Bracket is live for BEDWARS MCF ELITE** " + E.Gf_Stars,
     "",
@@ -301,20 +361,26 @@ export async function notifyBracketLive(data: {
     "",
     E.Fire_yellow + " Defend your bed. Break theirs. We conquer MCFleet together ⚔️🔥",
   ].filter(Boolean);
+
+  const description = lines.join("\n");
+
   const components =
     base && roundsLink
       ? linkButtons(base, { label: "📋 View Bracket", url: roundsLink })
       : base
         ? linkButtons(base)
         : undefined;
-  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
+
+  const embed: DiscordEmbed = {
     type: "rich",
     title: E.Gf_Stars + " 𝐁𝐑𝐀𝐂𝐊𝐄𝐓 𝐋𝐈𝐕𝐄 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
-    description: lines.join("\n"),
+    description,
     url: roundsLink || undefined,
     color: COLOR_GREEN,
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  }, components);
+  };
+
+  await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
