@@ -310,6 +310,7 @@ async function registerWithTournamentId(
       teamName,
       playerIGNs: players.map((p) => (p.minecraftIGN ?? "").trim()).filter(Boolean),
       slot: `${newCount} / ${t.maxTeams}`,
+      teamId: created._id.toString(),
     }).catch(() => {});
     if (newCount >= t.maxTeams) {
       notifyRegistrationClosed({

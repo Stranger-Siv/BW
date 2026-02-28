@@ -24,8 +24,30 @@ function getBaseUrl(): string {
   return u.startsWith("http") ? u : `https://${u}`;
 }
 
-function buildBody(embed: DiscordEmbed): string {
-  return JSON.stringify({ content: null, embeds: [embed], components: [] });
+/** Discord link button (style 5). Max 5 per row, max 5 rows. */
+type DiscordLinkButton = { type: 2; style: 5; label: string; url: string };
+type DiscordActionRow = { type: 1; components: DiscordLinkButton[] };
+
+function buildBody(embed: DiscordEmbed, components?: DiscordActionRow[]): string {
+  return JSON.stringify({
+    content: null,
+    embeds: [embed],
+    components: components && components.length > 0 ? components : [],
+  });
+}
+
+/** One row of link buttons: "Visit Website" + optional extra buttons (max 5 total). */
+function linkButtons(
+  websiteUrl: string,
+  ...extra: { label: string; url: string }[]
+): DiscordActionRow[] {
+  const row: DiscordLinkButton[] = [
+    { type: 2, style: 5, label: "🌐 Visit Website", url: websiteUrl },
+  ];
+  for (const b of extra) {
+    if (b?.url && row.length < 5) row.push({ type: 2, style: 5, label: b.label, url: b.url });
+  }
+  return [{ type: 1, components: row }];
 }
 
 const EMBED_FOOTER =
@@ -42,11 +64,12 @@ function getThumbnailUrl(baseUrl: string): string | undefined {
 }
 
 /**
- * Sends a single embed to the given webhook URL. Does not throw; logs errors.
+ * Sends a single embed (and optional link buttons) to the given webhook URL. Does not throw; logs errors.
  */
 export async function sendDiscordWebhook(
   webhookUrl: string | undefined,
-  embed: DiscordEmbed
+  embed: DiscordEmbed,
+  components?: DiscordActionRow[]
 ): Promise<void> {
   if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) return;
   try {
@@ -58,7 +81,7 @@ export async function sendDiscordWebhook(
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: buildBody(embed),
+      body: buildBody(embed, components),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -115,6 +138,12 @@ export async function notifyNewTournament(data: {
     "✨ The arena is open. Welcome to **" + data.name + "**. ✨",
   ].filter(Boolean);
   const thumb = getThumbnailUrl(base);
+  const components =
+    base && tournamentLink
+      ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
+      : base
+        ? linkButtons(base)
+        : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
     title: `⭐ >> • NEW TOURNAMENT • ⭐`,
@@ -125,7 +154,7 @@ export async function notifyNewTournament(data: {
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  });
+  }, components);
 }
 
 const FIELD_VALUE_MAX = 1024;
@@ -145,6 +174,7 @@ export async function notifyNewRegistration(data: {
   teamName: string;
   playerIGNs: string[];
   slot: string;
+  teamId?: string;
 }): Promise<void> {
   if (!REGISTRATIONS_WEBHOOK || !REGISTRATIONS_WEBHOOK.startsWith("https://discord.com/api/webhooks/")) {
     if (process.env.NODE_ENV === "production") {
@@ -154,6 +184,10 @@ export async function notifyNewRegistration(data: {
   }
   const base = getBaseUrl();
   const tournamentLink = base ? `${base}/tournaments/${data.tournamentId}` : undefined;
+  const teamDetailLink =
+    base && data.teamId
+      ? `${base}/tournaments/${data.tournamentId}/teams/${data.teamId}`
+      : undefined;
   const playersStr = data.playerIGNs.join(", ") || "—";
   const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
   const lines = [
@@ -175,6 +209,11 @@ export async function notifyNewRegistration(data: {
     "✨ The squad grows stronger. ✨",
   ].filter(Boolean);
   const thumb = getThumbnailUrl(base);
+  const extraButtons: { label: string; url: string }[] = [];
+  if (tournamentLink) extraButtons.push({ label: "🏆 View Tournament", url: tournamentLink });
+  if (teamDetailLink) extraButtons.push({ label: "👥 View Team", url: teamDetailLink });
+  const components =
+    base ? linkButtons(base, ...extraButtons) : undefined;
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, {
     type: "rich",
     title: `⭐ >> • NEW REGISTRATION • ⭐`,
@@ -185,7 +224,7 @@ export async function notifyNewRegistration(data: {
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  });
+  }, components);
 }
 
 /**
@@ -215,6 +254,12 @@ export async function notifyRegistrationClosed(data: {
     "✨ Stay ready for the bracket. ✨",
   ].filter(Boolean);
   const thumb = getThumbnailUrl(base);
+  const components =
+    base && tournamentLink
+      ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
+      : base
+        ? linkButtons(base)
+        : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
     title: `⭐ >> • REGISTRATION CLOSED • ⭐`,
@@ -225,7 +270,7 @@ export async function notifyRegistrationClosed(data: {
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  });
+  }, components);
 }
 
 /**
@@ -259,6 +304,12 @@ export async function notifyBracketLive(data: {
     "⚔️ Undefeated. Unmatched. Unstoppable. 👑",
   ].filter(Boolean);
   const thumb = getThumbnailUrl(base);
+  const components =
+    base && roundsLink
+      ? linkButtons(base, { label: "📋 View Bracket", url: roundsLink })
+      : base
+        ? linkButtons(base)
+        : undefined;
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, {
     type: "rich",
     title: `⭐ >> • BRACKET LIVE • ⭐`,
@@ -269,5 +320,5 @@ export async function notifyBracketLive(data: {
     fields: null,
     footer: { text: EMBED_FOOTER },
     timestamp: new Date().toISOString(),
-  });
+  }, components);
 }
