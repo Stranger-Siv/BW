@@ -1,23 +1,17 @@
 /**
- * Discord webhook notifications. Webhooks only (no bot).
+ * Discord webhook notifications. Embeds only. No plain messages.
  * Set DISCORD_WEBHOOK_TOURNAMENTS and/or DISCORD_WEBHOOK_REGISTRATIONS.
  * Optional: DISCORD_EMBED_FOOTER to override the footer text.
- * Custom animated emojis use <a:name:id> so they render in Discord.
  */
 
-// ─── Animated emojis (BEDWARS MCF ELITE) ─────────────────────────────────────
-/** Format: <a:name:id>. Update IDs if your server uses different. */
+// ─── Emojis (exact IDs from spec) ─────────────────────────────────────────────
 const E = {
-  Gf_Stars: "<a:Gf_Stars:1426788119163961364>",
-  GF_Cute: "<a:GF_Cute:1428611435122000023>",
-  GF_Khush: "<a:GF_Khush:1426788948956414032>",
+  Stars: "<a:Gf_Stars:1426788119163961364>",
+  Cute: "<a:GF_Cute:1428611435122000023>",
   Arrow: "<a:Arrow:1426787645115076758>",
-  Fire_yellow: "<a:Fire_yellow:1428616881727864832>",
-  A_Tada: "<a:A_Tada:1426997134120583259>",
-  Basu_chatting: "<a:Basu_chatting:1428620806325276755>",
+  Fire: "<a:Fire_yellow:1428616881727864832>",
   Rules: "<a:Rules:1428412802577727642>",
-  Blue_lightening: "<a:Blue_lightening:1212297471238209577>",
-  Spider_oh_updates: "<a:Spider_oh_updates:1428410120051626134>",
+  Updates: "<a:Spider_oh_updates:1428410120051626134>",
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -49,7 +43,6 @@ const COLOR_GREEN = 0x2ecc71;
 const COLOR_AMBER = 0xf1c40f;
 
 const FIELD_VALUE_MAX = 1024;
-const TITLE_MAX = 256;
 
 const TOURNAMENTS_WEBHOOK = process.env.DISCORD_WEBHOOK_TOURNAMENTS;
 const REGISTRATIONS_WEBHOOK = process.env.DISCORD_WEBHOOK_REGISTRATIONS;
@@ -62,16 +55,20 @@ function getBaseUrl(): string {
   return u.startsWith("http") ? u : `https://${u}`;
 }
 
-function getThumbnailUrl(baseUrl: string): string | undefined {
-  const logo =
-    process.env.DISCORD_EMBED_LOGO_URL ||
-    (baseUrl ? `${baseUrl}/baba-tillu-logo.png` : "");
-  return logo || undefined;
-}
-
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return s.slice(0, max - 3) + "...";
+}
+
+/** Build embed with required footer and timestamp. */
+function createEmbed(overrides: Partial<DiscordEmbed>): DiscordEmbed {
+  return {
+    type: "rich",
+    footer: { text: EMBED_FOOTER },
+    timestamp: new Date().toISOString(),
+    fields: null,
+    ...overrides,
+  };
 }
 
 function buildBody(
@@ -91,7 +88,7 @@ function linkButtons(
   ...extra: { label: string; url: string }[]
 ): DiscordActionRow[] {
   const row: DiscordLinkButton[] = [
-    { type: 2, style: 5, label: "🌐 Visit Website", url: websiteUrl },
+    { type: 2, style: 5, label: "Visit Website", url: websiteUrl },
   ];
   for (const b of extra) {
     if (b?.url && row.length < 5) {
@@ -141,12 +138,8 @@ export async function sendDiscordWebhook(
   }
 }
 
-// ─── Embed builders (notification content) ────────────────────────────────────
+// ─── Notify: New tournament created ───────────────────────────────────────────
 
-/**
- * Notify #tournaments: new tournament created.
- * Style matches BEDWARS MCF ELITE welcome ( :Gf_Stars: :Arrow: etc. ).
- */
 export async function notifyNewTournament(data: {
   tournamentId: string;
   name: string;
@@ -162,53 +155,40 @@ export async function notifyNewTournament(data: {
     ? `${base}/tournaments/${data.tournamentId}`
     : undefined;
 
-  const lines = [
-    E.Gf_Stars + " **Welcome to BEDWARS MCF ELITE** — a new tournament is live! " + E.Gf_Stars,
+  const description = [
+    E.Stars + " A new tournament is now live!",
     "",
-    E.Arrow + " **" + data.name + "** — where strategy meets domination " + E.Fire_yellow,
-    E.Arrow + " 📅 **Date:** " + data.date + " • ⏰ **Start:** " + data.startTime + " ⚔️",
+    E.Arrow + " Tournament: **" + data.name + "**",
+    E.Arrow + " Date: **" + data.date + "** • Start: **" + data.startTime + "**",
+    E.Arrow + " Mode: **" + data.type + "**",
+    E.Arrow + " Slots: **0 / " + data.maxTeams + "**",
+    E.Arrow + " Registration until: **" + data.registrationDeadline + "**",
+    E.Arrow + " Status: **" + data.status + "**",
     "",
-    E.Arrow + " 🎮 **Mode:** " + data.type + " • 👥 **Slots:** 0 / " + data.maxTeams + " 🏆",
-    E.Arrow + " 📝 **Registration until:** " + data.registrationDeadline,
-    E.Arrow + " 📌 **Status:** " + data.status,
+    "Register now and secure your squad's position.",
     "",
-    "🎤 **Register & compete:** Open the link below to join.",
-    E.Arrow + " Team up, grind hard, and dominate every match. 💬",
+    E.Rules + " No hacks • No toxicity • Play fair",
+    E.Updates + " Brackets and announcements coming soon",
     "",
-    E.Rules + " **Rules & Fair Play:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
-    E.Arrow + " Respect teammates. Play smart.",
-    "",
-    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for brackets & events 🚀",
-    "",
-    E.Fire_yellow + " Gear up soldier — we conquer MCFleet together ⚔️🔥",
-  ].filter(Boolean);
+    E.Fire + " Prepare your squad. Dominate the battlefield.",
+  ].join("\n");
 
-  const description = lines.join("\n");
+  const buttons: { label: string; url: string }[] = [];
+  if (tournamentLink) buttons.push({ label: "View Tournament", url: tournamentLink });
+  const components = base ? linkButtons(base, ...buttons) : undefined;
 
-  const components =
-    base && tournamentLink
-      ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
-      : base
-        ? linkButtons(base)
-        : undefined;
-
-  const embed: DiscordEmbed = {
-    type: "rich",
-    title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐓𝐎𝐔𝐑𝐍𝐀𝐌𝐄𝐍𝐓 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
+  const embed = createEmbed({
+    title: E.Stars + " NEW TOURNAMENT — BEDWARS MCF ELITE " + E.Stars,
     description,
-    url: tournamentLink || undefined,
+    url: tournamentLink ?? undefined,
     color: COLOR_ORANGE,
-    fields: null,
-    footer: { text: EMBED_FOOTER },
-    timestamp: new Date().toISOString(),
-  };
+  });
 
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
 
-/**
- * Notify #registrations: new team registered.
- */
+// ─── Notify: New team registration ───────────────────────────────────────────
+
 export async function notifyNewRegistration(data: {
   tournamentId: string;
   tournamentName: string;
@@ -240,51 +220,41 @@ export async function notifyNewRegistration(data: {
 
   const playersStr = data.playerIGNs.join(", ") || "—";
   const teamName = truncate(data.teamName, FIELD_VALUE_MAX);
+  const playersDisplay = truncate(playersStr, FIELD_VALUE_MAX);
 
-  const lines = [
-    E.GF_Cute + " **A new team has joined the arena!** " + E.GF_Khush,
+  const description = [
+    E.Cute + " A new team has entered the arena!",
     "",
-    E.Arrow + " Welcome to **BEDWARS MCF ELITE**, where strategy meets domination " + E.Fire_yellow,
-    E.Arrow + " **Team:** " + teamName + " ⚔️",
+    E.Arrow + " Team: **" + teamName + "**",
+    E.Arrow + " Players: **" + playersDisplay + "**",
+    E.Arrow + " Slot: **" + data.slot + "**",
+    E.Arrow + " Tournament: **" + data.tournamentName + "**",
     "",
-    E.Arrow + " 🎮 **Players:** " + truncate(playersStr, FIELD_VALUE_MAX),
-    E.Arrow + " 📌 **Slot:** " + data.slot + " • 🏆 **Tournament:** " + data.tournamentName,
+    "Teams should now coordinate and prepare strategies.",
     "",
-    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 " + E.Basu_chatting,
-    E.Arrow + " Open the links below to view the team or tournament.",
+    E.Rules + " Respect teammates • No toxicity • Play smart",
+    E.Updates + " Match info and brackets coming soon",
     "",
-    E.Rules + " **Rules & Discipline:** Respect teammates. No toxicity. Play smart. " + E.Blue_lightening,
-    "",
-    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for brackets & events 🚀",
-    "",
-    E.Fire_yellow + " Another warrior enters — we conquer MCFleet together ⚔️🔥",
-  ].filter(Boolean);
+    E.Fire + " Another challenger joins the fight.",
+  ].join("\n");
 
-  const description = lines.join("\n");
+  const buttons: { label: string; url: string }[] = [];
+  if (tournamentLink) buttons.push({ label: "View Tournament", url: tournamentLink });
+  if (teamDetailLink) buttons.push({ label: "View Team", url: teamDetailLink });
+  const components = base ? linkButtons(base, ...buttons) : undefined;
 
-  const extraButtons: { label: string; url: string }[] = [];
-  if (tournamentLink) extraButtons.push({ label: "🏆 View Tournament", url: tournamentLink });
-  if (teamDetailLink) extraButtons.push({ label: "👥 View Team", url: teamDetailLink });
-
-  const components = base ? linkButtons(base, ...extraButtons) : undefined;
-
-  const embed: DiscordEmbed = {
-    type: "rich",
-    title: E.Gf_Stars + " 𝐍𝐄𝐖 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
+  const embed = createEmbed({
+    title: E.Stars + " NEW TEAM REGISTERED — BEDWARS MCF ELITE " + E.Stars,
     description,
-    url: tournamentLink || undefined,
+    url: tournamentLink ?? undefined,
     color: COLOR_GREEN,
-    fields: null,
-    footer: { text: EMBED_FOOTER },
-    timestamp: new Date().toISOString(),
-  };
+  });
 
   await sendDiscordWebhook(REGISTRATIONS_WEBHOOK, embed, components);
 }
 
-/**
- * Notify #tournaments: registration closed (full or manually closed).
- */
+// ─── Notify: Registration closed ───────────────────────────────────────────────
+
 export async function notifyRegistrationClosed(data: {
   tournamentId: string;
   tournamentName: string;
@@ -295,48 +265,36 @@ export async function notifyRegistrationClosed(data: {
     ? `${base}/tournaments/${data.tournamentId}`
     : undefined;
 
-  const lines = [
-    E.Gf_Stars + " **Registration is now closed for BEDWARS MCF ELITE** " + E.Gf_Stars,
+  const description = [
+    E.Stars + " Registration has officially closed.",
     "",
-    E.Arrow + " " + data.slotText + " " + E.Fire_yellow,
-    E.Arrow + " **Tournament:** " + data.tournamentName + " ⚔️",
+    E.Arrow + " " + data.slotText,
+    E.Arrow + " Tournament: **" + data.tournamentName + "**",
     "",
-    "🎤 **Team Chat & Strategy:** Brackets and matches coming next. " + E.Basu_chatting,
-    E.Arrow + " Stay ready for the bracket — discuss tactics with your squad 💬",
+    "Teams should now prepare for bracket release.",
     "",
-    E.Rules + " **Rules & Discipline:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
+    E.Rules + " Fair play only • No cheats • No toxicity",
+    E.Updates + " Bracket announcement coming soon",
     "",
-    E.Spider_oh_updates + " **Match Updates & Announcements:** Bracket will be published soon 🚀",
-    "",
-    E.Fire_yellow + " Slots filled. The battlefield is set. We conquer MCFleet together ⚔️🔥",
-  ].filter(Boolean);
+    E.Fire + " The battlefield is set. Prepare for combat.",
+  ].join("\n");
 
-  const description = lines.join("\n");
+  const buttons: { label: string; url: string }[] = [];
+  if (tournamentLink) buttons.push({ label: "View Tournament", url: tournamentLink });
+  const components = base ? linkButtons(base, ...buttons) : undefined;
 
-  const components =
-    base && tournamentLink
-      ? linkButtons(base, { label: "🏆 View Tournament", url: tournamentLink })
-      : base
-        ? linkButtons(base)
-        : undefined;
-
-  const embed: DiscordEmbed = {
-    type: "rich",
-    title: E.Gf_Stars + " 𝐑𝐄𝐆𝐈𝐒𝐓𝐑𝐀𝐓𝐈𝐎𝐍 𝐂𝐋𝐎𝐒𝐄𝐃 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
+  const embed = createEmbed({
+    title: E.Stars + " REGISTRATION CLOSED — BEDWARS MCF ELITE " + E.Stars,
     description,
-    url: tournamentLink || undefined,
+    url: tournamentLink ?? undefined,
     color: COLOR_AMBER,
-    fields: null,
-    footer: { text: EMBED_FOOTER },
-    timestamp: new Date().toISOString(),
-  };
+  });
 
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
 
-/**
- * Notify #tournaments: bracket is live (rounds created).
- */
+// ─── Notify: Bracket live ─────────────────────────────────────────────────────
+
 export async function notifyBracketLive(data: {
   tournamentId: string;
   tournamentName: string;
@@ -346,41 +304,30 @@ export async function notifyBracketLive(data: {
     ? `${base}/tournaments/${data.tournamentId}/rounds`
     : undefined;
 
-  const lines = [
-    E.Gf_Stars + " **Bracket is live for BEDWARS MCF ELITE** " + E.Gf_Stars,
+  const description = [
+    E.Stars + " The bracket is now live!",
     "",
-    E.Arrow + " **" + data.tournamentName + "** — rounds published, time to dominate " + E.Fire_yellow,
-    E.Arrow + " 🏆 **Bracket:** Ready to view ⚔️",
+    E.Arrow + " Tournament: **" + data.tournamentName + "**",
+    E.Arrow + " Status: **Rounds published**",
     "",
-    "🎤 **Team Chat & Strategy:** Discuss tactics, scrims & game plans 💬 " + E.Basu_chatting,
-    E.Arrow + " Open the link below to view the bracket.",
+    "Teams should review matchups and prepare strategies.",
     "",
-    E.Rules + " **Rules & Discipline:** No hacks. No toxicity. Only skill. " + E.Blue_lightening,
+    E.Rules + " No hacks • No toxicity • Play fair",
+    E.Updates + " Match announcements will follow",
     "",
-    E.Spider_oh_updates + " **Match Updates & Announcements:** Stay ready for matches & events 🚀",
-    "",
-    E.Fire_yellow + " Defend your bed. Break theirs. We conquer MCFleet together ⚔️🔥",
-  ].filter(Boolean);
+    E.Fire + " Defend your bed. Break theirs. Win the war.",
+  ].join("\n");
 
-  const description = lines.join("\n");
+  const buttons: { label: string; url: string }[] = [];
+  if (roundsLink) buttons.push({ label: "View Bracket", url: roundsLink });
+  const components = base ? linkButtons(base, ...buttons) : undefined;
 
-  const components =
-    base && roundsLink
-      ? linkButtons(base, { label: "📋 View Bracket", url: roundsLink })
-      : base
-        ? linkButtons(base)
-        : undefined;
-
-  const embed: DiscordEmbed = {
-    type: "rich",
-    title: E.Gf_Stars + " 𝐁𝐑𝐀𝐂𝐊𝐄𝐓 𝐋𝐈𝐕𝐄 – 𝐁𝐄𝐃𝐖𝐀𝐑𝐒 𝐌𝐂𝐅 𝐄𝐋𝐈𝐓𝐄 " + E.Gf_Stars,
+  const embed = createEmbed({
+    title: E.Stars + " BRACKET LIVE — BEDWARS MCF ELITE " + E.Stars,
     description,
-    url: roundsLink || undefined,
+    url: roundsLink ?? undefined,
     color: COLOR_GREEN,
-    fields: null,
-    footer: { text: EMBED_FOOTER },
-    timestamp: new Date().toISOString(),
-  };
+  });
 
   await sendDiscordWebhook(TOURNAMENTS_WEBHOOK, embed, components);
 }
