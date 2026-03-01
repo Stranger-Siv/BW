@@ -91,6 +91,11 @@ export async function PATCH(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const id = typeof params?.id === "string" ? params.id : undefined;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
@@ -182,15 +187,15 @@ export async function PATCH(
           { status: 409 }
         );
       }
-      const session = await Team.startSession();
-      session.startTransaction();
+      const txSession = await Team.startSession();
+      txSession.startTransaction();
       try {
         const oldTournament = oldTournamentId
-          ? await Tournament.findById(oldTournamentId).session(session).lean()
+          ? await Tournament.findById(oldTournamentId).session(txSession).lean()
           : null;
-        const newTournamentTx = await Tournament.findById(newTournamentId).session(session).lean();
+        const newTournamentTx = await Tournament.findById(newTournamentId).session(txSession).lean();
         if (!newTournamentTx) {
-          await session.abortTransaction();
+          await txSession.abortTransaction();
           return NextResponse.json({ error: "Tournament not found" }, { status: 500 });
         }
         const oldT = oldTournament as unknown as { registeredTeams: number; maxTeams: number } | null;
@@ -205,7 +210,7 @@ export async function PATCH(
                 ...(wasFull && newCountOld < oldT.maxTeams ? { isClosed: false } : {}),
               },
             },
-            { session }
+            { session: txSession }
           );
         }
         const newT = newTournamentTx as unknown as { registeredTeams: number; maxTeams: number };
@@ -219,17 +224,17 @@ export async function PATCH(
               ...(becomesFull ? { isClosed: true } : {}),
             },
           },
-          { session }
+          { session: txSession }
         );
         const teamUpdate: Partial<ITeam> = { tournamentId: newIdObj };
         if (statusUpdate !== undefined) teamUpdate.status = statusUpdate;
-        await Team.findByIdAndUpdate(id, { $set: teamUpdate }, { session });
-        await session.commitTransaction();
+        await Team.findByIdAndUpdate(id, { $set: teamUpdate }, { session: txSession });
+        await txSession.commitTransaction();
       } catch (e) {
-        await session.abortTransaction();
+        await txSession.abortTransaction();
         throw e;
       } finally {
-        session.endSession();
+        txSession.endSession();
       }
       const updated = await Team.findById(id).lean();
       return NextResponse.json(updated, { status: 200 });
@@ -302,16 +307,16 @@ export async function PATCH(
     }
 
     // Perform move in a transaction
-    const session = await Team.startSession();
-    session.startTransaction();
+    const txSession = await Team.startSession();
+    txSession.startTransaction();
     try {
       const [oldDateDoc, newDateDocInTx] = await Promise.all([
-        TournamentDate.findOne({ date: oldDate }).session(session).lean(),
-        TournamentDate.findOne({ date: newDate }).session(session).lean(),
+        TournamentDate.findOne({ date: oldDate }).session(txSession).lean(),
+        TournamentDate.findOne({ date: newDate }).session(txSession).lean(),
       ]);
 
       if (!oldDateDoc || !newDateDocInTx) {
-        await session.abortTransaction();
+        await txSession.abortTransaction();
         return NextResponse.json(
           { error: "Tournament date record not found" },
           { status: 500 }
@@ -331,7 +336,7 @@ export async function PATCH(
             ...(wasOldFull && newCountOld < oldD.maxTeams ? { isClosed: false } : {}),
           },
         },
-        { session }
+        { session: txSession }
       );
 
       const newCountNew = newD.registeredTeams + 1;
@@ -345,19 +350,19 @@ export async function PATCH(
             ...(becomesNewFull ? { isClosed: true } : {}),
           },
         },
-        { session }
+        { session: txSession }
       );
 
       const teamUpdate: Partial<ITeam> = { tournamentDate: newDate };
       if (statusUpdate !== undefined) teamUpdate.status = statusUpdate;
-      await Team.findByIdAndUpdate(id, { $set: teamUpdate }, { session });
+      await Team.findByIdAndUpdate(id, { $set: teamUpdate }, { session: txSession });
 
-      await session.commitTransaction();
+      await txSession.commitTransaction();
     } catch (txErr) {
-      await session.abortTransaction();
+      await txSession.abortTransaction();
       throw txErr;
     } finally {
-      session.endSession();
+      txSession.endSession();
     }
 
     const updated = await Team.findById(id).lean();
@@ -376,6 +381,11 @@ export async function DELETE(
   { params }: { params: { id?: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const id = typeof params?.id === "string" ? params.id : undefined;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
@@ -391,10 +401,10 @@ export async function DELETE(
     const tournamentIdForPusher = team.tournamentId?.toString?.() ?? null;
 
     if (team.tournamentId) {
-      // Atomic decrement so bulk deletes don't race (each $inc -1).
+      // Only decrement when > 0 to avoid negative; bulk deletes each $inc -1.
       await Tournament.updateOne(
-        { _id: team.tournamentId },
-        { $inc: { registeredTeams: -1 }, $max: { registeredTeams: 0 } }
+        { _id: team.tournamentId, registeredTeams: { $gt: 0 } },
+        { $inc: { registeredTeams: -1 } }
       );
       // Reopen registration if was full and now has slots.
       await Tournament.updateOne(
@@ -407,8 +417,8 @@ export async function DELETE(
       );
     } else if (team.tournamentDate) {
       await TournamentDate.updateOne(
-        { date: team.tournamentDate },
-        { $inc: { registeredTeams: -1 }, $max: { registeredTeams: 0 } }
+        { date: team.tournamentDate, registeredTeams: { $gt: 0 } },
+        { $inc: { registeredTeams: -1 } }
       );
       await TournamentDate.updateOne(
         {
@@ -422,10 +432,14 @@ export async function DELETE(
 
     await Team.findByIdAndDelete(id);
 
-    const pusher = getServerPusher();
-    if (pusher && tournamentIdForPusher) {
-      pusher.trigger(tournamentChannel(tournamentIdForPusher), PUSHER_EVENTS.TEAMS_CHANGED, {});
-      pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+    try {
+      const pusher = getServerPusher();
+      if (pusher && tournamentIdForPusher) {
+        pusher.trigger(tournamentChannel(tournamentIdForPusher), PUSHER_EVENTS.TEAMS_CHANGED, {});
+        pusher.trigger(PUSHER_CHANNELS.TOURNAMENTS, PUSHER_EVENTS.TOURNAMENTS_CHANGED, {});
+      }
+    } catch (pusherErr) {
+      console.warn("Pusher broadcast after disband failed:", pusherErr);
     }
 
     return NextResponse.json(
@@ -434,8 +448,9 @@ export async function DELETE(
     );
   } catch (err) {
     console.error("DELETE /api/admin/team/[id] error:", err);
+    const message = err instanceof Error ? err.message : "Failed to delete team";
     return NextResponse.json(
-      { error: "Failed to delete team" },
+      { error: process.env.NODE_ENV === "development" ? message : "Failed to delete team" },
       { status: 500 }
     );
   }
