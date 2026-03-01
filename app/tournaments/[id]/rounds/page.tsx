@@ -60,8 +60,6 @@ export default function TournamentRoundsPage() {
     fetchRounds().finally(() => setLoading(false));
   }, [id, fetchRounds]);
 
-  const nextRound = rounds.find((r) => r.scheduledAt && new Date(r.scheduledAt) > new Date());
-
   /** Each round = 1 match (4 teams). */
   const getMatchForRound = (round: RoundPublic) => {
     return round.teams.length > 0 ? [round.teams] : [];
@@ -232,20 +230,6 @@ export default function TournamentRoundsPage() {
                     ))}
                   </ul>
                 )}
-              </div>
-            )}
-
-            {nextRound && (
-              <div className="card-glass mb-6 p-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-500 dark:text-emerald-400">
-                  Next round
-                </h2>
-                <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">
-                  {nextRound.name}
-                </p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  {nextRound.scheduledAt ? formatDateTime(nextRound.scheduledAt) : "—"}
-                </p>
               </div>
             )}
 
