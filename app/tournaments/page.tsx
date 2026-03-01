@@ -157,6 +157,34 @@ export default function TournamentsPage() {
   const teamDetailPanelRef = useRef<HTMLDivElement>(null);
   const selectedTournamentIdRef = useRef<string | null>(null);
 
+  const teamPhaseById = useMemo(() => {
+    type Phase = "none" | "played" | "advanced";
+    const phase = new Map<string, Phase>();
+    if (!rounds.length) return phase;
+    const firstByTeam = new Map<string, number>();
+    const latestByTeam = new Map<string, number>();
+    let maxRound = 0;
+    for (const r of rounds) {
+      if (!Array.isArray(r.teamIds)) continue;
+      if (r.roundNumber > maxRound) maxRound = r.roundNumber;
+      for (const tid of r.teamIds) {
+        const prevFirst = firstByTeam.get(tid);
+        if (prevFirst == null || r.roundNumber < prevFirst) {
+          firstByTeam.set(tid, r.roundNumber);
+        }
+        const prevLatest = latestByTeam.get(tid);
+        if (prevLatest == null || r.roundNumber > prevLatest) {
+          latestByTeam.set(tid, r.roundNumber);
+        }
+      }
+    }
+    firstByTeam.forEach((_first, tid) => {
+      const latest = latestByTeam.get(tid) ?? 0;
+      phase.set(tid, latest === maxRound ? "advanced" : "played");
+    });
+    return phase;
+  }, [rounds]);
+
   const duplicateWithinForm = useMemo(() => {
     const seenIgns = new Map<string, number>();
     const seenDiscords = new Map<string, number>();
@@ -815,12 +843,6 @@ export default function TournamentsPage() {
                             <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 sm:text-2xl">
                               Registered teams ({slotTeams.length})
                             </h2>
-                            <Link
-                              href={`/tournaments/${selectedTournament._id}/rounds`}
-                              className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-                            >
-                              View brackets & matches →
-                            </Link>
                           </div>
                           {slotLoading ? (
                             <div className="flex flex-wrap gap-2">
@@ -1003,14 +1025,7 @@ export default function TournamentsPage() {
                     ? `${selectedTournament.registeredTeams ?? slotTeams.length} team(s) registered`
                     : `${selectedTournament.maxTeams} total · ${Math.max(0, selectedTournament.maxTeams - (selectedTournament.registeredTeams ?? 0))} open`}
                 </p>
-                {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
-                  <Link
-                    href={`/tournaments/${selectedTournament._id}/rounds`}
-                    className="mt-3 inline-block text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
-                  >
-                    View brackets & matches →
-                  </Link>
-                )}
+                {/* For closed tournaments we show a single primary button in the main column, not an extra link here. */}
                 {(selectedTournament.description || selectedTournament.prize || selectedTournament.serverIP) && (
                   <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-xs">
                     {selectedTournament.description && (
@@ -1054,11 +1069,17 @@ export default function TournamentsPage() {
                       const team = slotTeams[index];
                       const isFilled = !!team;
                       const registrationClosed = slotStatus !== "registration_open";
-                      const round1 = rounds.find((r) => r.roundNumber === 1);
-                      const teamIdsInRound1 = new Set(round1?.teamIds ?? []);
-                      const inCurrentRound = team ? teamIdsInRound1.has(team._id) : false;
+                      const phase = team && registrationClosed ? teamPhaseById.get(team._id) ?? "none" : "none";
                       const slotState =
-                        !isFilled ? "empty" : registrationClosed ? (inCurrentRound ? "in_round" : "out") : "filled";
+                        !isFilled
+                          ? "empty"
+                          : !registrationClosed
+                            ? "open_filled"
+                            : phase === "advanced"
+                              ? "closed_advanced"
+                              : phase === "played"
+                                ? "closed_out"
+                                : "closed_never";
                       const isSelected = selectedTeamIdForModal === team?._id;
                       return (
                         <div
@@ -1076,11 +1097,13 @@ export default function TournamentsPage() {
                                 className={`absolute inset-0 flex items-center justify-center rounded-xl border-2 text-[10px] font-medium transition-all duration-300 ease-out hover:scale-[1.08] focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
                                   slotState === "empty"
                                     ? ""
-                                    : slotState === "filled"
+                                    : slotState === "open_filled"
                                       ? "border-white/25 bg-white/10 text-slate-300 shadow-sm hover:border-white/40 hover:bg-white/15 hover:shadow-md"
-                                      : slotState === "in_round"
+                                      : slotState === "closed_advanced"
                                         ? "border-emerald-400/70 bg-emerald-500/25 text-emerald-200 shadow-sm hover:border-emerald-400 hover:bg-emerald-500/35 hover:shadow-md"
-                                        : "border-red-400/60 bg-red-500/20 text-red-200 shadow-sm hover:border-red-400/80 hover:bg-red-500/30 hover:shadow-md"
+                                        : slotState === "closed_out"
+                                          ? "border-red-400/60 bg-red-500/20 text-red-200 shadow-sm hover:border-red-400/80 hover:bg-red-500/30 hover:shadow-md"
+                                          : "border-white/15 bg-white/5 text-slate-200 shadow-sm hover:border-white/25 hover:bg-white/10 hover:shadow-md"
                                 } ${isSelected ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-slate-900" : ""}`}
                                 title={team.teamName}
                               >
@@ -1109,10 +1132,13 @@ export default function TournamentsPage() {
                   {slotStatus !== "registration_open" && slotTeams.length > 0 && rounds.length > 0 && (
                     <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                       <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> In current round
+                        <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> Reached latest round
                       </span>
                       <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Not in current round
+                        <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Eliminated / disqualified
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-slate-400/80" aria-hidden /> Registered, no match played
                       </span>
                     </p>
                   )}
