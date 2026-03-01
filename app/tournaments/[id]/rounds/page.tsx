@@ -339,19 +339,22 @@ export default function TournamentRoundsPage() {
                                   const isFinalist = hasDecision && laterTeams.has(t.id);
                                   const isEliminatedHere =
                                     hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
+                                  // Semi: neutral until result (someone advanced to final); then green/red
                                   const baseClass = !hasDecision
-                                    ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                    ? "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
                                     : isFinalist
                                       ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
                                       : isEliminatedHere
                                         ? "border border-red-400/70 bg-red-500/15 text-red-100"
                                         : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
                                   const labelClass =
-                                    !hasDecision || isFinalist
-                                      ? "text-emerald-50"
-                                      : isEliminatedHere
-                                        ? "text-red-100"
-                                        : "text-slate-200";
+                                    !hasDecision
+                                      ? "text-slate-200"
+                                      : isFinalist
+                                        ? "text-emerald-50"
+                                        : isEliminatedHere
+                                          ? "text-red-100"
+                                          : "text-slate-200";
                                   return (
                                     <Link
                                       key={t.id}
