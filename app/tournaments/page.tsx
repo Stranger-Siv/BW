@@ -181,49 +181,7 @@ export default function TournamentsPage() {
 
     if (!latestByTeam.size) return phase;
 
-    const groupNames = new Set([
-      "R11",
-      "R12",
-      "R13",
-      "R14",
-      "R15",
-      "R16",
-      "R17",
-      "R18",
-    ]);
-    const semiNames = new Set(["R21", "R22"]);
-    const finalNames = new Set(["R2", "R3"]);
-
-    const semiRounds = rounds.filter((r) => semiNames.has(r.name));
-    const finalRound = rounds.find((r) => finalNames.has(r.name));
-    const hasFinalTeams = !!finalRound && finalRound.teamIds.length > 0;
-    // Only "semi stage" when both R21 and R22 have teams (top 8 in place); else still group stage for slot coloring
-    const r21 = rounds.find((r) => r.name === "R21");
-    const r22 = rounds.find((r) => r.name === "R22");
-    const semiStage =
-      !hasFinalTeams &&
-      (r21?.teamIds?.length ?? 0) > 0 &&
-      (r22?.teamIds?.length ?? 0) > 0;
-
-    type Stage = "group" | "semi" | "final" | "completed";
-    let stage: Stage;
-    if (winnerTeamIdForSlots) {
-      stage = "completed";
-    } else if (hasFinalTeams) {
-      stage = "final";
-    } else if (semiStage) {
-      stage = "semi";
-    } else {
-      stage = "group";
-    }
-
-    // During semi-finals (both semis filled) and during the final before a winner is set,
-    // keep all slots neutral (grey) – brackets show progression.
-    if (stage === "semi" || stage === "final") {
-      return phase;
-    }
-
-    // Determine which rounds have at least one team that advanced beyond them
+    // Rounds that are "decided" (at least one team from them advanced to a later round)
     const decidedRounds = new Set<number>();
     latestByTeam.forEach((latest, tid) => {
       const set = roundsByTeam.get(tid);
@@ -234,7 +192,7 @@ export default function TournamentsPage() {
     });
     if (!decidedRounds.size) return phase;
 
-    // Compute global max latest roundNumber (furthest anyone reached)
+    // Furthest round anyone has reached (by roundNumber)
     let maxLatest = 0;
     latestByTeam.forEach((rn) => {
       if (rn > maxLatest) maxLatest = rn;
@@ -249,20 +207,12 @@ export default function TournamentsPage() {
       });
       if (!hasDecidedSource) return;
 
-      let advanced = false;
-      if (stage === "group") {
-        // Group stage: advanced teams are the ones who progressed furthest so far.
-        advanced = latest === maxLatest;
-      } else {
-        // Final / completed: finalists have the furthest decided round.
-        advanced = latest === maxLatest;
-      }
-
+      const advanced = latest === maxLatest;
       phase.set(tid, advanced ? "advanced" : "played");
     });
 
     return phase;
-  }, [rounds, winnerTeamIdForSlots]);
+  }, [rounds]);
 
   const duplicateWithinForm = useMemo(() => {
     const seenIgns = new Map<string, number>();
