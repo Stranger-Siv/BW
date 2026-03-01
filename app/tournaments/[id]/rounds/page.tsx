@@ -124,8 +124,18 @@ export default function TournamentRoundsPage() {
     return map;
   }, [rounds]);
 
-  const groupRounds = rounds.filter((r) => r1GroupNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
-  const semiRounds = has32Structure ? rounds.filter((r) => r.name === "R21" || r.name === "R22").sort((a, b) => a.roundNumber - b.roundNumber) : [];
+  const groupRounds = rounds
+    .filter((r) => r1GroupNames.includes(r.name))
+    .sort((a, b) => a.roundNumber - b.roundNumber);
+  const semiRounds = has32Structure
+    ? rounds
+        .filter((r) => r.name === "R21" || r.name === "R22")
+        .sort((a, b) => a.roundNumber - b.roundNumber)
+    : [];
+  const r21 = rounds.find((r) => r.name === "R21");
+  const r22 = rounds.find((r) => r.name === "R22");
+  const semiContainersFull =
+    (r21?.teamIds?.length ?? 0) >= 4 && (r22?.teamIds?.length ?? 0) >= 4;
 
   if (!id) {
     return (
@@ -324,6 +334,7 @@ export default function TournamentRoundsPage() {
                             .filter((r) => r.roundNumber > round.roundNumber)
                             .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
                           const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
+                          const isTop8Stage = !hasDecision && semiContainersFull;
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -339,16 +350,18 @@ export default function TournamentRoundsPage() {
                                   const isFinalist = hasDecision && laterTeams.has(t.id);
                                   const isEliminatedHere =
                                     hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
-                                  // Semi: neutral until result (someone advanced to final); then green/red
-                                  const baseClass = !hasDecision
-                                    ? "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
-                                    : isFinalist
-                                      ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                      : isEliminatedHere
-                                        ? "border border-red-400/70 bg-red-500/15 text-red-100"
-                                        : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
-                                  const labelClass =
-                                    !hasDecision
+                                  const baseClass = isTop8Stage
+                                    ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                    : !hasDecision
+                                      ? "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
+                                      : isFinalist
+                                        ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                        : isEliminatedHere
+                                          ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                                          : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                                  const labelClass = isTop8Stage
+                                    ? "text-emerald-50"
+                                    : !hasDecision
                                       ? "text-slate-200"
                                       : isFinalist
                                         ? "text-emerald-50"
