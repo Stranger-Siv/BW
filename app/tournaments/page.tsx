@@ -594,8 +594,14 @@ export default function TournamentsPage() {
                   </p>
                 </div>
               </div>
-              <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
-                {selectedTournament ? "Open" : "Choose tournament"}
+              <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                !selectedTournament
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")
+                    ? "bg-slate-500/20 text-slate-400 dark:text-slate-300"
+                    : "bg-emerald-500/20 text-emerald-400"
+              }`}>
+                {!selectedTournament ? "Choose tournament" : ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") ? (selectedTournament.status === "completed" ? "Completed" : selectedTournament.status === "ongoing" ? "Ongoing" : "Closed") : "Open"}
               </span>
             </div>
 
@@ -751,19 +757,156 @@ export default function TournamentsPage() {
                 )}
                 {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
                   <div className="mb-5 rounded-xl border border-slate-400/30 bg-slate-500/10 px-4 py-3 text-sm text-slate-200 dark:border-slate-500/30 dark:bg-slate-500/10 sm:mb-6">
-                    This tournament is closed. You can view details, brackets, and results but cannot register.
+                    This tournament is closed. You can view all team and round details below; registration is not available.
                   </div>
                 )}
-                <h2 className="mb-5 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 sm:text-2xl">
-                  {selectedTournament.teamSize === 1 ? "Register your entry" : "Team details"}
-                </h2>
-                {session?.user && meDisplayName && selectedTournament.status !== "scheduled" && !["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
-                  <p className="mb-5 text-sm text-slate-500 dark:text-slate-400 sm:mb-6">
-                    Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
-                  </p>
-                )}
 
-                <div className="space-y-6">
+                {(() => {
+                  const isClosed = ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "");
+                  if (isClosed) {
+                    return (
+                      <>
+                        <div className="mb-6 space-y-5 sm:mb-8">
+                          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 sm:text-2xl">
+                            Tournament details
+                          </h2>
+                          <div className="grid gap-4 sm:grid-cols-1">
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5">
+                              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                                <div>
+                                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Date & time</dt>
+                                  <dd className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">
+                                    {formatDateLabel(selectedTournament.date)} · {selectedTournament.startTime}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Mode</dt>
+                                  <dd className="mt-0.5 text-slate-800 dark:text-slate-200">
+                                    {TYPE_LABEL[selectedTournament.type ?? "squad"] ?? selectedTournament.type ?? "Squad"}
+                                  </dd>
+                                </div>
+                                {selectedTournament.description && (
+                                  <div className="sm:col-span-2">
+                                    <dt className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Description</dt>
+                                    <dd className="mt-1 text-slate-200 dark:text-slate-300 whitespace-pre-wrap">{selectedTournament.description}</dd>
+                                  </div>
+                                )}
+                                {selectedTournament.prize && (
+                                  <div className="sm:col-span-2">
+                                    <dt className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Prize</dt>
+                                    <dd className="mt-1 text-slate-200 dark:text-slate-300 whitespace-pre-wrap">{selectedTournament.prize}</dd>
+                                  </div>
+                                )}
+                                {selectedTournament.serverIP && (
+                                  <div>
+                                    <dt className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Server IP</dt>
+                                    <dd className="mt-1">
+                                      <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{selectedTournament.serverIP}</code>
+                                    </dd>
+                                  </div>
+                                )}
+                              </dl>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mb-6 sm:mb-8">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100 sm:text-2xl">
+                              Registered teams ({slotTeams.length})
+                            </h2>
+                            <Link
+                              href={`/tournaments/${selectedTournament._id}/rounds`}
+                              className="text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
+                            >
+                              View brackets & matches →
+                            </Link>
+                          </div>
+                          {slotLoading ? (
+                            <div className="flex flex-wrap gap-2">
+                              {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="h-10 w-32 animate-pulse rounded-lg bg-white/10" />
+                              ))}
+                            </div>
+                          ) : slotTeams.length === 0 ? (
+                            <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                              No teams registered.
+                            </p>
+                          ) : (
+                            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                              {slotTeams.map((team, index) => (
+                                <li key={team._id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedTeamIdForModal(team._id);
+                                      fetchTeamDetail(selectedTournament._id, team._id);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
+                                  >
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-semibold text-slate-300">
+                                      {index + 1}
+                                    </span>
+                                    <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">
+                                      {team.teamName}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+
+                        <div className="mb-6 rounded-xl border border-white/10 bg-white/5 p-5 dark:border-white/10 dark:bg-white/5 sm:mb-8">
+                          <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:text-2xl">
+                            Rounds & matches
+                          </h2>
+                          <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                            All matches are 4 teams per round. See who advanced and full brackets on the rounds page.
+                          </p>
+                          {rounds.length === 0 ? (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              Rounds have not been published yet.
+                            </p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {rounds
+                                .sort((a, b) => a.roundNumber - b.roundNumber)
+                                .map((r) => (
+                                  <li
+                                    key={r.roundNumber}
+                                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 px-4 py-3 text-sm"
+                                  >
+                                    <span className="font-medium text-slate-800 dark:text-slate-200">{r.name}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">
+                                      {r.teamIds?.length ?? 0} team{(r.teamIds?.length ?? 0) !== 1 ? "s" : ""}
+                                    </span>
+                                  </li>
+                                ))}
+                            </ul>
+                          )}
+                          <Link
+                            href={`/tournaments/${selectedTournament._id}/rounds`}
+                            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/30 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:hover:bg-emerald-500/30"
+                          >
+                            View full brackets & matches
+                          </Link>
+                        </div>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <h2 className="mb-5 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 sm:text-2xl">
+                        {selectedTournament.teamSize === 1 ? "Register your entry" : "Team details"}
+                      </h2>
+                      {session?.user && meDisplayName && selectedTournament.status !== "scheduled" && (
+                        <p className="mb-5 text-sm text-slate-500 dark:text-slate-400 sm:mb-6">
+                          Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
+                        </p>
+                      )}
+
+                      <div className="space-y-6">
                   <div className="w-full">
                     <label htmlFor="team-name" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
                       {selectedTournament.teamSize === 1 ? "Display name" : "Team name"}
@@ -891,17 +1034,30 @@ export default function TournamentsPage() {
                     </form>
                   )}
                 </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
             <aside className="min-w-0 w-full shrink-0 lg:w-80 lg:sticky lg:top-6">
               <div className="card-glass w-full p-5 sm:p-6">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Slots & info
+                  {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") ? "Teams & brackets" : "Slots & info"}
                 </h3>
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  {selectedTournament.maxTeams} total · {Math.max(0, selectedTournament.maxTeams - selectedTournament.registeredTeams)} open
+                  {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")
+                    ? `${selectedTournament.registeredTeams ?? slotTeams.length} team(s) registered`
+                    : `${selectedTournament.maxTeams} total · ${Math.max(0, selectedTournament.maxTeams - (selectedTournament.registeredTeams ?? 0))} open`}
                 </p>
+                {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
+                  <Link
+                    href={`/tournaments/${selectedTournament._id}/rounds`}
+                    className="mt-3 inline-block text-sm font-medium text-emerald-500 hover:text-emerald-400 dark:text-emerald-400 dark:hover:text-emerald-300"
+                  >
+                    View brackets & matches →
+                  </Link>
+                )}
                 {(selectedTournament.description || selectedTournament.prize || selectedTournament.serverIP) && (
                   <div className="mt-4 space-y-3 border-t border-white/10 pt-4 text-xs">
                     {selectedTournament.description && (

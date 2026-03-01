@@ -132,6 +132,8 @@ export default function AdminTournamentRoundsPage() {
   );
 
   const R1_SERIES_NAMES = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"] as const;
+  const R2_SEMI_NAMES = ["R21", "R22"] as const;
+  const R3_FINAL_NAME = "R3";
 
   const createRoundsWithTeams = useCallback(
     async (
@@ -188,7 +190,7 @@ export default function AdminTournamentRoundsPage() {
     }
   }, [teams, createRoundsWithTeams]);
 
-  /** Creates R11–R18 (8 groups of 4 teams) and R2 (final). For 32-team squad. */
+  /** Creates R11–R18 (8 groups of 4), R21/R22 (semi-finals), R3 (final). For 32-team squad. */
   const createAll32TeamRounds = useCallback(async () => {
     if (teams.length < 32) {
       setError("Need at least 32 registered teams. You have " + teams.length + ".");
@@ -207,7 +209,9 @@ export default function AdminTournamentRoundsPage() {
         { name: "R16", roundNumber: 6, teamIds: teamIds.slice(20, 24) },
         { name: "R17", roundNumber: 7, teamIds: teamIds.slice(24, 28) },
         { name: "R18", roundNumber: 8, teamIds: teamIds.slice(28, 32) },
-        { name: "R2", roundNumber: 9, teamIds: [] },
+        { name: "R21", roundNumber: 9, teamIds: [] },
+        { name: "R22", roundNumber: 10, teamIds: [] },
+        { name: "R3", roundNumber: 11, teamIds: [] },
       ];
       await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
@@ -275,11 +279,20 @@ export default function AdminTournamentRoundsPage() {
 
       const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(fromRound.name);
       const isToR2 = toRound.name === "R2";
-      const shouldCopyInsteadOfMove = isR1Series && isToR2;
+      const isToSemi = (R2_SEMI_NAMES as readonly string[]).includes(toRound.name);
+      const isToFinal = toRound.name === R3_FINAL_NAME;
+      const isFromSemi = (R2_SEMI_NAMES as readonly string[]).includes(fromRound.name);
+      const shouldCopyInsteadOfMove =
+        (isR1Series && (isToR2 || isToSemi)) || (isFromSemi && isToFinal);
 
       const newFromIds = shouldCopyInsteadOfMove
         ? fromRound.teamIds
         : fromRound.teamIds.filter((tid) => tid !== teamId);
+      const maxTeamsNext = (["R2", "R21", "R22", R3_FINAL_NAME] as const).includes(toRound.name as "R2" | "R21" | "R22" | "R3")
+        ? 4
+        : Infinity;
+      const wouldAdd = !toRound.teamIds.includes(teamId);
+      if (wouldAdd && toRound.teamIds.length >= maxTeamsNext) return;
       const newToIds = toRound.teamIds.includes(teamId)
         ? toRound.teamIds
         : [...toRound.teamIds, teamId];
@@ -508,7 +521,7 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              Drag winners from R11–R14 (or R11–R18 for 32 teams) into R2, then drag the final winner to Tournament winner.
+              16-team: R11–R14 → R2 → winner. 32-team: R11–R14 → R21, R15–R18 → R22; top 2 from R21 & R22 → R3; drag final winner to Tournament winner.
             </p>
 
             <div className="flex flex-wrap gap-6 overflow-x-auto pb-8">
@@ -602,15 +615,26 @@ export default function AdminTournamentRoundsPage() {
                           </Link>
                           <div className="flex items-center gap-1">
                             {(() => {
-                              const r2 = rounds.find((r) => r.name === "R2");
                               const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(round.name);
-                              const advanceTo = isR1Series && r2 ? r2 : rounds[rounds.findIndex((r) => r._id === round._id) + 1];
+                              const isSemi = (R2_SEMI_NAMES as readonly string[]).includes(round.name);
+                              const r21 = rounds.find((r) => r.name === "R21");
+                              const r22 = rounds.find((r) => r.name === "R22");
+                              const r3 = rounds.find((r) => r.name === "R3");
+                              const r2 = rounds.find((r) => r.name === "R2");
+                              let advanceTo: RoundDoc | undefined;
+                              if (isR1Series) {
+                                if (["R11", "R12", "R13", "R14"].includes(round.name) && r21) advanceTo = r21;
+                                else if (["R11", "R12", "R13", "R14"].includes(round.name) && r2) advanceTo = r2;
+                                else if (["R15", "R16", "R17", "R18"].includes(round.name) && r22) advanceTo = r22;
+                              } else if (isSemi && r3) advanceTo = r3;
+                              else advanceTo = rounds[rounds.findIndex((r) => r._id === round._id) + 1];
+                              const title = advanceTo ? `Advance to ${advanceTo.name}` : undefined;
                               return advanceTo ? (
                                 <button
                                   type="button"
-                                  onClick={() => moveTeam(tid, round._id, advanceTo._id)}
+                                  onClick={() => moveTeam(tid, round._id, advanceTo!._id)}
                                   className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                                  title={isR1Series ? "Advance to R2" : "Advance to next round"}
+                                  title={title}
                                 >
                                   →
                                 </button>
@@ -643,7 +667,7 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                16 teams: R11–R14 (4 groups of 4) + R2. 32 teams: R11–R18 (8 groups of 4) + R2. Drag winners into R2, then to Tournament winner.
+                16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance winners to next round, then drag final winner above.
               </p>
               <div className="mb-3 flex flex-wrap gap-2">
                 <button
@@ -660,7 +684,7 @@ export default function AdminTournamentRoundsPage() {
                   disabled={addRoundLoading || teams.length < 32}
                   className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
                 >
-                  {addRoundLoading ? "Creating…" : "Create 32-team rounds (R11–R18 & R2)"}
+                  {addRoundLoading ? "Creating…" : "Create 32-team rounds (R11–R18, R21, R22, R3)"}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">

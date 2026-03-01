@@ -62,14 +62,17 @@ export default function TournamentRoundsPage() {
 
   const nextRound = rounds.find((r) => r.scheduledAt && new Date(r.scheduledAt) > new Date());
 
-  /** Each round = 1 match (4 teams). R11, R12, R13, R14, R2. */
+  /** Each round = 1 match (4 teams). */
   const getMatchForRound = (round: RoundPublic) => {
     return round.teams.length > 0 ? [round.teams] : [];
   };
 
-  // Teams that reached the final (R2), used to highlight winners in earlier rounds
-  const finalRound = rounds.find((r) => r.name === "R2");
+  const r1GroupNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
+  const has32Structure = rounds.some((r) => r.name === "R21" || r.name === "R22" || r.name === "R3");
+  const finalRound = rounds.find((r) => r.name === (has32Structure ? "R3" : "R2"));
   const finalTeamIds = new Set(finalRound?.teamIds ?? []);
+  const groupRounds = rounds.filter((r) => r1GroupNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+  const semiRounds = has32Structure ? rounds.filter((r) => r.name === "R21" || r.name === "R22").sort((a, b) => a.roundNumber - b.roundNumber) : [];
 
   if (!id) {
     return (
@@ -194,53 +197,95 @@ export default function TournamentRoundsPage() {
                 </p>
               ) : (
                 <>
-                  {/* R11–R14 in a grid */}
+                  {/* Group stage R11–R14 or R11–R18 */}
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {rounds
-                      .filter((r) => ["R11", "R12", "R13", "R14"].includes(r.name))
-                      .map((round) => {
-                        const matches = getMatchForRound(round);
-                        return (
-                          <section key={round._id} className="card-glass p-4 sm:p-5">
-                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                              <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
-                              {round.scheduledAt && (
-                                <span className="text-xs text-slate-500 dark:text-slate-500">
-                                  {formatDateTime(round.scheduledAt)}
-                                </span>
-                              )}
-                            </div>
-                            {matches.length === 0 ? (
-                              <p className="text-sm text-slate-500 dark:text-slate-500">No teams yet</p>
-                            ) : (
+                    {groupRounds.map((round) => {
+                      const matches = getMatchForRound(round);
+                      const teams = matches[0] ?? [];
+                      return (
+                        <section key={round._id} className="card-glass p-4 sm:p-5">
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                            {round.scheduledAt && (
+                              <span className="text-xs text-slate-500 dark:text-slate-500">
+                                {formatDateTime(round.scheduledAt)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {teams.map((t) => {
+                              const isWinner = finalTeamIds.has(t.id);
+                              return (
+                                <Link
+                                  key={t.id}
+                                  href={`/tournaments/${id}/teams/${t.id}`}
+                                  className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
+                                    isWinner
+                                      ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                      : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
+                                  }`}
+                                  title={t.name || "—"}
+                                >
+                                  <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinner ? "text-emerald-50" : "text-slate-200"}`}>
+                                    {t.name || "—"}
+                                  </span>
+                                  {isWinner && (
+                                    <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
+                                      Winner
+                                    </span>
+                                  )}
+                                </Link>
+                              );
+                            })}
+                            {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
+                              <div
+                                key={`empty-${i}`}
+                                className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
+                              >
+                                TBD
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      );
+                    })}
+                  </div>
+
+                  {/* Semi-finals R21, R22 (32-team only) */}
+                  {semiRounds.length > 0 && (
+                    <section className="space-y-4">
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        Semi-finals
+                      </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Winners from R11–R18 advance here (4 to R21, 4 to R22). Top 2 from each semi advance to the final.
+                      </p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {semiRounds.map((round) => {
+                          const matches = getMatchForRound(round);
+                          const teams = matches[0] ?? [];
+                          return (
+                            <div key={round._id} className="card-glass p-4 sm:p-5">
+                              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <h3 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h3>
+                                {round.scheduledAt && (
+                                  <span className="text-xs text-slate-500 dark:text-slate-500">
+                                    {formatDateTime(round.scheduledAt)}
+                                  </span>
+                                )}
+                              </div>
                               <div className="grid grid-cols-2 gap-2">
-                                {matches[0].map((t) => {
-                                  const isWinner = finalTeamIds.has(t.id);
-                                  return (
-                                    <Link
-                                      key={t.id}
-                                      href={`/tournaments/${id}/teams/${t.id}`}
-                                      className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
-                                        isWinner
-                                          ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                          : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
-                                      }`}
-                                      title={t.name || "—"}
-                                    >
-                                      <span
-                                        className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinner ? "text-emerald-50" : "text-slate-200"}`}
-                                      >
-                                        {t.name || "—"}
-                                      </span>
-                                      {isWinner && (
-                                        <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
-                                          Winner
-                                        </span>
-                                      )}
-                                    </Link>
-                                  );
-                                })}
-                                {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
+                                {teams.map((t) => (
+                                  <Link
+                                    key={t.id}
+                                    href={`/tournaments/${id}/teams/${t.id}`}
+                                    className="flex min-h-[2.25rem] items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
+                                    title={t.name || "—"}
+                                  >
+                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">{t.name || "—"}</span>
+                                  </Link>
+                                ))}
+                                {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}
                                     className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
@@ -249,66 +294,60 @@ export default function TournamentRoundsPage() {
                                   </div>
                                 ))}
                               </div>
-                            )}
-                          </section>
-                        );
-                      })}
-                  </div>
-                  {/* R2 Final */}
-                  {rounds.find((r) => r.name === "R2") && (
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+                  {/* Final: R3 (32-team) or R2 (16-team) */}
+                  {finalRound && (
                     <section
-                      key={rounds.find((r) => r.name === "R2")!._id}
+                      key={finalRound._id}
                       className="card-glass w-full ring-2 ring-amber-400/40 p-4 sm:p-5 md:p-6"
                     >
-                      {(() => {
-                        const round = rounds.find((r) => r.name === "R2")!;
-                        const matches = getMatchForRound(round);
-                        return (
-                          <>
-                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                              <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 sm:text-xl">
-                                {round.name}
-                                <span className="ml-2 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
-                                  Final
-                                </span>
-                              </h2>
-                              {round.scheduledAt && (
-                                <span className="text-sm text-slate-500 dark:text-slate-500">
-                                  {formatDateTime(round.scheduledAt)}
-                                </span>
-                              )}
-                            </div>
-                            {matches.length === 0 ? (
-                              <p className="text-sm text-slate-500 dark:text-slate-500">
-                                Winners from R11–R14 advance here
-                              </p>
-                            ) : (
-                              <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                                {matches[0].map((t) => (
-                                  <Link
-                                    key={t.id}
-                                    href={`/tournaments/${id}/teams/${t.id}`}
-                                    className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
-                                    title={t.name || "—"}
-                                  >
-                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">
-                                      {t.name || "—"}
-                                    </span>
-                                  </Link>
-                                ))}
-                                {Array.from({ length: Math.max(0, 4 - matches[0].length) }).map((_, i) => (
-                                  <div
-                                    key={`empty-${i}`}
-                                    className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 dark:text-slate-500"
-                                  >
-                                    TBD
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
+                      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 sm:text-xl">
+                          {finalRound.name}
+                          <span className="ml-2 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                            Final
+                          </span>
+                        </h2>
+                        {finalRound.scheduledAt && (
+                          <span className="text-sm text-slate-500 dark:text-slate-500">
+                            {formatDateTime(finalRound.scheduledAt)}
+                          </span>
+                        )}
+                      </div>
+                      {has32Structure ? (
+                        <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                          Top 2 from R21 and top 2 from R22 advance here.
+                        </p>
+                      ) : (
+                        <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                          Winners from R11–R14 advance here.
+                        </p>
+                      )}
+                      <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+                        {(getMatchForRound(finalRound)[0] ?? []).map((t) => (
+                          <Link
+                            key={t.id}
+                            href={`/tournaments/${id}/teams/${t.id}`}
+                            className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
+                            title={t.name || "—"}
+                          >
+                            <span className="min-w-0 flex-1 truncate whitespace-nowrap">{t.name || "—"}</span>
+                          </Link>
+                        ))}
+                        {Array.from({ length: Math.max(0, 4 - (getMatchForRound(finalRound)[0] ?? []).length) }).map((_, i) => (
+                          <div
+                            key={`empty-${i}`}
+                            className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 dark:text-slate-500"
+                          >
+                            TBD
+                          </div>
+                        ))}
+                      </div>
                     </section>
                   )}
                 </>
