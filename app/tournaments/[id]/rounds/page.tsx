@@ -70,6 +70,7 @@ export default function TournamentRoundsPage() {
   const r1GroupNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
   const has32Structure = rounds.some((r) => r.name === "R21" || r.name === "R22" || r.name === "R3");
   const finalRound = rounds.find((r) => r.name === (has32Structure ? "R3" : "R2"));
+  const championName = winner?.teamName ?? null;
 
   const teamPhaseById = useMemo(() => {
     type Phase = "none" | "played" | "advanced";
@@ -305,7 +306,7 @@ export default function TournamentRoundsPage() {
                     })}
                   </div>
 
-                  {/* Semi-finals R21, R22 (32-team only) — same layer, all 8 teams green */}
+                  {/* Semi-finals R21, R22 (32-team only) — same layer */}
                   {semiRounds.length > 0 && (
                     <section className="space-y-4">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -318,6 +319,11 @@ export default function TournamentRoundsPage() {
                         {semiRounds.map((round) => {
                           const matches = getMatchForRound(round);
                           const teams = matches[0] ?? [];
+                          const laterTeams = new Set<string>();
+                          rounds
+                            .filter((r) => r.roundNumber > round.roundNumber)
+                            .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
+                          const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -329,18 +335,36 @@ export default function TournamentRoundsPage() {
                                 )}
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                {teams.map((t) => (
-                                  <Link
-                                    key={t.id}
-                                    href={`/tournaments/${id}/teams/${t.id}`}
-                                    className="flex min-h-[2.25rem] items-center gap-1.5 rounded-lg border border-emerald-400/70 bg-emerald-500/20 px-3 py-1.5 text-xs sm:text-sm font-medium text-emerald-100 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950"
-                                    title={t.name || "—"}
-                                  >
-                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">
-                                      {t.name || "—"}
-                                    </span>
-                                  </Link>
-                                ))}
+                                {teams.map((t) => {
+                                  const isFinalist = hasDecision && laterTeams.has(t.id);
+                                  const isEliminatedHere =
+                                    hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
+                                  const baseClass = !hasDecision
+                                    ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                    : isFinalist
+                                      ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                      : isEliminatedHere
+                                        ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                                        : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                                  const labelClass =
+                                    !hasDecision || isFinalist
+                                      ? "text-emerald-50"
+                                      : isEliminatedHere
+                                        ? "text-red-100"
+                                        : "text-slate-200";
+                                  return (
+                                    <Link
+                                      key={t.id}
+                                      href={`/tournaments/${id}/teams/${t.id}`}
+                                      className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
+                                      title={t.name || "—"}
+                                    >
+                                      <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${labelClass}`}>
+                                        {t.name || "—"}
+                                      </span>
+                                    </Link>
+                                  );
+                                })}
                                 {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}
@@ -385,16 +409,31 @@ export default function TournamentRoundsPage() {
                         </p>
                       )}
                       <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                        {(getMatchForRound(finalRound)[0] ?? []).map((t) => (
-                          <Link
-                            key={t.id}
-                            href={`/tournaments/${id}/teams/${t.id}`}
-                            className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-emerald-400/70 bg-emerald-500/20 px-4 py-2 text-xs sm:text-sm font-medium text-emerald-100 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950"
-                            title={t.name || "—"}
-                          >
-                            <span className="min-w-0 flex-1 truncate whitespace-nowrap">{t.name || "—"}</span>
-                          </Link>
-                        ))}
+                        {(getMatchForRound(finalRound)[0] ?? []).map((t) => {
+                          const isChampion = championName && t.name === championName;
+                          const baseClass = isChampion
+                            ? "border border-amber-400/80 bg-amber-500/25 text-amber-50"
+                            : championName
+                              ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                              : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                          const labelClass = isChampion
+                            ? "text-amber-50"
+                            : championName
+                              ? "text-red-100"
+                              : "text-slate-200";
+                          return (
+                            <Link
+                              key={t.id}
+                              href={`/tournaments/${id}/teams/${t.id}`}
+                              className={`flex min-h-[2.5rem] items-center gap-1.5 rounded-xl px-4 py-2 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
+                              title={t.name || "—"}
+                            >
+                              <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${labelClass}`}>
+                                {t.name || "—"}
+                              </span>
+                            </Link>
+                          );
+                        })}
                         {Array.from({ length: Math.max(0, 4 - (getMatchForRound(finalRound)[0] ?? []).length) }).map((_, i) => (
                           <div
                             key={`empty-${i}`}

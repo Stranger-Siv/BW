@@ -148,6 +148,7 @@ export default function TournamentsPage() {
   const [slotTeams, setSlotTeams] = useState<SlotTeam[]>([]);
   const [slotStatus, setSlotStatus] = useState<string>("");
   const [rounds, setRounds] = useState<RoundForSlots[]>([]);
+  const [winnerTeamIdForSlots, setWinnerTeamIdForSlots] = useState<string | null>(null);
   const [slotLoading, setSlotLoading] = useState(false);
   const [selectedTeamIdForModal, setSelectedTeamIdForModal] = useState<string | null>(null);
   const [teamDetail, setTeamDetail] = useState<TeamDetail | null>(null);
@@ -180,6 +181,41 @@ export default function TournamentsPage() {
 
     if (!latestByTeam.size) return phase;
 
+    const groupNames = new Set([
+      "R11",
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+    ]);
+    const semiNames = new Set(["R21", "R22"]);
+    const finalNames = new Set(["R2", "R3"]);
+
+    const semiRounds = rounds.filter((r) => semiNames.has(r.name));
+    const finalRound = rounds.find((r) => finalNames.has(r.name));
+    const hasSemiTeams = semiRounds.some((r) => r.teamIds.length > 0);
+    const hasFinalTeams = !!finalRound && finalRound.teamIds.length > 0;
+
+    type Stage = "group" | "semi" | "final" | "completed";
+    let stage: Stage;
+    if (winnerTeamIdForSlots) {
+      stage = "completed";
+    } else if (hasFinalTeams) {
+      stage = "final";
+    } else if (hasSemiTeams) {
+      stage = "semi";
+    } else {
+      stage = "group";
+    }
+
+    // During semi-finals (before finalists known), keep slots neutral.
+    if (stage === "semi") {
+      return phase;
+    }
+
     // Determine which rounds have at least one team that advanced beyond them
     const decidedRounds = new Set<number>();
     latestByTeam.forEach((latest, tid) => {
@@ -197,18 +233,6 @@ export default function TournamentsPage() {
       if (rn > maxLatest) maxLatest = rn;
     });
 
-    const roundAtMax = rounds.find((r) => r.roundNumber === maxLatest);
-    const maxRoundName = roundAtMax?.name ?? "";
-    const isSemiFinalStage = maxRoundName === "R21" || maxRoundName === "R22";
-    const semiFinalistIds = new Set<string>();
-    if (isSemiFinalStage) {
-      rounds.forEach((r) => {
-        if ((r.name === "R21" || r.name === "R22") && Array.isArray(r.teamIds)) {
-          r.teamIds.forEach((tid) => semiFinalistIds.add(tid));
-        }
-      });
-    }
-
     latestByTeam.forEach((latest, tid) => {
       const set = roundsByTeam.get(tid);
       if (!set) return;
@@ -217,13 +241,21 @@ export default function TournamentsPage() {
         if (decidedRounds.has(rn)) hasDecidedSource = true;
       });
       if (!hasDecidedSource) return;
-      const advanced =
-        isSemiFinalStage ? semiFinalistIds.has(tid) : latest === maxLatest;
+
+      let advanced = false;
+      if (stage === "group") {
+        // Group stage: advanced teams are the ones who progressed furthest so far.
+        advanced = latest === maxLatest;
+      } else {
+        // Final / completed: finalists have the furthest decided round.
+        advanced = latest === maxLatest;
+      }
+
       phase.set(tid, advanced ? "advanced" : "played");
     });
 
     return phase;
-  }, [rounds]);
+  }, [rounds, winnerTeamIdForSlots]);
 
   const duplicateWithinForm = useMemo(() => {
     const seenIgns = new Map<string, number>();
@@ -294,14 +326,19 @@ export default function TournamentsPage() {
         fetch(`/api/tournaments/${tournamentId}/teams`, { cache: "no-store" }),
         fetch(`/api/tournaments/${tournamentId}/rounds`, { cache: "no-store" }),
       ]);
+
+      let teamsList: SlotTeam[] = [];
+
       if (teamsRes.ok) {
         const teamsData = await teamsRes.json();
-        setSlotTeams(Array.isArray(teamsData.teams) ? teamsData.teams : []);
+        teamsList = Array.isArray(teamsData.teams) ? teamsData.teams : [];
+        setSlotTeams(teamsList);
         setSlotStatus(typeof teamsData.status === "string" ? teamsData.status : "");
       } else {
         setSlotTeams([]);
         setSlotStatus("");
       }
+
       if (roundsRes.ok) {
         const roundsData = await roundsRes.json();
         const list = Array.isArray(roundsData.rounds) ? roundsData.rounds : [];
@@ -312,13 +349,28 @@ export default function TournamentsPage() {
             teamIds: Array.isArray(r.teamIds) ? r.teamIds : [],
           }))
         );
+
+        const winnerName =
+          roundsData && typeof roundsData === "object" && "winner" in roundsData
+            ? (roundsData.winner?.teamName as string | undefined)
+            : undefined;
+        if (winnerName && teamsList.length > 0) {
+          const winnerTeam = teamsList.find(
+            (t) => (t.teamName ?? "").trim() === winnerName.trim()
+          );
+          setWinnerTeamIdForSlots(winnerTeam?._id ?? null);
+        } else {
+          setWinnerTeamIdForSlots(null);
+        }
       } else {
         setRounds([]);
+        setWinnerTeamIdForSlots(null);
       }
     } catch {
       setSlotTeams([]);
       setSlotStatus("");
       setRounds([]);
+      setWinnerTeamIdForSlots(null);
     } finally {
       setSlotLoading(false);
     }
@@ -1111,12 +1163,15 @@ export default function TournamentsPage() {
                       const registrationClosed = slotStatus !== "registration_open";
                       const hasProgress = teamPhaseById.size > 0;
                       const phase = team && registrationClosed && hasProgress ? teamPhaseById.get(team._id) ?? "none" : "none";
+                      const isWinnerTeam = team && winnerTeamIdForSlots && team._id === winnerTeamIdForSlots;
                       const slotState =
                         !isFilled
                           ? "empty"
                           : !registrationClosed && !hasProgress
                             ? "open_filled"
-                            : phase === "advanced"
+                            : isWinnerTeam
+                              ? "winner"
+                              : phase === "advanced"
                               ? "closed_advanced"
                               : phase === "played"
                                 ? "closed_out"
@@ -1140,6 +1195,8 @@ export default function TournamentsPage() {
                                     ? ""
                                     : slotState === "open_filled"
                                       ? "border-white/25 bg-white/10 text-slate-300 shadow-sm hover:border-white/40 hover:bg-white/15 hover:shadow-md"
+                                      : slotState === "winner"
+                                        ? "border-amber-400/80 bg-amber-500/30 text-amber-100 shadow-sm hover:border-amber-400 hover:bg-amber-500/40 hover:shadow-md"
                                       : slotState === "closed_advanced"
                                         ? "border-emerald-400/70 bg-emerald-500/25 text-emerald-200 shadow-sm hover:border-emerald-400 hover:bg-emerald-500/35 hover:shadow-md"
                                         : slotState === "closed_out"
