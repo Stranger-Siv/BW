@@ -254,6 +254,11 @@ export default function TournamentRoundsPage() {
                     {groupRounds.map((round) => {
                       const matches = getMatchForRound(round);
                       const teams = matches[0] ?? [];
+                      const laterTeams = new Set<string>();
+                      rounds
+                        .filter((r) => r.roundNumber > round.roundNumber)
+                        .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
+                      const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
                       return (
                         <section key={round._id} className="card-glass p-4 sm:p-5">
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -266,12 +271,11 @@ export default function TournamentRoundsPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {teams.map((t) => {
-                              const phase = teamPhaseById.get(t.id);
-                              const isAdvanced = phase === "advanced";
-                              const isEliminated = phase === "played";
-                              const baseClass = isAdvanced
+                              const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
+                              const isLoserFromThisRound = hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
+                              const baseClass = isWinnerFromThisRound
                                 ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                : isEliminated
+                                : isLoserFromThisRound
                                   ? "border border-red-400/70 bg-red-500/15 text-red-100"
                                   : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
                               return (
@@ -281,7 +285,7 @@ export default function TournamentRoundsPage() {
                                   className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
                                   title={t.name || "—"}
                                 >
-                                  <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isAdvanced ? "text-emerald-50" : isEliminated ? "text-red-100" : "text-slate-200"}`}>
+                                  <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinnerFromThisRound ? "text-emerald-50" : isLoserFromThisRound ? "text-red-100" : "text-slate-200"}`}>
                                     {t.name || "—"}
                                   </span>
                                 </Link>
@@ -314,6 +318,11 @@ export default function TournamentRoundsPage() {
                         {semiRounds.map((round) => {
                           const matches = getMatchForRound(round);
                           const teams = matches[0] ?? [];
+                          const laterTeams = new Set<string>();
+                          rounds
+                            .filter((r) => r.roundNumber > round.roundNumber)
+                            .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
+                          const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -326,12 +335,11 @@ export default function TournamentRoundsPage() {
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 {teams.map((t) => {
-                                  const phase = teamPhaseById.get(t.id);
-                                  const isAdvanced = phase === "advanced";
-                                  const isEliminated = phase === "played";
-                                  const baseClass = isAdvanced
+                                  const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
+                                  const isLoserFromThisRound = hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
+                                  const baseClass = isWinnerFromThisRound
                                     ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                    : isEliminated
+                                    : isLoserFromThisRound
                                       ? "border border-red-400/70 bg-red-500/15 text-red-100"
                                       : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
                                   return (
