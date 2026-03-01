@@ -824,72 +824,25 @@ export default function TournamentsPage() {
                           </div>
                           {slotLoading ? (
                             <div className="flex flex-wrap gap-2">
-                              {Array.from({ length: 8 }).map((_, i) => (
+                              {Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="h-10 w-32 animate-pulse rounded-lg bg-white/10" />
                               ))}
                             </div>
-                          ) : slotTeams.length === 0 ? (
-                            <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                              No teams registered.
-                            </p>
                           ) : (
-                            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                              {slotTeams.map((team, index) => (
-                                <li key={team._id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedTeamIdForModal(team._id);
-                                      fetchTeamDetail(selectedTournament._id, team._id);
-                                    }}
-                                    className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-white/20 hover:bg-white/10 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:bg-white/10"
-                                  >
-                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-semibold text-slate-300">
-                                      {index + 1}
-                                    </span>
-                                    <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">
-                                      {team.teamName}
-                                    </span>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
+                            <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
+                              {slotTeams.length === 0
+                                ? "No teams registered."
+                                : `${slotTeams.length} team${slotTeams.length !== 1 ? "s" : ""} registered. Open the rounds page or use the slots panel on the right to inspect individual teams.`}
+                            </p>
                           )}
                         </div>
 
-                        <div className="mb-6 rounded-xl border border-white/10 bg-white/5 p-5 dark:border-white/10 dark:bg-white/5 sm:mb-8">
-                          <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:text-2xl">
-                            Rounds & matches
-                          </h2>
-                          <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                            All matches are 4 teams per round. See who advanced and full brackets on the rounds page.
-                          </p>
-                          {rounds.length === 0 ? (
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                              Rounds have not been published yet.
-                            </p>
-                          ) : (
-                            <ul className="space-y-2">
-                              {rounds
-                                .sort((a, b) => a.roundNumber - b.roundNumber)
-                                .map((r) => (
-                                  <li
-                                    key={r.roundNumber}
-                                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 px-4 py-3 text-sm"
-                                  >
-                                    <span className="font-medium text-slate-800 dark:text-slate-200">{r.name}</span>
-                                    <span className="text-slate-500 dark:text-slate-400">
-                                      {r.teamIds?.length ?? 0} team{(r.teamIds?.length ?? 0) !== 1 ? "s" : ""}
-                                    </span>
-                                  </li>
-                                ))}
-                            </ul>
-                          )}
+                        <div className="mb-6 sm:mb-8">
                           <Link
                             href={`/tournaments/${selectedTournament._id}/rounds`}
-                            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/30 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:hover:bg-emerald-500/30"
+                            className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/30 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-100 dark:hover:bg-emerald-500/30"
                           >
-                            View full brackets & matches
+                            View rounds & matches
                           </Link>
                         </div>
                       </>
