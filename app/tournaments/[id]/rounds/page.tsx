@@ -75,7 +75,10 @@ export default function TournamentRoundsPage() {
     type Phase = "none" | "played" | "advanced";
     const map = new Map<string, Phase>();
     if (!rounds.length) return map;
+
     const latestByTeam = new Map<string, number>();
+    const roundsByTeam = new Map<string, Set<number>>();
+
     rounds.forEach((r) => {
       if (!Array.isArray(r.teamIds) || r.teamIds.length === 0) return;
       r.teamIds.forEach((tid) => {
@@ -83,19 +86,40 @@ export default function TournamentRoundsPage() {
         if (prev == null || r.roundNumber > prev) {
           latestByTeam.set(tid, r.roundNumber);
         }
+        const set = roundsByTeam.get(tid) ?? new Set<number>();
+        set.add(r.roundNumber);
+        roundsByTeam.set(tid, set);
       });
     });
+
     if (!latestByTeam.size) return map;
-    let minLatest = Infinity;
+
+    const decidedRounds = new Set<number>();
+    latestByTeam.forEach((latest, tid) => {
+      const set = roundsByTeam.get(tid);
+      if (!set) return;
+      set.forEach((rn) => {
+        if (rn < latest) decidedRounds.add(rn);
+      });
+    });
+    if (!decidedRounds.size) return map;
+
     let maxLatest = 0;
     latestByTeam.forEach((rn) => {
-      if (rn < minLatest) minLatest = rn;
       if (rn > maxLatest) maxLatest = rn;
     });
-    if (maxLatest === minLatest) return map;
-    latestByTeam.forEach((rn, tid) => {
-      map.set(tid, rn === maxLatest ? "advanced" : "played");
+
+    latestByTeam.forEach((latest, tid) => {
+      const set = roundsByTeam.get(tid);
+      if (!set) return;
+      let hasDecidedSource = false;
+      set.forEach((rn) => {
+        if (decidedRounds.has(rn)) hasDecidedSource = true;
+      });
+      if (!hasDecidedSource) return;
+      map.set(tid, latest === maxLatest ? "advanced" : "played");
     });
+
     return map;
   }, [rounds]);
 
@@ -260,11 +284,6 @@ export default function TournamentRoundsPage() {
                                   <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isAdvanced ? "text-emerald-50" : isEliminated ? "text-red-100" : "text-slate-200"}`}>
                                     {t.name || "—"}
                                   </span>
-                                  {isAdvanced && (
-                                    <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
-                                      Winner
-                                    </span>
-                                  )}
                                 </Link>
                               );
                             })}

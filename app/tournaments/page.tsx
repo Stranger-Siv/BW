@@ -161,7 +161,10 @@ export default function TournamentsPage() {
     type Phase = "none" | "played" | "advanced";
     const phase = new Map<string, Phase>();
     if (!rounds.length) return phase;
+
     const latestByTeam = new Map<string, number>();
+    const roundsByTeam = new Map<string, Set<number>>();
+
     rounds.forEach((r) => {
       if (!Array.isArray(r.teamIds) || r.teamIds.length === 0) return;
       r.teamIds.forEach((tid) => {
@@ -169,19 +172,42 @@ export default function TournamentsPage() {
         if (prev == null || r.roundNumber > prev) {
           latestByTeam.set(tid, r.roundNumber);
         }
+        const set = roundsByTeam.get(tid) ?? new Set<number>();
+        set.add(r.roundNumber);
+        roundsByTeam.set(tid, set);
       });
     });
+
     if (!latestByTeam.size) return phase;
-    let minLatest = Infinity;
+
+    // Determine which rounds have at least one team that advanced beyond them
+    const decidedRounds = new Set<number>();
+    latestByTeam.forEach((latest, tid) => {
+      const set = roundsByTeam.get(tid);
+      if (!set) return;
+      set.forEach((rn) => {
+        if (rn < latest) decidedRounds.add(rn);
+      });
+    });
+    if (!decidedRounds.size) return phase;
+
+    // Compute global max latest roundNumber (furthest anyone reached)
     let maxLatest = 0;
     latestByTeam.forEach((rn) => {
-      if (rn < minLatest) minLatest = rn;
       if (rn > maxLatest) maxLatest = rn;
     });
-    if (maxLatest === minLatest) return phase;
-    latestByTeam.forEach((rn, tid) => {
-      phase.set(tid, rn === maxLatest ? "advanced" : "played");
+
+    latestByTeam.forEach((latest, tid) => {
+      const set = roundsByTeam.get(tid);
+      if (!set) return;
+      let hasDecidedSource = false;
+      set.forEach((rn) => {
+        if (decidedRounds.has(rn)) hasDecidedSource = true;
+      });
+      if (!hasDecidedSource) return;
+      phase.set(tid, latest === maxLatest ? "advanced" : "played");
     });
+
     return phase;
   }, [rounds]);
 
