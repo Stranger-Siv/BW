@@ -161,26 +161,26 @@ export default function TournamentsPage() {
     type Phase = "none" | "played" | "advanced";
     const phase = new Map<string, Phase>();
     if (!rounds.length) return phase;
-    const firstByTeam = new Map<string, number>();
     const latestByTeam = new Map<string, number>();
-    let maxRound = 0;
-    for (const r of rounds) {
-      if (!Array.isArray(r.teamIds)) continue;
-      if (r.roundNumber > maxRound) maxRound = r.roundNumber;
-      for (const tid of r.teamIds) {
-        const prevFirst = firstByTeam.get(tid);
-        if (prevFirst == null || r.roundNumber < prevFirst) {
-          firstByTeam.set(tid, r.roundNumber);
-        }
-        const prevLatest = latestByTeam.get(tid);
-        if (prevLatest == null || r.roundNumber > prevLatest) {
+    rounds.forEach((r) => {
+      if (!Array.isArray(r.teamIds) || r.teamIds.length === 0) return;
+      r.teamIds.forEach((tid) => {
+        const prev = latestByTeam.get(tid);
+        if (prev == null || r.roundNumber > prev) {
           latestByTeam.set(tid, r.roundNumber);
         }
-      }
-    }
-    firstByTeam.forEach((_first, tid) => {
-      const latest = latestByTeam.get(tid) ?? 0;
-      phase.set(tid, latest === maxRound ? "advanced" : "played");
+      });
+    });
+    if (!latestByTeam.size) return phase;
+    let minLatest = Infinity;
+    let maxLatest = 0;
+    latestByTeam.forEach((rn) => {
+      if (rn < minLatest) minLatest = rn;
+      if (rn > maxLatest) maxLatest = rn;
+    });
+    if (maxLatest === minLatest) return phase;
+    latestByTeam.forEach((rn, tid) => {
+      phase.set(tid, rn === maxLatest ? "advanced" : "played");
     });
     return phase;
   }, [rounds]);
@@ -1069,20 +1069,18 @@ export default function TournamentsPage() {
                       const team = slotTeams[index];
                       const isFilled = !!team;
                       const registrationClosed = slotStatus !== "registration_open";
-                      const matchProgressActive = slotStatus === "ongoing" || slotStatus === "completed";
-                      const phase = team && registrationClosed && matchProgressActive ? teamPhaseById.get(team._id) ?? "none" : "none";
+                      const hasProgress = teamPhaseById.size > 0;
+                      const phase = team && registrationClosed && hasProgress ? teamPhaseById.get(team._id) ?? "none" : "none";
                       const slotState =
                         !isFilled
                           ? "empty"
-                          : !registrationClosed
+                          : !registrationClosed && !hasProgress
                             ? "open_filled"
-                            : !matchProgressActive
-                              ? "closed_never"
-                              : phase === "advanced"
-                                ? "closed_advanced"
-                                : phase === "played"
-                                  ? "closed_out"
-                                  : "closed_never";
+                            : phase === "advanced"
+                              ? "closed_advanced"
+                              : phase === "played"
+                                ? "closed_out"
+                                : "closed_never";
                       const isSelected = selectedTeamIdForModal === team?._id;
                       return (
                         <div
@@ -1133,7 +1131,7 @@ export default function TournamentsPage() {
                     })}
                   </div>
                   {slotStatus !== "registration_open" && slotTeams.length > 0 && rounds.length > 0 && (
-                    slotStatus === "ongoing" || slotStatus === "completed" ? (
+                    teamPhaseById.size > 0 ? (
                       <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> Reached latest round

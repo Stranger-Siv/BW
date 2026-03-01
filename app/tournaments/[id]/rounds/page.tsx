@@ -75,26 +75,26 @@ export default function TournamentRoundsPage() {
     type Phase = "none" | "played" | "advanced";
     const map = new Map<string, Phase>();
     if (!rounds.length) return map;
-    const firstByTeam = new Map<string, number>();
     const latestByTeam = new Map<string, number>();
-    let maxRound = 0;
-    for (const r of rounds) {
-      if (!Array.isArray(r.teamIds)) continue;
-      if (r.roundNumber > maxRound) maxRound = r.roundNumber;
-      for (const tid of r.teamIds) {
-        const prevFirst = firstByTeam.get(tid);
-        if (prevFirst == null || r.roundNumber < prevFirst) {
-          firstByTeam.set(tid, r.roundNumber);
-        }
-        const prevLatest = latestByTeam.get(tid);
-        if (prevLatest == null || r.roundNumber > prevLatest) {
+    rounds.forEach((r) => {
+      if (!Array.isArray(r.teamIds) || r.teamIds.length === 0) return;
+      r.teamIds.forEach((tid) => {
+        const prev = latestByTeam.get(tid);
+        if (prev == null || r.roundNumber > prev) {
           latestByTeam.set(tid, r.roundNumber);
         }
-      }
-    }
-    firstByTeam.forEach((_first, tid) => {
-      const latest = latestByTeam.get(tid) ?? 0;
-      map.set(tid, latest === maxRound ? "advanced" : "played");
+      });
+    });
+    if (!latestByTeam.size) return map;
+    let minLatest = Infinity;
+    let maxLatest = 0;
+    latestByTeam.forEach((rn) => {
+      if (rn < minLatest) minLatest = rn;
+      if (rn > maxLatest) maxLatest = rn;
+    });
+    if (maxLatest === minLatest) return map;
+    latestByTeam.forEach((rn, tid) => {
+      map.set(tid, rn === maxLatest ? "advanced" : "played");
     });
     return map;
   }, [rounds]);
