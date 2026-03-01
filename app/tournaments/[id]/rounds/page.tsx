@@ -413,14 +413,8 @@ export default function TournamentRoundsPage() {
                           const isChampion = championName && t.name === championName;
                           const baseClass = isChampion
                             ? "border border-amber-400/80 bg-amber-500/25 text-amber-50"
-                            : championName
-                              ? "border border-red-400/70 bg-red-500/15 text-red-100"
-                              : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
-                          const labelClass = isChampion
-                            ? "text-amber-50"
-                            : championName
-                              ? "text-red-100"
-                              : "text-slate-200";
+                            : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                          const labelClass = isChampion ? "text-amber-50" : "text-slate-200";
                           return (
                             <Link
                               key={t.id}

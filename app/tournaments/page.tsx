@@ -211,8 +211,9 @@ export default function TournamentsPage() {
       stage = "group";
     }
 
-    // During semi-finals (before finalists known), keep slots neutral.
-    if (stage === "semi") {
+    // During semi-finals and during the final before a winner is set,
+    // keep all slots neutral (grey) – brackets show progression.
+    if (stage === "semi" || stage === "final") {
       return phase;
     }
 
