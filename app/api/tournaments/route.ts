@@ -6,9 +6,10 @@ import Tournament from "@/models/Tournament";
 export const dynamic = "force-dynamic";
 
 /**
- * Public list of tournaments: open for registration and scheduled (registration opens later).
- * - registration_open: not full, not closed.
- * - scheduled: show "Registration opens at [scheduledAt]".
+ * Public list of tournaments: open for registration, scheduled, and closed (so users can view details).
+ * - scheduled: registration opens later.
+ * - registration_open: has slots.
+ * - registration_closed, ongoing, completed: view-only (closed).
  */
 export async function GET() {
   try {
@@ -19,14 +20,7 @@ export async function GET() {
       { $set: { status: "registration_open" } }
     );
     const list = await Tournament.find({
-      isClosed: false,
-      $or: [
-        { status: "scheduled" },
-        {
-          status: "registration_open",
-          $expr: { $lt: ["$registeredTeams", "$maxTeams"] },
-        },
-      ],
+      status: { $in: ["scheduled", "registration_open", "registration_closed", "ongoing", "completed"] },
     })
       .sort({ date: 1, startTime: 1 })
       .select("name type date startTime registrationDeadline maxTeams teamSize registeredTeams status scheduledAt description prize serverIP")

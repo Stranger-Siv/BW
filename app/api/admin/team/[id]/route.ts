@@ -16,17 +16,34 @@ type PatchBody = {
   status?: string;
   tournamentDate?: string;
   tournamentId?: string;
+  players?: { minecraftIGN?: string; discordUsername?: string }[];
+  rewardReceiverIGN?: string;
 };
 
 function validatePatchBody(
   body: unknown
-): { ok: true; data: { status?: StatusUpdate; tournamentDate?: string; tournamentId?: string } } | { ok: false; status: number; message: string } {
+): {
+  ok: true;
+  data: {
+    status?: StatusUpdate;
+    tournamentDate?: string;
+    tournamentId?: string;
+    players?: IPlayer[];
+    rewardReceiverIGN?: string;
+  };
+} | { ok: false; status: number; message: string } {
   if (typeof body !== "object" || body === null) {
     return { ok: false, status: 400, message: "Request body must be a JSON object" };
   }
 
-  const { status, tournamentDate, tournamentId } = body as PatchBody;
-  const updates: { status?: StatusUpdate; tournamentDate?: string; tournamentId?: string } = {};
+  const { status, tournamentDate, tournamentId, players, rewardReceiverIGN } = body as PatchBody;
+  const updates: {
+    status?: StatusUpdate;
+    tournamentDate?: string;
+    tournamentId?: string;
+    players?: IPlayer[];
+    rewardReceiverIGN?: string;
+  } = {};
 
   if (status !== undefined) {
     if (typeof status !== "string" || !STATUS_VALUES.includes(status as StatusUpdate)) {
@@ -49,8 +66,39 @@ function validatePatchBody(
     updates.tournamentId = tournamentId;
   }
 
+  if (players !== undefined) {
+    if (!Array.isArray(players)) {
+      return { ok: false, status: 400, message: "players must be an array" };
+    }
+    const validated: IPlayer[] = [];
+    for (let i = 0; i < players.length; i++) {
+      const p = players[i];
+      if (typeof p !== "object" || p === null) {
+        return { ok: false, status: 400, message: `players[${i}] must be an object with minecraftIGN and discordUsername` };
+      }
+      const ign = typeof p.minecraftIGN === "string" ? p.minecraftIGN.trim() : "";
+      const discord = typeof p.discordUsername === "string" ? p.discordUsername.trim() : "";
+      if (!ign || !discord) {
+        return { ok: false, status: 400, message: `players[${i}] must have minecraftIGN and discordUsername (non-empty strings)` };
+      }
+      validated.push({ minecraftIGN: ign, discordUsername: discord });
+    }
+    updates.players = validated;
+  }
+
+  if (rewardReceiverIGN !== undefined) {
+    if (typeof rewardReceiverIGN !== "string" || !rewardReceiverIGN.trim()) {
+      return { ok: false, status: 400, message: "rewardReceiverIGN must be a non-empty string" };
+    }
+    updates.rewardReceiverIGN = rewardReceiverIGN.trim();
+  }
+
   if (Object.keys(updates).length === 0) {
-    return { ok: false, status: 400, message: "Provide at least one of: status, tournamentDate, tournamentId" };
+    return {
+      ok: false,
+      status: 400,
+      message: "Provide at least one of: status, tournamentDate, tournamentId, players, rewardReceiverIGN",
+    };
   }
 
   return { ok: true, data: updates };
@@ -117,7 +165,7 @@ export async function PATCH(
       );
     }
 
-    const { status: statusUpdate, tournamentDate: newDate, tournamentId: newTournamentId } = validation.data;
+    const { status: statusUpdate, tournamentDate: newDate, tournamentId: newTournamentId, players: newPlayers, rewardReceiverIGN: newRewardReceiver } = validation.data;
 
     await connectDB();
 
@@ -128,6 +176,70 @@ export async function PATCH(
 
     const oldDate = team.tournamentDate;
     const oldTournamentId = team.tournamentId?.toString();
+
+    // --- Edit players/rewardReceiver (admin only when status is pending) ---
+    if (newPlayers !== undefined || newRewardReceiver !== undefined) {
+      if (team.status !== "pending") {
+        return NextResponse.json(
+          { error: "Can only edit team members before approval. Approve or reject first, or ask a super admin." },
+          { status: 400 }
+        );
+      }
+      let teamSize = 4;
+      if (team.tournamentId) {
+        const t = await Tournament.findById(team.tournamentId).select("teamSize").lean();
+        if (t) teamSize = (t as unknown as { teamSize?: number }).teamSize ?? 4;
+      } else if (team.tournamentDate) {
+        const t = await Tournament.findOne({ date: team.tournamentDate }).select("teamSize").lean();
+        if (t) teamSize = (t as unknown as { teamSize?: number }).teamSize ?? 4;
+      }
+      const playersToUse = newPlayers ?? team.players;
+      const rewardToUse = newRewardReceiver ?? team.rewardReceiverIGN;
+      if (playersToUse.length !== teamSize) {
+        return NextResponse.json(
+          { error: `Player count must be exactly ${teamSize} for this tournament` },
+          { status: 400 }
+        );
+      }
+      const igns = playersToUse.map((p: IPlayer) => p.minecraftIGN.trim()).filter(Boolean);
+      if (!igns.includes(rewardToUse.trim())) {
+        return NextResponse.json(
+          { error: "Reward receiver must be one of the players' Minecraft IGN" },
+          { status: 400 }
+        );
+      }
+      const otherTeamsQuery = team.tournamentId
+        ? { tournamentId: team.tournamentId, _id: { $ne: id } }
+        : team.tournamentDate
+          ? { tournamentDate: team.tournamentDate, _id: { $ne: id } }
+          : null;
+      if (otherTeamsQuery) {
+        const otherTeams = await Team.find(otherTeamsQuery, {
+          "players.minecraftIGN": 1,
+          "players.discordUsername": 1,
+        }).lean();
+        const usedKeys = new Set<string>();
+        for (const t of otherTeams) {
+          const list = (t as { players?: IPlayer[] }).players ?? [];
+          for (const p of list) {
+            usedKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
+          }
+        }
+        const dup = playersToUse.find((p: IPlayer) => usedKeys.has(`${p.minecraftIGN.trim().toLowerCase()}|${p.discordUsername.trim()}`));
+        if (dup) {
+          return NextResponse.json(
+            { error: `Player "${dup.minecraftIGN}" with that Discord is already on another team in this tournament` },
+            { status: 409 }
+          );
+        }
+      }
+      const update: Partial<ITeam> = {};
+      if (newPlayers !== undefined) update.players = playersToUse;
+      if (newRewardReceiver !== undefined) update.rewardReceiverIGN = rewardToUse;
+      await Team.findByIdAndUpdate(id, { $set: update });
+      const updated = await Team.findById(id).lean();
+      return NextResponse.json(updated, { status: 200 });
+    }
 
     // --- Status-only update (no date/tournament change) ---
     if (newDate === undefined && newTournamentId === undefined) {

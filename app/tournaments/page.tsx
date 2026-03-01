@@ -72,6 +72,57 @@ const TYPE_LABEL: Record<string, string> = {
   squad: "Squad",
 };
 
+const STORAGE_KEY = "bw-registration";
+
+type StoredForm = {
+  teamName: string;
+  players: { minecraftIGN: string; discordUsername: string }[];
+  rewardReceiverIGN: string;
+};
+
+function loadStoredForm(tournamentId: string): StoredForm | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(`${STORAGE_KEY}-${tournamentId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const p = parsed as Record<string, unknown>;
+    const teamName = typeof p.teamName === "string" ? p.teamName : "";
+    const players = Array.isArray(p.players)
+      ? (p.players as unknown[]).map((x) => {
+          const o = typeof x === "object" && x !== null ? (x as Record<string, unknown>) : {};
+          return {
+            minecraftIGN: typeof o.minecraftIGN === "string" ? o.minecraftIGN : "",
+            discordUsername: typeof o.discordUsername === "string" ? o.discordUsername : "",
+          };
+        })
+      : [];
+    const rewardReceiverIGN = typeof p.rewardReceiverIGN === "string" ? p.rewardReceiverIGN : "";
+    return { teamName, players, rewardReceiverIGN };
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredForm(tournamentId: string, data: StoredForm) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`${STORAGE_KEY}-${tournamentId}`, JSON.stringify(data));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+function clearStoredForm(tournamentId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(`${STORAGE_KEY}-${tournamentId}`);
+  } catch {
+    // ignore
+  }
+}
+
 export default function TournamentsPage() {
   const { data: session, status } = useSession();
   const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
@@ -271,17 +322,39 @@ export default function TournamentsPage() {
     [teamDetailPanelClosing]
   );
 
+  // Only reset form when user selects a different tournament (by id), not when tournaments list refreshes (same id, new object ref)
+  // Restore from localStorage when available so reload keeps form filled
   useEffect(() => {
-    if (selectedTournament) {
-      setPlayers(getInitialPlayers(selectedTournament.teamSize));
+    if (!selectedTournament) return;
+    const teamSize = selectedTournament.teamSize;
+    const stored = loadStoredForm(selectedTournament._id);
+    if (stored && stored.players.length === teamSize) {
+      setTeamName(stored.teamName);
+      setPlayers(stored.players);
+      setRewardReceiverIGN(stored.rewardReceiverIGN);
+    } else {
+      setTeamName("");
+      setPlayers(getInitialPlayers(teamSize));
       setRewardReceiverIGN("");
-      setSubmitError(null);
-      setSuccessMessage(null);
-      setMeDisplayName(null);
-      setTeamNameAvailable(null);
-      setPlayerErrors({});
     }
-  }, [selectedTournament]);
+    setSubmitError(null);
+    setSuccessMessage(null);
+    setMeDisplayName(null);
+    setTeamNameAvailable(null);
+    setPlayerErrors({});
+  }, [selectedTournament?._id]);
+
+  // Persist form to localStorage on every change so reload keeps data
+  useEffect(() => {
+    if (!selectedTournament?._id) return;
+    const hasData = teamName.trim() || players.some((p) => (p.minecraftIGN || "").trim() || (p.discordUsername || "").trim()) || rewardReceiverIGN.trim();
+    if (!hasData) return;
+    saveStoredForm(selectedTournament._id, {
+      teamName,
+      players,
+      rewardReceiverIGN,
+    });
+  }, [selectedTournament?._id, teamName, players, rewardReceiverIGN]);
 
   useEffect(() => {
     if (!selectedTournament || !teamName.trim()) {
@@ -408,12 +481,15 @@ export default function TournamentsPage() {
     setRewardReceiverIGN("");
     setSubmitError(null);
     setSuccessMessage(null);
+    // Keep localStorage so if they reselect same tournament, form is still there
   }, []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!selectedTournament || selectedTournament.status === "scheduled") return;
+      if (!selectedTournament) return;
+      const regDisabled = selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "");
+      if (regDisabled) return;
       setSubmitError(null);
       setSuccessMessage(null);
 
@@ -454,6 +530,7 @@ export default function TournamentsPage() {
           return;
         }
         setSuccessMessage(data.message ?? "Registered successfully!");
+        clearStoredForm(selectedTournament._id);
         setTeamName("");
         setPlayers(getInitialPlayers(selectedTournament.teamSize));
         setRewardReceiverIGN("");
@@ -557,8 +634,24 @@ export default function TournamentsPage() {
                 <StaggerChildren className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {tournaments.map((t) => {
                     const isScheduled = t.status === "scheduled";
-                    const remaining = Math.max(0, t.maxTeams - t.registeredTeams);
+                    const isClosed = ["registration_closed", "ongoing", "completed"].includes(t.status ?? "");
+                    const canRegister = t.status === "registration_open" && (t.maxTeams - (t.registeredTeams ?? 0)) > 0;
+                    const remaining = Math.max(0, t.maxTeams - (t.registeredTeams ?? 0));
                     const typeLabel = TYPE_LABEL[t.type ?? "squad"] ?? (t.type ?? "Squad");
+                    const statusBadge = isScheduled
+                      ? "Scheduled"
+                      : isClosed
+                        ? (t.status === "completed" ? "Completed" : t.status === "ongoing" ? "Ongoing" : "Closed")
+                        : canRegister
+                          ? "Register"
+                          : "Full";
+                    const statusBadgeClass = isScheduled
+                      ? "bg-violet-500/20 text-violet-400 dark:text-violet-300"
+                      : isClosed
+                        ? "bg-slate-500/20 text-slate-400 dark:text-slate-300"
+                        : canRegister
+                          ? "bg-emerald-500/20 text-emerald-400 dark:text-emerald-300"
+                          : "bg-amber-500/20 text-amber-400 dark:text-amber-300";
                     const cardContent = (
                       <div className="w-full p-5 text-left">
                         <span className="block font-semibold text-slate-800 dark:text-slate-100">
@@ -573,6 +666,10 @@ export default function TournamentsPage() {
                         {isScheduled ? (
                           <p className="mt-2 text-sm font-medium text-violet-400 dark:text-violet-300">
                             Registration opens at {t.scheduledAt ? formatDateTime(t.scheduledAt) : "—"}
+                          </p>
+                        ) : isClosed ? (
+                          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                            View details and results
                           </p>
                         ) : (
                           <>
@@ -594,7 +691,7 @@ export default function TournamentsPage() {
                     return (
                       <StaggerItem
                         key={t._id}
-                        className={`card-glass transition-all duration-300 ${isScheduled ? "opacity-95 hover:-translate-y-0.5 hover:shadow-xl" : "hover:-translate-y-0.5 hover:shadow-xl"}`}
+                        className="card-glass transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                       >
                         <button
                           type="button"
@@ -602,8 +699,8 @@ export default function TournamentsPage() {
                           className="w-full rounded-t-2xl text-left"
                         >
                           {cardContent}
-                          <span className={`mx-5 mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${isScheduled ? "bg-violet-500/20 text-violet-400 dark:text-violet-300" : "bg-emerald-500/20 text-emerald-400 dark:text-emerald-300"}`}>
-                            {isScheduled ? "Scheduled" : "Register"}
+                          <span className={`mx-5 mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass}`}>
+                            {statusBadge}
                           </span>
                         </button>
                         <Link
@@ -652,10 +749,15 @@ export default function TournamentsPage() {
                     Registration opens at <strong>{selectedTournament.scheduledAt ? formatDateTime(selectedTournament.scheduledAt) : "—"}</strong>. You can view details but cannot register yet.
                   </div>
                 )}
+                {["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
+                  <div className="mb-5 rounded-xl border border-slate-400/30 bg-slate-500/10 px-4 py-3 text-sm text-slate-200 dark:border-slate-500/30 dark:bg-slate-500/10 sm:mb-6">
+                    This tournament is closed. You can view details, brackets, and results but cannot register.
+                  </div>
+                )}
                 <h2 className="mb-5 text-xl font-semibold text-slate-800 dark:text-slate-100 sm:mb-6 sm:text-2xl">
                   {selectedTournament.teamSize === 1 ? "Register your entry" : "Team details"}
                 </h2>
-                {session?.user && meDisplayName && selectedTournament.status !== "scheduled" && (
+                {session?.user && meDisplayName && selectedTournament.status !== "scheduled" && !["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") && (
                   <p className="mb-5 text-sm text-slate-500 dark:text-slate-400 sm:mb-6">
                     Registering as <strong className="text-slate-800 dark:text-slate-100">{meDisplayName}</strong>
                   </p>
@@ -672,13 +774,13 @@ export default function TournamentsPage() {
                       value={teamName}
                       onChange={(e) => setTeamName(e.target.value)}
                       placeholder={selectedTournament.teamSize === 1 ? "e.g. Your IGN or nickname" : "e.g. Dragon Slayers"}
-                      disabled={selectedTournament.status === "scheduled"}
+                      disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                       className={`w-full min-h-[48px] rounded-lg border bg-white/5 px-4 py-3 text-slate-800 placeholder-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white/5 dark:text-slate-100 dark:placeholder-slate-500 sm:min-h-[44px] sm:py-2.5 ${
                         teamNameAvailable === false
                           ? "border-red-400 dark:border-red-500"
                           : "border-white/10 dark:border-white/10 focus:border-emerald-400/50"
                       }`}
-                      aria-required={selectedTournament.status !== "scheduled"}
+                      aria-required={selectedTournament.status !== "scheduled" && !["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                     />
                     {teamNameCheckLoading && teamName.trim() && (
                       <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Checking name…</p>
@@ -721,7 +823,7 @@ export default function TournamentsPage() {
                             onIGNChange={(v) => updatePlayer(0, "minecraftIGN", v)}
                             onDiscordChange={(v) => updatePlayer(0, "discordUsername", v)}
                             error={allPlayerErrors[0]}
-                            disabled={selectedTournament.status === "scheduled"}
+                            disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                           />
                         </div>
                       </div>
@@ -732,7 +834,7 @@ export default function TournamentsPage() {
                           igns={rewardReceiverOptions}
                           value={rewardReceiverIGN}
                           onChange={setRewardReceiverIGN}
-                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled"}
+                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                         />
                       </div>
                       {submitError && (
@@ -741,7 +843,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={selectedTournament.status === "scheduled" || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
+                      <button type="submit" disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>
@@ -761,7 +863,7 @@ export default function TournamentsPage() {
                               discordUsername={player.discordUsername}
                               onIGNChange={(v) => updatePlayer(idx, "minecraftIGN", v)}
                               onDiscordChange={(v) => updatePlayer(idx, "discordUsername", v)}
-                              disabled={selectedTournament.status === "scheduled"}
+                              disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                               error={allPlayerErrors[idx]}
                             />
                           ))}
@@ -774,7 +876,7 @@ export default function TournamentsPage() {
                           igns={rewardReceiverOptions}
                           value={rewardReceiverIGN}
                           onChange={setRewardReceiverIGN}
-                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled"}
+                          disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                         />
                       </div>
                       {submitError && (
@@ -783,7 +885,7 @@ export default function TournamentsPage() {
                       {successMessage && (
                         <div className="w-full rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 dark:border-emerald-500/30 dark:bg-emerald-500/10">{successMessage}</div>
                       )}
-                      <button type="submit" disabled={selectedTournament.status === "scheduled" || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
+                      <button type="submit" disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "") || submitLoading || Object.keys(allPlayerErrors).length > 0} className="btn-gradient w-full py-3 sm:w-auto sm:min-w-[220px] disabled:cursor-not-allowed disabled:opacity-60">
                         {submitLoading ? "Registering…" : "Register"}
                       </button>
                     </form>

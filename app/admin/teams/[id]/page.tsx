@@ -7,6 +7,8 @@ import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import { AdminTeamDetailSkeleton } from "@/components/admin/AdminSkeletons";
 import { ChangeDateModal, type TournamentOption } from "@/components/admin/ChangeDateModal";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
+import { PlayerRow } from "@/components/registration/PlayerRow";
+import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
 import { formatDateLabel } from "@/lib/formatDate";
 
 type TournamentPopulated = {
@@ -64,6 +66,11 @@ export default function AdminTeamDetailPage() {
   const [disbandOpen, setDisbandOpen] = useState(false);
   const [disbandLoading, setDisbandLoading] = useState(false);
 
+  const [editPlayers, setEditPlayers] = useState<{ minecraftIGN: string; discordUsername: string }[]>([]);
+  const [editRewardReceiver, setEditRewardReceiver] = useState("");
+  const [editSaveLoading, setEditSaveLoading] = useState(false);
+  const [editSaveError, setEditSaveError] = useState<string | null>(null);
+
   const fetchTeam = useCallback(async () => {
     if (!id) return;
     const res = await fetch(`/api/admin/team/${id}`, { cache: "no-store" });
@@ -83,10 +90,21 @@ export default function AdminTeamDetailPage() {
     setLoading(true);
     setError(null);
     fetchTeam()
-      .then((data) => setTeam(data))
+      .then((data) => {
+        setTeam(data);
+        setEditPlayers((data?.players ?? []).map((p: { minecraftIGN?: string; discordUsername?: string }) => ({ minecraftIGN: p.minecraftIGN ?? "", discordUsername: p.discordUsername ?? "" })));
+        setEditRewardReceiver(data?.rewardReceiverIGN ?? "");
+      })
       .catch((e) => setError(e.message || "Failed to load"))
       .finally(() => setLoading(false));
   }, [id, fetchTeam]);
+
+  useEffect(() => {
+    if (team) {
+      setEditPlayers((team.players ?? []).map((p) => ({ minecraftIGN: p.minecraftIGN ?? "", discordUsername: p.discordUsername ?? "" })));
+      setEditRewardReceiver(team.rewardReceiverIGN ?? "");
+    }
+  }, [team]);
 
   useEffect(() => {
     fetch("/api/admin/tournaments", { cache: "no-store" })
@@ -204,6 +222,35 @@ export default function AdminTeamDetailPage() {
       setDisbandLoading(false);
     }
   }, [team, router]);
+
+  const handleSavePlayers = useCallback(async () => {
+    if (!team) return;
+    const igns = editPlayers.map((p) => p.minecraftIGN.trim()).filter(Boolean);
+    if (!igns.includes(editRewardReceiver.trim())) {
+      setEditSaveError("Reward receiver must be one of the players' Minecraft IGN");
+      return;
+    }
+    setEditSaveLoading(true);
+    setEditSaveError(null);
+    try {
+      const res = await fetch(`/api/admin/team/${team._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          players: editPlayers.map((p) => ({ minecraftIGN: p.minecraftIGN.trim(), discordUsername: p.discordUsername.trim() })),
+          rewardReceiverIGN: editRewardReceiver.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to save");
+      setTeam(data);
+      setActionMessage("Team members updated.");
+    } catch (e) {
+      setEditSaveError(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setEditSaveLoading(false);
+    }
+  }, [team, editPlayers, editRewardReceiver]);
 
   if (loading) {
     return <AdminTeamDetailSkeleton />;
@@ -399,31 +446,76 @@ export default function AdminTeamDetailPage() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Roster ({team.players?.length ?? 0})
           </h2>
-          <ul className="space-y-3">
-            {(team.players ?? []).map((p, idx) => {
-              const isReward = (p.minecraftIGN || "").trim() === (team.rewardReceiverIGN || "").trim();
-              return (
-                <li
-                  key={idx}
-                  className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-slate-800 dark:text-slate-200">{p.minecraftIGN || "—"}</p>
-                      {isReward && (
-                        <span className="rounded bg-amber-500/25 px-1.5 py-0.5 text-xs font-medium text-amber-200">
-                          Reward
-                        </span>
-                      )}
+          {team.status === "pending" ? (
+            <div className="space-y-6">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Edit player details before approving. Changes are saved when you click Save.
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+                {editPlayers.map((player, idx) => (
+                  <PlayerRow
+                    key={idx}
+                    index={idx}
+                    minecraftIGN={player.minecraftIGN}
+                    discordUsername={player.discordUsername}
+                    onIGNChange={(v) => setEditPlayers((prev) => prev.map((p, i) => (i === idx ? { ...p, minecraftIGN: v } : p)))}
+                    onDiscordChange={(v) => setEditPlayers((prev) => prev.map((p, i) => (i === idx ? { ...p, discordUsername: v } : p)))}
+                  />
+                ))}
+              </div>
+              <div>
+                <label htmlFor="admin-reward-receiver" className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Reward receiver (Minecraft IGN)
+                </label>
+                <RewardReceiverSelect
+                  id="admin-reward-receiver"
+                  igns={editPlayers.map((p) => p.minecraftIGN.trim()).filter(Boolean)}
+                  value={editRewardReceiver}
+                  onChange={setEditRewardReceiver}
+                  disabled={editPlayers.every((p) => !p.minecraftIGN.trim())}
+                />
+              </div>
+              {editSaveError && (
+                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
+                  {editSaveError}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleSavePlayers}
+                disabled={editSaveLoading}
+                className="min-h-[44px] rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-2.5 text-sm font-medium text-slate-900 transition hover:opacity-90 disabled:opacity-60"
+              >
+                {editSaveLoading ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {(team.players ?? []).map((p, idx) => {
+                const isReward = (p.minecraftIGN || "").trim() === (team.rewardReceiverIGN || "").trim();
+                return (
+                  <li
+                    key={idx}
+                    className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-slate-800 dark:text-slate-200">{p.minecraftIGN || "—"}</p>
+                        {isReward && (
+                          <span className="rounded bg-amber-500/25 px-1.5 py-0.5 text-xs font-medium text-amber-200">
+                            Reward
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                        Discord: {p.discordUsername || "—"}
+                      </p>
                     </div>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                      Discord: {p.discordUsername || "—"}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         <p className="mt-8">
