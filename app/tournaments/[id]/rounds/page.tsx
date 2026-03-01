@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/formatDate";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
@@ -70,7 +70,35 @@ export default function TournamentRoundsPage() {
   const r1GroupNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
   const has32Structure = rounds.some((r) => r.name === "R21" || r.name === "R22" || r.name === "R3");
   const finalRound = rounds.find((r) => r.name === (has32Structure ? "R3" : "R2"));
-  const finalTeamIds = new Set(finalRound?.teamIds ?? []);
+
+  const teamPhaseById = useMemo(() => {
+    type Phase = "none" | "played" | "advanced";
+    const map = new Map<string, Phase>();
+    if (!rounds.length) return map;
+    const firstByTeam = new Map<string, number>();
+    const latestByTeam = new Map<string, number>();
+    let maxRound = 0;
+    for (const r of rounds) {
+      if (!Array.isArray(r.teamIds)) continue;
+      if (r.roundNumber > maxRound) maxRound = r.roundNumber;
+      for (const tid of r.teamIds) {
+        const prevFirst = firstByTeam.get(tid);
+        if (prevFirst == null || r.roundNumber < prevFirst) {
+          firstByTeam.set(tid, r.roundNumber);
+        }
+        const prevLatest = latestByTeam.get(tid);
+        if (prevLatest == null || r.roundNumber > prevLatest) {
+          latestByTeam.set(tid, r.roundNumber);
+        }
+      }
+    }
+    firstByTeam.forEach((_first, tid) => {
+      const latest = latestByTeam.get(tid) ?? 0;
+      map.set(tid, latest === maxRound ? "advanced" : "played");
+    });
+    return map;
+  }, [rounds]);
+
   const groupRounds = rounds.filter((r) => r1GroupNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
   const semiRounds = has32Structure ? rounds.filter((r) => r.name === "R21" || r.name === "R22").sort((a, b) => a.roundNumber - b.roundNumber) : [];
 
@@ -214,22 +242,25 @@ export default function TournamentRoundsPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {teams.map((t) => {
-                              const isWinner = finalTeamIds.has(t.id);
+                              const phase = teamPhaseById.get(t.id);
+                              const isAdvanced = phase === "advanced";
+                              const isEliminated = phase === "played";
+                              const baseClass = isAdvanced
+                                ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                : isEliminated
+                                  ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                                  : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
                               return (
                                 <Link
                                   key={t.id}
                                   href={`/tournaments/${id}/teams/${t.id}`}
-                                  className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${
-                                    isWinner
-                                      ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                      : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
-                                  }`}
+                                  className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
                                   title={t.name || "—"}
                                 >
-                                  <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinner ? "text-emerald-50" : "text-slate-200"}`}>
+                                  <span className={`min-w-0 flex-1 truncate whitespace-nowrap ${isAdvanced ? "text-emerald-50" : isEliminated ? "text-red-100" : "text-slate-200"}`}>
                                     {t.name || "—"}
                                   </span>
-                                  {isWinner && (
+                                  {isAdvanced && (
                                     <span className="ml-1.5 rounded-full bg-emerald-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-50">
                                       Winner
                                     </span>
@@ -275,16 +306,28 @@ export default function TournamentRoundsPage() {
                                 )}
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                {teams.map((t) => (
-                                  <Link
-                                    key={t.id}
-                                    href={`/tournaments/${id}/teams/${t.id}`}
-                                    className="flex min-h-[2.25rem] items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
-                                    title={t.name || "—"}
-                                  >
-                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">{t.name || "—"}</span>
-                                  </Link>
-                                ))}
+                                {teams.map((t) => {
+                                  const phase = teamPhaseById.get(t.id);
+                                  const isAdvanced = phase === "advanced";
+                                  const isEliminated = phase === "played";
+                                  const baseClass = isAdvanced
+                                    ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                    : isEliminated
+                                      ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                                      : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                                  return (
+                                    <Link
+                                      key={t.id}
+                                      href={`/tournaments/${id}/teams/${t.id}`}
+                                      className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
+                                      title={t.name || "—"}
+                                    >
+                                      <span className="min-w-0 flex-1 truncate whitespace-nowrap">
+                                        {t.name || "—"}
+                                      </span>
+                                    </Link>
+                                  );
+                                })}
                                 {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}
@@ -333,7 +376,7 @@ export default function TournamentRoundsPage() {
                           <Link
                             key={t.id}
                             href={`/tournaments/${id}/teams/${t.id}`}
-                            className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs sm:text-sm font-medium text-slate-800 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 dark:text-slate-200"
+                            className="flex min-h-[2.5rem] items-center gap-1.5 rounded-xl border border-emerald-400/70 bg-emerald-500/20 px-4 py-2 text-xs sm:text-sm font-medium text-emerald-100 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950"
                             title={t.name || "—"}
                           >
                             <span className="min-w-0 flex-1 truncate whitespace-nowrap">{t.name || "—"}</span>
