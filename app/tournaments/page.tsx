@@ -196,8 +196,14 @@ export default function TournamentsPage() {
 
     const semiRounds = rounds.filter((r) => semiNames.has(r.name));
     const finalRound = rounds.find((r) => finalNames.has(r.name));
-    const hasSemiTeams = semiRounds.some((r) => r.teamIds.length > 0);
     const hasFinalTeams = !!finalRound && finalRound.teamIds.length > 0;
+    // Only "semi stage" when both R21 and R22 have teams (top 8 in place); else still group stage for slot coloring
+    const r21 = rounds.find((r) => r.name === "R21");
+    const r22 = rounds.find((r) => r.name === "R22");
+    const semiStage =
+      !hasFinalTeams &&
+      (r21?.teamIds?.length ?? 0) > 0 &&
+      (r22?.teamIds?.length ?? 0) > 0;
 
     type Stage = "group" | "semi" | "final" | "completed";
     let stage: Stage;
@@ -205,13 +211,13 @@ export default function TournamentsPage() {
       stage = "completed";
     } else if (hasFinalTeams) {
       stage = "final";
-    } else if (hasSemiTeams) {
+    } else if (semiStage) {
       stage = "semi";
     } else {
       stage = "group";
     }
 
-    // During semi-finals and during the final before a winner is set,
+    // During semi-finals (both semis filled) and during the final before a winner is set,
     // keep all slots neutral (grey) – brackets show progression.
     if (stage === "semi" || stage === "final") {
       return phase;
