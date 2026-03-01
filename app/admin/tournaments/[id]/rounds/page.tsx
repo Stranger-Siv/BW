@@ -131,23 +131,12 @@ export default function AdminTournamentRoundsPage() {
     [id, fetchRounds]
   );
 
-  /** Creates R11, R12, R13, R14 (4 teams each) and R2 (final). For 16-team squad. */
-  const createAll16TeamRounds = useCallback(async () => {
-    if (teams.length < 16) {
-      setError("Need exactly 16 registered teams. You have " + teams.length + ".");
-      return;
-    }
-    setAddRoundLoading(true);
-    setError(null);
-    try {
-      const teamIds = teams.slice(0, 16).map((t) => t._id);
-      const roundsToCreate = [
-        { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
-        { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
-        { name: "R13", roundNumber: 3, teamIds: teamIds.slice(8, 12) },
-        { name: "R14", roundNumber: 4, teamIds: teamIds.slice(12, 16) },
-        { name: "R2", roundNumber: 5, teamIds: [] },
-      ];
+  const R1_SERIES_NAMES = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"] as const;
+
+  const createRoundsWithTeams = useCallback(
+    async (
+      roundsToCreate: { name: string; roundNumber: number; teamIds: string[] }[]
+    ) => {
       for (const r of roundsToCreate) {
         const postRes = await fetch(`/api/admin/tournaments/${id}/rounds`, {
           method: "POST",
@@ -170,12 +159,64 @@ export default function AdminTournamentRoundsPage() {
         if (!patchRes.ok) throw new Error(`Failed to add teams to ${r.name}`);
       }
       fetchRounds();
+    },
+    [id, fetchRounds]
+  );
+
+  /** Creates R11, R12, R13, R14 (4 teams each) and R2 (final). For 16-team squad. */
+  const createAll16TeamRounds = useCallback(async () => {
+    if (teams.length < 16) {
+      setError("Need exactly 16 registered teams. You have " + teams.length + ".");
+      return;
+    }
+    setAddRoundLoading(true);
+    setError(null);
+    try {
+      const teamIds = teams.slice(0, 16).map((t) => t._id);
+      const roundsToCreate = [
+        { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
+        { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
+        { name: "R13", roundNumber: 3, teamIds: teamIds.slice(8, 12) },
+        { name: "R14", roundNumber: 4, teamIds: teamIds.slice(12, 16) },
+        { name: "R2", roundNumber: 5, teamIds: [] },
+      ];
+      await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
       setAddRoundLoading(false);
     }
-  }, [id, teams, fetchRounds]);
+  }, [teams, createRoundsWithTeams]);
+
+  /** Creates R11–R18 (8 groups of 4 teams) and R2 (final). For 32-team squad. */
+  const createAll32TeamRounds = useCallback(async () => {
+    if (teams.length < 32) {
+      setError("Need at least 32 registered teams. You have " + teams.length + ".");
+      return;
+    }
+    setAddRoundLoading(true);
+    setError(null);
+    try {
+      const teamIds = teams.slice(0, 32).map((t) => t._id);
+      const roundsToCreate = [
+        { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
+        { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
+        { name: "R13", roundNumber: 3, teamIds: teamIds.slice(8, 12) },
+        { name: "R14", roundNumber: 4, teamIds: teamIds.slice(12, 16) },
+        { name: "R15", roundNumber: 5, teamIds: teamIds.slice(16, 20) },
+        { name: "R16", roundNumber: 6, teamIds: teamIds.slice(20, 24) },
+        { name: "R17", roundNumber: 7, teamIds: teamIds.slice(24, 28) },
+        { name: "R18", roundNumber: 8, teamIds: teamIds.slice(28, 32) },
+        { name: "R2", roundNumber: 9, teamIds: [] },
+      ];
+      await createRoundsWithTeams(roundsToCreate);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setAddRoundLoading(false);
+    }
+  }, [teams, createRoundsWithTeams]);
+
 
   const updateRoundTeamIds = useCallback(
     async (roundId: string, teamIds: string[]) => {
@@ -232,7 +273,7 @@ export default function AdminTournamentRoundsPage() {
       const toRound = rounds.find((r) => r._id === toRoundId);
       if (!fromRound || !toRound) return;
 
-      const isR1Series = ["R11", "R12", "R13", "R14"].includes(fromRound.name);
+      const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(fromRound.name);
       const isToR2 = toRound.name === "R2";
       const shouldCopyInsteadOfMove = isR1Series && isToR2;
 
@@ -467,7 +508,7 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              Drag winners from R11–R14 into R2, then drag the final winner to Tournament winner.
+              Drag winners from R11–R14 (or R11–R18 for 32 teams) into R2, then drag the final winner to Tournament winner.
             </p>
 
             <div className="flex flex-wrap gap-6 overflow-x-auto pb-8">
@@ -562,7 +603,7 @@ export default function AdminTournamentRoundsPage() {
                           <div className="flex items-center gap-1">
                             {(() => {
                               const r2 = rounds.find((r) => r.name === "R2");
-                              const isR1Series = ["R11", "R12", "R13", "R14"].includes(round.name);
+                              const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(round.name);
                               const advanceTo = isR1Series && r2 ? r2 : rounds[rounds.findIndex((r) => r._id === round._id) + 1];
                               return advanceTo ? (
                                 <button
@@ -602,16 +643,26 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                Create R11, R12, R13, R14 (4 teams each) and R2 (final). Drag winners from R11–R14 into R2, then to Tournament winner.
+                16 teams: R11–R14 (4 groups of 4) + R2. 32 teams: R11–R18 (8 groups of 4) + R2. Drag winners into R2, then to Tournament winner.
               </p>
-              <button
-                type="button"
-                onClick={createAll16TeamRounds}
-                disabled={addRoundLoading || teams.length < 16}
-                className="mb-3 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-60"
-              >
-                {addRoundLoading ? "Creating…" : "Create R11, R12, R13, R14 & R2 (16 teams)"}
-              </button>
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={createAll16TeamRounds}
+                  disabled={addRoundLoading || teams.length < 16}
+                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-60"
+                >
+                  {addRoundLoading ? "Creating…" : "Create 16-team rounds (R11–R14 & R2)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={createAll32TeamRounds}
+                  disabled={addRoundLoading || teams.length < 32}
+                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
+                >
+                  {addRoundLoading ? "Creating…" : "Create 32-team rounds (R11–R18 & R2)"}
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
                   <Link
