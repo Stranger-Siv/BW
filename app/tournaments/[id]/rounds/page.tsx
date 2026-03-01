@@ -305,24 +305,19 @@ export default function TournamentRoundsPage() {
                     })}
                   </div>
 
-                  {/* Semi-finals R21, R22 (32-team only) */}
+                  {/* Semi-finals R21, R22 (32-team only) — same layer, all 8 teams green */}
                   {semiRounds.length > 0 && (
                     <section className="space-y-4">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Semi-finals
+                        Semi-finals (top 8)
                       </h2>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         Winners from R11–R18 advance here (4 to R21, 4 to R22). Top 2 from each semi advance to the final.
                       </p>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {semiRounds.map((round) => {
                           const matches = getMatchForRound(round);
                           const teams = matches[0] ?? [];
-                          const laterTeams = new Set<string>();
-                          rounds
-                            .filter((r) => r.roundNumber > round.roundNumber)
-                            .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
-                          const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -334,27 +329,18 @@ export default function TournamentRoundsPage() {
                                 )}
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                {teams.map((t) => {
-                                  const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
-                                  const isLoserFromThisRound = hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
-                                  const baseClass = isWinnerFromThisRound
-                                    ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
-                                    : isLoserFromThisRound
-                                      ? "border border-red-400/70 bg-red-500/15 text-red-100"
-                                      : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
-                                  return (
-                                    <Link
-                                      key={t.id}
-                                      href={`/tournaments/${id}/teams/${t.id}`}
-                                      className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
-                                      title={t.name || "—"}
-                                    >
-                                      <span className="min-w-0 flex-1 truncate whitespace-nowrap">
-                                        {t.name || "—"}
-                                      </span>
-                                    </Link>
-                                  );
-                                })}
+                                {teams.map((t) => (
+                                  <Link
+                                    key={t.id}
+                                    href={`/tournaments/${id}/teams/${t.id}`}
+                                    className="flex min-h-[2.25rem] items-center gap-1.5 rounded-lg border border-emerald-400/70 bg-emerald-500/20 px-3 py-1.5 text-xs sm:text-sm font-medium text-emerald-100 transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950"
+                                    title={t.name || "—"}
+                                  >
+                                    <span className="min-w-0 flex-1 truncate whitespace-nowrap">
+                                      {t.name || "—"}
+                                    </span>
+                                  </Link>
+                                ))}
                                 {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}

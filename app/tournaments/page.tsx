@@ -197,6 +197,18 @@ export default function TournamentsPage() {
       if (rn > maxLatest) maxLatest = rn;
     });
 
+    const roundAtMax = rounds.find((r) => r.roundNumber === maxLatest);
+    const maxRoundName = roundAtMax?.name ?? "";
+    const isSemiFinalStage = maxRoundName === "R21" || maxRoundName === "R22";
+    const semiFinalistIds = new Set<string>();
+    if (isSemiFinalStage) {
+      rounds.forEach((r) => {
+        if ((r.name === "R21" || r.name === "R22") && Array.isArray(r.teamIds)) {
+          r.teamIds.forEach((tid) => semiFinalistIds.add(tid));
+        }
+      });
+    }
+
     latestByTeam.forEach((latest, tid) => {
       const set = roundsByTeam.get(tid);
       if (!set) return;
@@ -205,7 +217,9 @@ export default function TournamentsPage() {
         if (decidedRounds.has(rn)) hasDecidedSource = true;
       });
       if (!hasDecidedSource) return;
-      phase.set(tid, latest === maxLatest ? "advanced" : "played");
+      const advanced =
+        isSemiFinalStage ? semiFinalistIds.has(tid) : latest === maxLatest;
+      phase.set(tid, advanced ? "advanced" : "played");
     });
 
     return phase;

@@ -515,17 +515,23 @@ export default function AdminTournamentRoundsPage() {
                 </div>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Drag a team from any round here to set as tournament winner.
+                  Click the 🏆 button next to a team in the final round (R2 or R3) to set as tournament winner.
                 </p>
               )}
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              16-team: R11–R14 → R2 → winner. 32-team: R11–R14 → R21, R15–R18 → R22; top 2 from R21 & R22 → R3; drag final winner to Tournament winner.
+              16-team: R11–R14 → R2. 32-team: R11–R14 → R21, R15–R18 → R22; top 2 from R21 & R22 → R3. In the final round (R2 or R3), click 🏆 next to the winning team to set tournament winner.
             </p>
 
-            <div className="flex flex-wrap gap-6 overflow-x-auto pb-8">
-              {rounds.map((round) => (
+            {(() => {
+              const groupRoundNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
+              const semiNames = ["R21", "R22"];
+              const groupRounds = rounds.filter((r) => groupRoundNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+              const semiRounds = rounds.filter((r) => semiNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+              const otherRounds = rounds.filter((r) => !groupRoundNames.includes(r.name) && !semiNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+
+              const renderRoundCard = (round: RoundDoc) => (
                 <div
                   key={round._id}
                   onDragOver={handleDragOver}
@@ -614,32 +620,44 @@ export default function AdminTournamentRoundsPage() {
                             {teamIdToName(tid)}
                           </Link>
                           <div className="flex items-center gap-1">
-                            {(() => {
-                              const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(round.name);
-                              const isSemi = (R2_SEMI_NAMES as readonly string[]).includes(round.name);
-                              const r21 = rounds.find((r) => r.name === "R21");
-                              const r22 = rounds.find((r) => r.name === "R22");
-                              const r3 = rounds.find((r) => r.name === "R3");
-                              const r2 = rounds.find((r) => r.name === "R2");
-                              let advanceTo: RoundDoc | undefined;
-                              if (isR1Series) {
-                                if (["R11", "R12", "R13", "R14"].includes(round.name) && r21) advanceTo = r21;
-                                else if (["R11", "R12", "R13", "R14"].includes(round.name) && r2) advanceTo = r2;
-                                else if (["R15", "R16", "R17", "R18"].includes(round.name) && r22) advanceTo = r22;
-                              } else if (isSemi && r3) advanceTo = r3;
-                              else advanceTo = rounds[rounds.findIndex((r) => r._id === round._id) + 1];
-                              const title = advanceTo ? `Advance to ${advanceTo.name}` : undefined;
-                              return advanceTo ? (
-                                <button
-                                  type="button"
-                                  onClick={() => moveTeam(tid, round._id, advanceTo!._id)}
-                                  className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                                  title={title}
-                                >
-                                  →
-                                </button>
-                              ) : null;
-                            })()}
+                            {round.name === "R2" || round.name === "R3" ? (
+                              <button
+                                type="button"
+                                onClick={() => setWinner(tid)}
+                                disabled={winnerLoading}
+                                className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40 disabled:opacity-50"
+                                title="Set as tournament winner"
+                              >
+                                🏆
+                              </button>
+                            ) : (
+                              (() => {
+                                const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(round.name);
+                                const isSemi = (R2_SEMI_NAMES as readonly string[]).includes(round.name);
+                                const r21 = rounds.find((r) => r.name === "R21");
+                                const r22 = rounds.find((r) => r.name === "R22");
+                                const r3 = rounds.find((r) => r.name === "R3");
+                                const r2 = rounds.find((r) => r.name === "R2");
+                                let advanceTo: RoundDoc | undefined;
+                                if (isR1Series) {
+                                  if (["R11", "R12", "R13", "R14"].includes(round.name) && r21) advanceTo = r21;
+                                  else if (["R11", "R12", "R13", "R14"].includes(round.name) && r2) advanceTo = r2;
+                                  else if (["R15", "R16", "R17", "R18"].includes(round.name) && r22) advanceTo = r22;
+                                } else if (isSemi && r3) advanceTo = r3;
+                                else advanceTo = rounds[rounds.findIndex((r) => r._id === round._id) + 1];
+                                const title = advanceTo ? `Advance to ${advanceTo.name}` : undefined;
+                                return advanceTo ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => moveTeam(tid, round._id, advanceTo!._id)}
+                                    className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                                    title={title}
+                                  >
+                                    →
+                                  </button>
+                                ) : null;
+                              })()
+                            )}
                             <button
                               type="button"
                               onClick={() => removeFromRound(round._id, tid)}
@@ -653,8 +671,29 @@ export default function AdminTournamentRoundsPage() {
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+
+              return (
+                <div className="space-y-8 pb-8">
+                  {groupRounds.length > 0 && (
+                    <div className="flex flex-wrap gap-6 overflow-x-auto">
+                      {groupRounds.map(renderRoundCard)}
+                    </div>
+                  )}
+                  {semiRounds.length > 0 && (
+                    <div className="flex flex-wrap gap-6 overflow-x-auto">
+                      <span className="sr-only">Semi-finals (same level)</span>
+                      {semiRounds.map(renderRoundCard)}
+                    </div>
+                  )}
+                  {otherRounds.length > 0 && (
+                    <div className="flex flex-wrap gap-6 overflow-x-auto">
+                      {otherRounds.map(renderRoundCard)}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {rounds.length === 0 && (
               <p className="text-sm text-slate-500 dark:text-slate-500">
@@ -667,7 +706,7 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance winners to next round, then drag final winner above.
+                16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance with →; in R2/R3 click 🏆 to set winner.
               </p>
               <div className="mb-3 flex flex-wrap gap-2">
                 <button
