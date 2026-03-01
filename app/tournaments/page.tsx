@@ -1069,17 +1069,20 @@ export default function TournamentsPage() {
                       const team = slotTeams[index];
                       const isFilled = !!team;
                       const registrationClosed = slotStatus !== "registration_open";
-                      const phase = team && registrationClosed ? teamPhaseById.get(team._id) ?? "none" : "none";
+                      const matchProgressActive = slotStatus === "ongoing" || slotStatus === "completed";
+                      const phase = team && registrationClosed && matchProgressActive ? teamPhaseById.get(team._id) ?? "none" : "none";
                       const slotState =
                         !isFilled
                           ? "empty"
                           : !registrationClosed
                             ? "open_filled"
-                            : phase === "advanced"
-                              ? "closed_advanced"
-                              : phase === "played"
-                                ? "closed_out"
-                                : "closed_never";
+                            : !matchProgressActive
+                              ? "closed_never"
+                              : phase === "advanced"
+                                ? "closed_advanced"
+                                : phase === "played"
+                                  ? "closed_out"
+                                  : "closed_never";
                       const isSelected = selectedTeamIdForModal === team?._id;
                       return (
                         <div
@@ -1130,17 +1133,23 @@ export default function TournamentsPage() {
                     })}
                   </div>
                   {slotStatus !== "registration_open" && slotTeams.length > 0 && rounds.length > 0 && (
-                    <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> Reached latest round
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Eliminated / disqualified
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-slate-400/80" aria-hidden /> Registered, no match played
-                      </span>
-                    </p>
+                    slotStatus === "ongoing" || slotStatus === "completed" ? (
+                      <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400/80" aria-hidden /> Reached latest round
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-red-400/80" aria-hidden /> Eliminated / disqualified
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-slate-400/80" aria-hidden /> Registered, no match played
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        Slots will highlight teams as matches are played. For now all registered teams are shown in the default style.
+                      </p>
+                    )
                   )}
                   </>
                 )}
