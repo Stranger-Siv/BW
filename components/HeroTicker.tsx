@@ -76,7 +76,7 @@ export function HeroTicker() {
   const loopItems = [...items, ...items];
 
   return (
-    <div className="mt-4 w-full overflow-hidden">
+    <div className="mt-4 w-full max-w-xl mx-auto overflow-hidden px-2 sm:px-0 sm:max-w-2xl">
       <div className="relative flex items-center gap-3 text-[11px] text-slate-200 sm:text-xs">
         <span className="inline-flex items-center rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-900">
           Host
