@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Team from "@/models/Team";
+import Tournament from "@/models/Tournament"; // Register so populate("tournamentId") works
 import { authOptions } from "@/lib/auth";
 
 export async function GET() {
