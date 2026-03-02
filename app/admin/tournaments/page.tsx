@@ -180,15 +180,15 @@ export default function AdminTournamentsPage() {
     }
   }, [deleteTournament, fetchList]);
 
-  if (loading) {
-    return <AdminTournamentsSkeleton />;
-  }
-
   const filteredList = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter((t) => t.name.toLowerCase().includes(q));
   }, [list, search]);
+
+  if (loading) {
+    return <AdminTournamentsSkeleton />;
+  }
 
   return (
     <main className="min-h-screen pb-bottom-nav">
