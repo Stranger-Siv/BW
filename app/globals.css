@@ -119,6 +119,10 @@
   .ticker-track {
     animation: tickerScroll 26s linear infinite;
   }
+  .headline-ticker-track {
+    animation: headlineTickerScroll 22s linear infinite;
+    will-change: transform;
+  }
 }
 
 @keyframes fadeIn {
@@ -144,6 +148,17 @@
 @media (max-width: 640px) {
   .ticker-track {
     animation-duration: 32s;
+  }
+  .headline-ticker-track {
+    animation-duration: 26s;
+  }
+}
+@keyframes headlineTickerScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
   }
 }
 @keyframes skeletonShine {

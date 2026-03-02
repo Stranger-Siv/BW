@@ -15,46 +15,48 @@ export default function HomePage() {
           <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-60">
             <div className="h-[400px] w-[600px] rounded-full bg-emerald-500/20 blur-[120px]" aria-hidden />
           </div>
-          <FadeInUp className="relative">
-            <p className="text-sm font-medium uppercase tracking-widest text-emerald-400/90 sm:text-base">
-              {SITE.name} · {SITE.serverName}
-            </p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
-              Compete. Dominate. Win.
-            </h1>
-            <p className="mx-auto mt-3 max-w-xl text-base text-slate-400 sm:mt-4 sm:text-lg md:text-xl">
-              Welcome to the ultimate BedWars arena. Register your team and battle in competitive tournaments — Solo, Duo, or Squad. Defend your bed. Break theirs. Claim your victory.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-8 sm:gap-4">
-              <FadeInUp delay={0.08}>
-                <Link
-                  href="/tournaments"
-                  className="btn-gradient inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-5 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
-                >
-                  Register Now
-                </Link>
-              </FadeInUp>
-              <FadeInUp delay={0.12}>
-                <Link
-                  href="/tournaments"
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
-                >
-                  View Tournaments
-                </Link>
-              </FadeInUp>
-              <FadeInUp delay={0.16}>
-                <a
-                  href={SITE.discordUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
-                >
-                  Join Discord
-                </a>
-              </FadeInUp>
-            </div>
-          </FadeInUp>
-          <HeroTicker />
+          <div className="relative inline-block text-center">
+            <FadeInUp className="relative">
+              <p className="text-sm font-medium uppercase tracking-widest text-emerald-400/90 sm:text-base">
+                {SITE.name} · {SITE.serverName}
+              </p>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+                Compete. Dominate. Win.
+              </h1>
+              <p className="mx-auto mt-3 max-w-xl text-base text-slate-400 sm:mt-4 sm:text-lg md:text-xl">
+                Welcome to the ultimate BedWars arena. Register your team and battle in competitive tournaments — Solo, Duo, or Squad. Defend your bed. Break theirs. Claim your victory.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-8 sm:gap-4">
+                <FadeInUp delay={0.08}>
+                  <Link
+                    href="/tournaments"
+                    className="btn-gradient inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-5 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                  >
+                    Register Now
+                  </Link>
+                </FadeInUp>
+                <FadeInUp delay={0.12}>
+                  <Link
+                    href="/tournaments"
+                    className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
+                  >
+                    View Tournaments
+                  </Link>
+                </FadeInUp>
+                <FadeInUp delay={0.16}>
+                  <a
+                    href={SITE.discordUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-slate-200 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 min-h-[44px] inline-flex items-center justify-center"
+                  >
+                    Join Discord
+                  </a>
+                </FadeInUp>
+              </div>
+            </FadeInUp>
+            <HeroTicker />
+          </div>
         </section>
 
         {/* Hosted by Baba Tillu */}
