@@ -147,7 +147,7 @@
 
 @media (max-width: 640px) {
   .ticker-track {
-    animation-duration: 22s;
+    animation-duration: 15s;
   }
   .headline-ticker-track {
     animation-duration: 20s;
