@@ -93,7 +93,23 @@ export default function AdminPage() {
   const filteredTeams = useMemo(() => {
     const q = teamSearch.trim().toLowerCase();
     if (!q) return teams;
-    return teams.filter((t) => t.teamName.toLowerCase().includes(q));
+    return teams.filter((t) => {
+      const fields: string[] = [
+        t.teamName,
+        t.rewardReceiverIGN,
+        t.status,
+        t._id,
+        t.tournamentDate,
+        t.createdAt,
+      ];
+      t.players.forEach((p) => {
+        fields.push(p.minecraftIGN, p.discordUsername);
+      });
+      return fields.some((raw) => {
+        const value = (raw ?? "").toString().toLowerCase();
+        return value && value.includes(q);
+      });
+    });
   }, [teams, teamSearch]);
 
   const fetchUserStats = useCallback(async () => {
