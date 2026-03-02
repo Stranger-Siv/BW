@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { HostedByName } from "@/components/HostedByName";
 import { FadeInUp, FadeInUpInView, StaggerChildren, StaggerChildrenInView, StaggerItem } from "@/components/ui/animations";
 
 export default function HomePage() {
@@ -65,7 +66,7 @@ export default function HomePage() {
             />
             <div className="text-center sm:text-left">
               <h2 className="text-lg font-semibold text-white sm:text-xl">
-                 Sponsored by {SITE.hostedBy}
+                Sponsored by <HostedByName />
               </h2>
               <p className="mt-1 text-sm text-slate-400">
                 This isn’t just a server — it’s a battlefield where strategy meets skill. Whether you’re learning the grind or chasing perfection, this is your place to grow, team up, and conquer.

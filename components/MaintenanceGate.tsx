@@ -8,6 +8,7 @@ import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ImpersonationBanner } from "./ImpersonationBanner";
 import { SITE } from "@/lib/site";
+import { HostedByName } from "@/components/HostedByName";
 
 type Maintenance = { maintenanceMode: boolean };
 
@@ -127,7 +128,9 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
               {SITE.hostedBy && (
                 <div className="flex items-center justify-between gap-4 text-slate-300">
                   <span className="text-slate-500">Sponsored by</span>
-                  <span className="text-slate-200">{SITE.hostedBy}</span>
+                  <span className="text-slate-200">
+                    <HostedByName />
+                  </span>
                 </div>
               )}
             </div>

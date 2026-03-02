@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { SITE } from "@/lib/site";
+import { HostedByName } from "@/components/HostedByName";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
 import { formatDateLabel, formatDateTime } from "@/lib/formatDate";
@@ -639,7 +640,11 @@ export default function TournamentsPage() {
                 All matches on <strong>{SITE.serverName}</strong> · <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Sponsored by <strong className="text-slate-300">{SITE.hostedBy}</strong> · Full rules &amp; updates on Discord
+                Sponsored by{" "}
+                <strong className="text-slate-300">
+                  <HostedByName />
+                </strong>{" "}
+                · Full rules &amp; updates on Discord
               </p>
             </div>
           </div>
@@ -667,7 +672,7 @@ export default function TournamentsPage() {
                     Tournament Registration
                   </h2>
                   <p className="mt-0.5 text-sm text-slate-400">
-                    Sponsored by {SITE.hostedBy}
+                    Sponsored by <HostedByName />
                   </p>
                 </div>
               </div>

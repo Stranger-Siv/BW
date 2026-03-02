@@ -5,6 +5,7 @@ const DOC_ID = "global";
 export interface ISiteSettings {
   _id: string;
   maintenanceMode: boolean;
+  hostedByName?: string;
   announcement: {
     message: string;
     active: boolean;
@@ -18,6 +19,7 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
   {
     _id: { type: String, default: DOC_ID },
     maintenanceMode: { type: Boolean, default: false },
+    hostedByName: { type: String, default: "BABA TILLU" },
     announcement: {
       message: { type: String, default: "" },
       active: { type: Boolean, default: false },

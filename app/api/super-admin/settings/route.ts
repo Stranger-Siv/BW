@@ -21,15 +21,22 @@ export async function GET() {
       await SiteSettings.create({
         _id: SITE_SETTINGS_ID,
         maintenanceMode: false,
+        hostedByName: "BABA TILLU",
         announcement: { message: "", active: false, updatedAt: new Date() },
         updatedAt: new Date(),
       });
       doc = await SiteSettings.findById(SITE_SETTINGS_ID).lean();
     }
-    const d = doc as unknown as { maintenanceMode?: boolean; announcement?: { message?: string; active?: boolean }; updatedAt?: string };
+    const d = doc as unknown as {
+      maintenanceMode?: boolean;
+      hostedByName?: string;
+      announcement?: { message?: string; active?: boolean };
+      updatedAt?: string;
+    };
     return NextResponse.json(
       {
         maintenanceMode: d.maintenanceMode ?? false,
+        hostedByName: d.hostedByName ?? "BABA TILLU",
         announcement: d.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: d.updatedAt,
       },
@@ -50,6 +57,8 @@ export async function PATCH(request: NextRequest) {
     const actorId = (session?.user as { id?: string })?.id;
     const body = await request.json().catch(() => ({}));
     const maintenanceMode = typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : undefined;
+    const hostedByName =
+      typeof body.hostedByName === "string" ? body.hostedByName.trim() : undefined;
 
     await connectDB();
     let doc = await SiteSettings.findById(SITE_SETTINGS_ID);
@@ -57,15 +66,16 @@ export async function PATCH(request: NextRequest) {
       doc = await SiteSettings.create({
         _id: SITE_SETTINGS_ID,
         maintenanceMode: false,
+        hostedByName: hostedByName ?? "BABA TILLU",
         announcement: { message: "", active: false, updatedAt: new Date() },
         updatedAt: new Date(),
       });
     }
 
+    let changed = false;
     if (maintenanceMode !== undefined) {
       doc.maintenanceMode = maintenanceMode;
-      doc.updatedAt = new Date();
-      await doc.save();
+      changed = true;
       await createAuditLog({
         actorId: actorId!,
         action: "setting_change",
@@ -73,9 +83,28 @@ export async function PATCH(request: NextRequest) {
         details: { maintenanceMode },
       });
     }
+    if (hostedByName !== undefined) {
+      doc.hostedByName = hostedByName;
+      changed = true;
+      await createAuditLog({
+        actorId: actorId!,
+        action: "setting_change",
+        targetType: "settings",
+        details: { hostedByName },
+      });
+    }
+    if (changed) {
+      doc.updatedAt = new Date();
+      await doc.save();
+    }
 
     const updated = await SiteSettings.findById(SITE_SETTINGS_ID).lean();
-    const u = updated as unknown as { maintenanceMode?: boolean; announcement?: { message?: string; active?: boolean }; updatedAt?: string };
+    const u = updated as unknown as {
+      maintenanceMode?: boolean;
+      hostedByName?: string;
+      announcement?: { message?: string; active?: boolean };
+      updatedAt?: string;
+    };
     if (maintenanceMode !== undefined) {
       const pusher = getServerPusher();
       const payload = { maintenanceMode: u?.maintenanceMode ?? false };
@@ -91,7 +120,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(
       {
         maintenanceMode: u.maintenanceMode ?? false,
-        announcement: u.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
+        hostedByName: u.hostedByName ?? "BABA TILLU",
+        announcement:
+          u.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: u.updatedAt,
       },
       { status: 200 }

@@ -10,6 +10,7 @@ import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type SettingsState = {
   maintenanceMode: boolean;
+  hostedByName: string;
   announcement: { message: string; active: boolean };
 };
 
@@ -18,6 +19,7 @@ export default function AdminSettingsPage() {
   const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === "super_admin";
   const [settings, setSettings] = useState<SettingsState>({
     maintenanceMode: false,
+    hostedByName: "BABA TILLU",
     announcement: { message: "", active: false },
   });
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ export default function AdminSettingsPage() {
       const data = await res.json();
       setSettings({
         maintenanceMode: Boolean(data.maintenanceMode),
+        hostedByName: (data.hostedByName ?? "BABA TILLU") as string,
         announcement: {
           message: data.announcement?.message ?? "",
           active: Boolean(data.announcement?.active),
@@ -160,7 +163,8 @@ export default function AdminSettingsPage() {
           Global site settings
         </h1>
         <p className="mb-6 text-sm text-slate-600 dark:text-slate-400 sm:text-base">
-          Maintenance mode and site-wide announcement. Only super admins can change these.
+          Maintenance mode, site-wide announcement, and host/organizer name. Only super admins can
+          change these.
         </p>
 
         {!isSuperAdmin && (
@@ -239,6 +243,63 @@ export default function AdminSettingsPage() {
               onConfirm={() => onMaintenanceChange(false)}
               onCancel={() => setMaintenanceConfirm(null)}
             />
+
+            <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-4 dark:border-slate-500/30 dark:bg-slate-800/60 sm:p-6">
+              <h2 className="mb-3 text-base font-semibold text-slate-200 sm:text-lg dark:text-slate-200">
+                Host / organizer name
+              </h2>
+              <p className="mb-4 text-sm text-slate-400">
+                Shown as &quot;Sponsored by&quot; across the site. This lets you change the host
+                without redeploying.
+              </p>
+              <input
+                type="text"
+                value={settings.hostedByName}
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    hostedByName: e.target.value,
+                  }))
+                }
+                placeholder="Host name (e.g. BABA TILLU)"
+                className="mb-3 w-full rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  setAnnouncementSaving(true);
+                  setMessage(null);
+                  try {
+                    const res = await fetch("/api/super-admin/settings", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ hostedByName: settings.hostedByName }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      setMessage(data.error ?? "Failed to update host name");
+                      setMessageType("error");
+                      return;
+                    }
+                    setMessage("Host name saved.");
+                    setMessageType("success");
+                    setTimeout(() => {
+                      setMessage(null);
+                      setMessageType(null);
+                    }, 3000);
+                  } catch {
+                    setMessage("Failed to update host name");
+                    setMessageType("error");
+                  } finally {
+                    setAnnouncementSaving(false);
+                  }
+                }}
+                disabled={announcementSaving}
+                className="admin-touch-btn w-full rounded-full bg-emerald-500/80 text-slate-900 hover:bg-emerald-500 disabled:opacity-60 sm:w-auto"
+              >
+                {announcementSaving ? "Saving…" : "Save host"}
+              </button>
+            </section>
 
             <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-4 dark:border-slate-500/30 dark:bg-slate-800/60 sm:p-6">
               <h2 className="mb-3 text-base font-semibold text-slate-200 sm:text-lg dark:text-slate-200">Announcement</h2>
