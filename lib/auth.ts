@@ -56,27 +56,73 @@ export const authOptions: NextAuthOptions = {
           token.banned = u.banned === true;
         }
 
-        // Discord connect (link Discord to existing logged-in user).
-        if (account.provider === "discord" && "id" in profile && token.id) {
+        // Discord sign-in or connect.
+        if (account.provider === "discord" && "id" in profile) {
           const discordId = (profile as { id: string }).id;
+          const discordEmailRaw = (profile as { email?: string }).email ?? "";
+          const discordEmail = discordEmailRaw ? discordEmailRaw.trim().toLowerCase() : "";
+
           const baseName =
             (profile as { global_name?: string }).global_name ??
             (profile as { username?: string }).username ??
             "";
           const disc = (profile as { discriminator?: string }).discriminator;
           const tag =
-            disc && disc !== "0" && baseName ? `${baseName}#${disc}` : baseName || (profile as { username?: string }).username || "";
+            disc && disc !== "0" && baseName
+              ? `${baseName}#${disc}`
+              : baseName || (profile as { username?: string }).username || "";
 
-          await User.findByIdAndUpdate(
-            token.id as string,
-            {
-              $set: {
+          // If user is already logged in (token.id), treat as "connect".
+          if (token.id) {
+            const existingByDiscord = await User.findOne({ discordId }).select("_id").lean();
+            if (existingByDiscord && (existingByDiscord as unknown as { _id: { toString(): string } })._id.toString() !== String(token.id)) {
+              throw new Error("This Discord account is already linked to another user.");
+            }
+
+            const updated = await User.findByIdAndUpdate(
+              token.id as string,
+              { $set: { discordId, discordUsername: tag || undefined } },
+              { new: true }
+            )
+              .select("_id role banned")
+              .lean();
+
+            const u = updated as unknown as { _id: { toString(): string }; role?: string; banned?: boolean } | null;
+            if (u) {
+              token.id = u._id.toString();
+              token.role = u.role ?? token.role;
+              token.banned = u.banned === true;
+            }
+          } else {
+            // Not logged in: allow Discord login by finding linked account or matching email.
+            let dbUser =
+              (await User.findOne({ discordId }).lean()) ??
+              (discordEmail ? await User.findOne({ email: discordEmail }).lean() : null);
+
+            if (!dbUser) {
+              const created = await User.create({
                 discordId,
                 discordUsername: tag || undefined,
-              },
-            },
-            { new: false }
-          ).lean();
+                email: discordEmail,
+                name: baseName?.trim() || "User",
+                image: ((profile as { image_url?: string }).image_url ?? (profile as { avatar?: string }).avatar) ?? undefined,
+                role: "player",
+              });
+              dbUser = created.toObject();
+            } else {
+              // Ensure Discord is linked on the found user (email match case).
+              await User.findByIdAndUpdate(
+                (dbUser as unknown as { _id: { toString(): string } })._id.toString(),
+                { $set: { discordId, discordUsername: tag || undefined } },
+                { new: false }
+              ).lean();
+            }
+
+            const u = dbUser as unknown as { _id: { toString(): string }; role: string; banned?: boolean };
+            token.id = u._id.toString();
+            token.role = u.role;
+            token.banned = u.banned === true;
+          }
         }
       }
       return token;

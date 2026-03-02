@@ -3,7 +3,7 @@ import mongoose, { Schema, model, models } from "mongoose";
 export type UserRole = "player" | "admin" | "super_admin";
 
 export interface IUser {
-  googleId: string;
+  googleId?: string;
   email: string;
   name: string;
   image?: string;
@@ -20,7 +20,7 @@ export interface IUser {
 
 const userSchema = new Schema<IUser>(
   {
-    googleId: { type: String, required: true, unique: true },
+    googleId: { type: String, unique: true, sparse: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     name: { type: String, required: true, trim: true },
     image: { type: String, trim: true },
