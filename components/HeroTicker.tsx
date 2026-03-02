@@ -73,7 +73,9 @@ export function HeroTicker() {
 
   if (items.length === 0) return null;
 
-  const loopItems = [...items, ...items];
+  // Repeat more than 2x so small screens don't show "empty gaps" between loops.
+  // We keep an even multiple so the -50% animation remains seamless.
+  const loopItems = [...items, ...items, ...items, ...items];
 
   return (
     <div className="mt-4 w-full max-w-xl mx-auto overflow-hidden px-2 sm:px-0 sm:max-w-2xl">
@@ -82,9 +84,9 @@ export function HeroTicker() {
           Host
         </span>
         <div className="relative flex-1 overflow-hidden">
-          <div className="ticker-track flex gap-8 whitespace-nowrap group hover:[animation-play-state:paused]">
+          <div className="ticker-track flex w-max gap-8 whitespace-nowrap group hover:[animation-play-state:paused]">
             {loopItems.map((item, idx) => (
-              <span key={`${item}-${idx}`} className="inline-flex items-center gap-1">
+              <span key={`${item.text}-${idx}`} className="inline-flex items-center gap-1">
                 {item.icon && <span className="text-amber-400">{item.icon}</span>}
                 <span>{item.text}</span>
               </span>
