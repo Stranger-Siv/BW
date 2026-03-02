@@ -15,7 +15,7 @@ export default function HomePage() {
           <div className="pointer-events-none absolute inset-0 flex justify-center overflow-hidden opacity-60">
             <div className="h-[400px] w-[600px] rounded-full bg-emerald-500/20 blur-[120px]" aria-hidden />
           </div>
-          <div className="relative inline-block text-center">
+          <div className="relative mx-auto inline-block max-w-xl text-center sm:max-w-2xl">
             <FadeInUp className="relative">
               <p className="text-sm font-medium uppercase tracking-widest text-emerald-400/90 sm:text-base">
                 {SITE.name} · {SITE.serverName}

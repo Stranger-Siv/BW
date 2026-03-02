@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import Team from "@/models/Team";
+import User from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
@@ -8,13 +8,7 @@ export async function GET() {
   try {
     await connectDB();
 
-    const result = await Team.aggregate<{ totalPlayers: number }>([
-      { $match: { status: "approved" } },
-      { $project: { count: { $size: "$players" } } },
-      { $group: { _id: null, totalPlayers: { $sum: "$count" } } },
-    ]);
-
-    const totalPlayers = result[0]?.totalPlayers ?? 0;
+    const totalPlayers = await User.countDocuments();
 
     return NextResponse.json(
       { totalPlayers },
