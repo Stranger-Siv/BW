@@ -14,6 +14,7 @@ export interface IUser {
   displayName?: string;
   minecraftIGN?: string;
   discordUsername?: string;
+  discordId?: string;
   createdAt: Date;
 }
 
@@ -33,6 +34,7 @@ const userSchema = new Schema<IUser>(
     displayName: { type: String, trim: true },
     minecraftIGN: { type: String, trim: true },
     discordUsername: { type: String, trim: true },
+    discordId: { type: String, trim: true, unique: true, sparse: true },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

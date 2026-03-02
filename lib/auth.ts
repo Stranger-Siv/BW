@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import DiscordProvider from "next-auth/providers/discord";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 
@@ -9,10 +10,14 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
     }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID ?? "",
+      clientSecret: process.env.DISCORD_CLIENT_SECRET ?? "",
+    }),
   ],
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    async jwt({ token, account, profile, trigger, session, user }) {
+    async jwt({ token, account, profile, trigger, session }) {
       // Handle session.update({ impersonatingUserId }) from super admin impersonation
       if (trigger === "update" && session && typeof session === "object") {
         const s = session as { impersonatingUserId?: string | null };
@@ -27,25 +32,52 @@ export const authOptions: NextAuthOptions = {
         }
         return token;
       }
-      if (account?.provider === "google" && profile && "sub" in profile) {
-        delete token.impersonatingUserId;
-        delete token.impersonatingFrom;
+      if (account && profile) {
         await connectDB();
-        let dbUser = await User.findOne({ googleId: profile.sub as string }).lean();
-        if (!dbUser) {
-          const created = await User.create({
-            googleId: profile.sub as string,
-            email: (profile.email as string)?.trim().toLowerCase() ?? "",
-            name: (profile.name as string)?.trim() ?? "User",
-            image: ((profile as { picture?: string }).picture ?? (profile as { image?: string }).image) ?? undefined,
-            role: "player",
-          });
-          dbUser = created.toObject();
+
+        // Google sign-in (create or fetch user).
+        if (account.provider === "google" && "sub" in profile) {
+          delete token.impersonatingUserId;
+          delete token.impersonatingFrom;
+          let dbUser = await User.findOne({ googleId: profile.sub as string }).lean();
+          if (!dbUser) {
+            const created = await User.create({
+              googleId: profile.sub as string,
+              email: (profile.email as string)?.trim().toLowerCase() ?? "",
+              name: (profile.name as string)?.trim() ?? "User",
+              image: ((profile as { picture?: string }).picture ?? (profile as { image?: string }).image) ?? undefined,
+              role: "player",
+            });
+            dbUser = created.toObject();
+          }
+          const u = dbUser as unknown as { _id: { toString(): string }; role: string; banned?: boolean };
+          token.id = u._id.toString();
+          token.role = u.role;
+          token.banned = u.banned === true;
         }
-        const u = dbUser as unknown as { _id: { toString(): string }; role: string; banned?: boolean };
-        token.id = u._id.toString();
-        token.role = u.role;
-        token.banned = u.banned === true;
+
+        // Discord connect (link Discord to existing logged-in user).
+        if (account.provider === "discord" && "id" in profile && token.id) {
+          const discordId = (profile as { id: string }).id;
+          const baseName =
+            (profile as { global_name?: string }).global_name ??
+            (profile as { username?: string }).username ??
+            "";
+          const disc = (profile as { discriminator?: string }).discriminator;
+          const tag =
+            disc && disc !== "0" && baseName ? `${baseName}#${disc}` : baseName || (profile as { username?: string }).username || "";
+
+          await User.findByIdAndUpdate(
+            token.id as string,
+            {
+              $set: {
+                discordId,
+                discordUsername: tag || undefined,
+              },
+            },
+            { new: false }
+          ).lean();
+        }
       }
       return token;
     },

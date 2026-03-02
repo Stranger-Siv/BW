@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -13,6 +13,7 @@ type Profile = {
   displayName?: string;
   minecraftIGN?: string;
   discordUsername?: string;
+  discordId?: string;
   role: string;
   createdAt?: string;
 };
@@ -109,6 +110,11 @@ export default function ProfilePage() {
       setSaving(false);
     }
   }, [displayName, minecraftIGN, discordUsername]);
+
+  const handleConnectDiscord = useCallback(() => {
+    setMessage("");
+    void signIn("discord", { callbackUrl: "/profile" });
+  }, []);
 
   if (status === "loading" || loading) {
     return (
@@ -262,6 +268,45 @@ export default function ProfilePage() {
               </li>
             )}
           </ul>
+        </div>
+
+        {/* Connect Discord */}
+        <div className="card mb-6">
+          <h2 className="section-title mb-2">Connect your Discord</h2>
+          <p className="mb-3 text-sm text-slate-400 dark:text-slate-500">
+            Link your Discord so we can give you tournament roles, send match reminders, and contact you quickly if there&apos;s an issue.
+            We never read your messages — we only use your ID and username.
+          </p>
+          {profile?.discordId ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-emerald-300">
+                Connected as{" "}
+                <span className="font-semibold text-emerald-100">
+                  {profile.discordUsername || "your Discord account"}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={handleConnectDiscord}
+                className="btn-secondary shrink-0"
+              >
+                Reconnect Discord
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-slate-300 dark:text-slate-200">
+                Discord not connected yet.
+              </p>
+              <button
+                type="button"
+                onClick={handleConnectDiscord}
+                className="btn-gradient shrink-0"
+              >
+                Connect Discord
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Your teams summary */}

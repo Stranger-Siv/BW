@@ -13,7 +13,7 @@ export async function GET() {
   try {
     await connectDB();
     const user = await User.findById(session.user.id)
-      .select("email name image displayName minecraftIGN discordUsername role createdAt")
+      .select("email name image displayName minecraftIGN discordUsername discordId role createdAt")
       .lean();
     if (!user) {
       return Response.json({ error: "User not found" }, { status: 404 });
@@ -49,7 +49,7 @@ export async function PATCH(request: Request) {
       { $set: updates },
       { new: true }
     )
-      .select("email name image displayName minecraftIGN discordUsername role createdAt")
+      .select("email name image displayName minecraftIGN discordUsername discordId role createdAt")
       .lean();
     if (!user) {
       return Response.json({ error: "User not found" }, { status: 404 });
