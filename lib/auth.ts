@@ -12,12 +12,13 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    async jwt({ token, account, profile, trigger, user }) {
-      if (trigger === "update" && user && typeof user === "object") {
-        const u = user as { impersonatingUserId?: string | null };
-        if (u.impersonatingUserId !== undefined) {
-          if (u.impersonatingUserId) {
-            token.impersonatingUserId = u.impersonatingUserId;
+    async jwt({ token, account, profile, trigger, session, user }) {
+      // Handle session.update({ impersonatingUserId }) from super admin impersonation
+      if (trigger === "update" && session && typeof session === "object") {
+        const s = session as { impersonatingUserId?: string | null };
+        if (s.impersonatingUserId !== undefined) {
+          if (s.impersonatingUserId) {
+            token.impersonatingUserId = s.impersonatingUserId;
             token.impersonatingFrom = token.sub ?? token.id;
           } else {
             delete token.impersonatingUserId;
