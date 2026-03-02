@@ -92,7 +92,8 @@ export function Navbar() {
                   } catch {}
                   signOut({ callbackUrl: "/" });
                 }}
-                className="hidden md:inline-flex rounded-full px-4 py-2 text-sm font-medium text-slate-400 transition-all duration-300 hover:bg-white/10 hover:text-slate-100"
+                className="hidden md:inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-red-400/50 hover:bg-red-500/10 hover:text-red-300"
+                aria-label="Sign out"
               >
                 Sign out
               </button>
