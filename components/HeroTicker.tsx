@@ -7,9 +7,15 @@ type TickerConfig = {
   items: string[];
 };
 
+type TickerItem = {
+  text: string;
+  icon?: string;
+};
+
 export function HeroTicker() {
   const [config, setConfig] = useState<TickerConfig | null>(null);
   const [hostNames, setHostNames] = useState<string[]>([]);
+  const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -46,17 +52,45 @@ export function HeroTicker() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    fetch("/api/stats/players", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { totalPlayers?: number } | null) => {
+        if (!active || !data) return;
+        const value =
+          typeof data.totalPlayers === "number" && Number.isFinite(data.totalPlayers)
+            ? data.totalPlayers
+            : 0;
+        setTotalPlayers(value);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   if (!config || !config.enabled) return null;
 
-  const baseItems = Array.isArray(config.items)
-    ? config.items.map((s) => (s ?? "").toString().trim()).filter(Boolean)
-    : [];
+  const items: TickerItem[] = [];
 
-  const hostLabel = hostNames.length ? hostNames.join(", ") : "";
-  const itemsWithHost = hostLabel ? [`🔥 Hosted by ${hostLabel}`, ...baseItems] : baseItems;
-  if (itemsWithHost.length === 0) return null;
+  const hostsClean = hostNames.map((s) => (s ?? "").toString().trim()).filter(Boolean);
+  if (hostsClean.length) {
+    for (const name of hostsClean) {
+      items.push({ icon: "🔥", text: name });
+    }
+  }
 
-  const loopItems = [...itemsWithHost, ...itemsWithHost];
+  if (totalPlayers && totalPlayers > 0) {
+    items.push({
+      icon: "👥",
+      text: `${totalPlayers} registered players`,
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  const loopItems = [...items, ...items];
 
   return (
     <div className="mt-4 w-full overflow-hidden">
@@ -68,7 +102,8 @@ export function HeroTicker() {
           <div className="ticker-track flex gap-8 whitespace-nowrap group hover:[animation-play-state:paused]">
             {loopItems.map((item, idx) => (
               <span key={`${item}-${idx}`} className="inline-flex items-center gap-1">
-                <span>{item}</span>
+                {item.icon && <span className="text-amber-400">{item.icon}</span>}
+                <span>{item.text}</span>
               </span>
             ))}
           </div>
