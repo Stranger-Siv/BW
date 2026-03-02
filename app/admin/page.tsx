@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [teamsError, setTeamsError] = useState<string | null>(null);
+  const [teamSearch, setTeamSearch] = useState("");
 
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -88,6 +89,12 @@ export default function AdminPage() {
   const [demoTeamsLoading, setDemoTeamsLoading] = useState(false);
 
   const selectedTournament = tournaments.find((t) => t._id === selectedTournamentId);
+
+  const filteredTeams = useMemo(() => {
+    const q = teamSearch.trim().toLowerCase();
+    if (!q) return teams;
+    return teams.filter((t) => t.teamName.toLowerCase().includes(q));
+  }, [teams, teamSearch]);
 
   const fetchUserStats = useCallback(async () => {
     if (!isSuperAdmin) return;
@@ -1021,46 +1028,60 @@ export default function AdminPage() {
                   <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100 sm:text-lg">
                     Registered teams
                   </h3>
-                  {selectedTeamIds.size > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="w-full text-sm text-slate-500 dark:text-slate-400 sm:w-auto">
-                        {selectedTeamIds.size} selected
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+                    <div className="relative w-full max-w-xs sm:w-64">
+                      <input
+                        type="text"
+                        value={teamSearch}
+                        onChange={(e) => setTeamSearch(e.target.value)}
+                        placeholder="Search teams…"
+                        className="w-full rounded-full border border-white/10 bg-slate-900/40 px-3 py-2 pl-9 text-sm text-slate-100 placeholder:text-slate-500 shadow-sm outline-none ring-0 focus:border-emerald-400/70 focus:ring-2 focus:ring-emerald-400/40 dark:bg-slate-900/60"
+                      />
+                      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+                        🔍
                       </span>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={bulkApprove}
-                          disabled={bulkLoading || selectedTeams.every((t) => t.status === "approved")}
-                          className="admin-touch-btn rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 text-slate-900 transition hover:opacity-90 disabled:opacity-50"
-                        >
-                          {bulkLoading ? "Processing…" : "Approve selected"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={bulkReject}
-                          disabled={bulkLoading || selectedTeams.every((t) => t.status === "rejected")}
-                          className="admin-touch-btn rounded-full border border-amber-400/50 bg-amber-500/20 text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-300"
-                        >
-                          {bulkLoading ? "Processing…" : "Reject selected"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={openBulkDisband}
-                          disabled={bulkLoading}
-                          className="admin-touch-btn rounded-full border border-red-400/50 bg-red-500/20 text-red-400 transition hover:bg-red-500/30 disabled:opacity-50 dark:text-red-300"
-                        >
-                          Disband selected
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTeamIds(new Set())}
-                          className="admin-touch-btn rounded-full border border-white/10 bg-white/10 text-slate-400 transition hover:bg-white/15 dark:text-slate-500 dark:hover:bg-white/15"
-                        >
-                          Clear selection
-                        </button>
-                      </div>
                     </div>
-                  )}
+                    {selectedTeamIds.size > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="w-full text-sm text-slate-500 dark:text-slate-400 sm:w-auto">
+                          {selectedTeamIds.size} selected
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={bulkApprove}
+                            disabled={bulkLoading || selectedTeams.every((t) => t.status === "approved")}
+                            className="admin-touch-btn rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 text-slate-900 transition hover:opacity-90 disabled:opacity-50"
+                          >
+                            {bulkLoading ? "Processing…" : "Approve selected"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={bulkReject}
+                            disabled={bulkLoading || selectedTeams.every((t) => t.status === "rejected")}
+                            className="admin-touch-btn rounded-full border border-amber-400/50 bg-amber-500/20 text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-50 dark:text-amber-300"
+                          >
+                            {bulkLoading ? "Processing…" : "Reject selected"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={openBulkDisband}
+                            disabled={bulkLoading}
+                            className="admin-touch-btn rounded-full border border-red-400/50 bg-red-500/20 text-red-400 transition hover:bg-red-500/30 disabled:opacity-50 dark:text-red-300"
+                          >
+                            Disband selected
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTeamIds(new Set())}
+                            className="admin-touch-btn rounded-full border border-white/10 bg-white/10 text-slate-400 transition hover:bg-white/15 dark:text-slate-500 dark:hover:bg-white/15"
+                          >
+                            Clear selection
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {teamsLoading ? (
                   <div className="flex items-center justify-center gap-2 py-12 text-slate-500 dark:text-slate-400">
@@ -1071,7 +1092,7 @@ export default function AdminPage() {
                   <>
                     <div className="hidden md:block">
                       <TeamsTable
-                        teams={teams}
+                        teams={filteredTeams}
                         selectedIds={selectedTeamIds}
                         onToggleSelect={toggleTeamSelection}
                         onToggleSelectAll={toggleSelectAllTeams}
@@ -1087,7 +1108,7 @@ export default function AdminPage() {
                     </div>
                     <div className="md:hidden">
                       <TeamsCards
-                        teams={teams}
+                        teams={filteredTeams}
                         selectedIds={selectedTeamIds}
                         onToggleSelect={toggleTeamSelection}
                         onApprove={handleApprove}
