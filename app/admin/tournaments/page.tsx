@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
 import { AdminTournamentsSkeleton } from "@/components/admin/AdminSkeletons";
@@ -57,6 +57,7 @@ export default function AdminTournamentsPage() {
   const [deleteTournament, setDeleteTournament] = useState<TournamentDoc | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [openRegTournamentId, setOpenRegTournamentId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -183,6 +184,12 @@ export default function AdminTournamentsPage() {
     return <AdminTournamentsSkeleton />;
   }
 
+  const filteredList = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((t) => t.name.toLowerCase().includes(q));
+  }, [list, search]);
+
   return (
     <main className="min-h-screen pb-bottom-nav">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 md:px-6 md:py-10 lg:px-8 lg:py-12">
@@ -190,8 +197,8 @@ export default function AdminTournamentsPage() {
           items={[{ label: "Admin", href: "/admin" }, { label: "Tournaments" }]}
           className="mb-4"
         />
-        <header className="mb-4 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div>
+        <header className="mb-4 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="space-y-1">
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl md:text-3xl">
               Tournaments
             </h1>
@@ -199,7 +206,19 @@ export default function AdminTournamentsPage() {
               Create tournaments and manage their settings. Use the Dashboard to view teams per tournament.
             </p>
           </div>
-          <nav className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <nav className="flex flex-1 flex-wrap items-center gap-3 sm:justify-end">
+            <div className="relative w-full max-w-xs flex-1 sm:w-auto">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tournaments…"
+                className="w-full rounded-full border border-white/10 bg-slate-900/40 px-3 py-2 pl-9 text-sm text-slate-100 placeholder:text-slate-500 shadow-sm outline-none ring-0 focus:border-emerald-400/70 focus:ring-2 focus:ring-emerald-400/40 dark:bg-slate-900/60"
+              />
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+                🔍
+              </span>
+            </div>
             <Link
               href="/admin"
               className="admin-touch-btn flex rounded-full border border-white/10 bg-white/10 text-slate-700 transition hover:bg-white/15 dark:text-slate-200 dark:hover:bg-white/15"
@@ -239,6 +258,15 @@ export default function AdminTournamentsPage() {
                 + Create tournament
               </button>
             </div>
+          ) : filteredList.length === 0 ? (
+            <div className="card-glass py-10 text-center">
+              <p className="text-slate-300 dark:text-slate-300">
+                No tournaments match your search.
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
+                Try a different name or clear the search box.
+              </p>
+            </div>
           ) : (
             <div className="card-glass admin-table-wrap">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -253,7 +281,7 @@ export default function AdminTournamentsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((t) => (
+                  {filteredList.map((t) => (
                     <tr
                       key={t._id}
                       className="border-b border-white/10 transition last:border-0 hover:bg-white/5 dark:border-white/10 dark:hover:bg-white/5"

@@ -9,6 +9,8 @@ type TeamsCardsProps = {
   onToggleSelect: (id: string) => void;
   onApprove: (team: AdminTeam) => void;
   onReject: (team: AdminTeam) => void;
+  onSetPending?: (team: AdminTeam) => void;
+  isSuperAdmin?: boolean;
   onChangeDate: (team: AdminTeam) => void;
   onDisband: (team: AdminTeam) => void;
   actionLoadingId: string | null;
@@ -35,6 +37,8 @@ export function TeamsCards({
   onToggleSelect,
   onApprove,
   onReject,
+  onSetPending,
+  isSuperAdmin = false,
   onChangeDate,
   onDisband,
   actionLoadingId,
@@ -110,6 +114,16 @@ export function TeamsCards({
                   className="min-h-[44px] rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300"
                 >
                   Reject
+                </button>
+              )}
+              {isSuperAdmin && onSetPending && team.status !== "pending" && (
+                <button
+                  type="button"
+                  onClick={() => onSetPending(team)}
+                  disabled={loading}
+                  className="min-h-[44px] rounded-full border border-slate-400/60 bg-slate-700/40 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-700/70 disabled:opacity-60"
+                >
+                  Set pending
                 </button>
               )}
               <button

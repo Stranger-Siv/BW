@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AdminBreadcrumbs } from "@/components/admin/AdminBreadcrumbs";
@@ -51,6 +52,8 @@ export default function AdminTeamDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === "string" ? params.id : "";
+  const { data: session } = useSession();
+  const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === "super_admin";
   const [team, setTeam] = useState<AdminTeamDetail | null>(null);
   const [tournaments, setTournaments] = useState<TournamentOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +155,27 @@ export default function AdminTeamDetailPage() {
       setActionLoading(false);
     }
   }, [team]);
+
+  const handleSetPending = useCallback(async () => {
+    if (!team || !isSuperAdmin) return;
+    setActionLoading(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch(`/api/admin/team/${team._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to set pending");
+      setTeam((prev) => (prev ? { ...prev, status: "pending" } : null));
+      setActionMessage("Team status set back to pending.");
+    } catch (e) {
+      setActionMessage(e instanceof Error ? e.message : "Action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  }, [team, isSuperAdmin]);
 
   const handleReject = useCallback(async () => {
     if (!team) return;
@@ -364,6 +388,16 @@ export default function AdminTeamDetailPage() {
                   className="min-h-[44px] rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300"
                 >
                   Reject
+                </button>
+              )}
+              {isSuperAdmin && team.status !== "pending" && (
+                <button
+                  type="button"
+                  onClick={handleSetPending}
+                  disabled={actionLoading}
+                  className="min-h-[44px] rounded-full border border-slate-400/60 bg-slate-700/40 px-4 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-slate-700/70 disabled:opacity-60"
+                >
+                  Set pending
                 </button>
               )}
               <button

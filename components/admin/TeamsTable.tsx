@@ -20,6 +20,8 @@ type TeamsTableProps = {
   onToggleSelectAll: (checked: boolean) => void;
   onApprove: (team: AdminTeam) => void;
   onReject: (team: AdminTeam) => void;
+   onSetPending?: (team: AdminTeam) => void;
+   isSuperAdmin?: boolean;
   onChangeDate: (team: AdminTeam) => void;
   onDisband: (team: AdminTeam) => void;
   actionLoadingId: string | null;
@@ -50,6 +52,8 @@ export function TeamsTable({
   onToggleSelectAll,
   onApprove,
   onReject,
+  onSetPending,
+  isSuperAdmin = false,
   onChangeDate,
   onDisband,
   actionLoadingId,
@@ -166,6 +170,16 @@ export function TeamsTable({
                         className="min-h-[44px] rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-2 text-xs font-medium text-amber-400 transition hover:bg-amber-500/30 disabled:opacity-60 dark:text-amber-300 sm:min-h-[36px] sm:py-1.5"
                       >
                         Reject
+                      </button>
+                    )}
+                    {isSuperAdmin && onSetPending && team.status !== "pending" && (
+                      <button
+                        type="button"
+                        onClick={() => onSetPending(team)}
+                        disabled={loading}
+                        className="min-h-[44px] rounded-full border border-slate-400/60 bg-slate-700/40 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-700/70 disabled:opacity-60 sm:min-h-[36px] sm:py-1.5"
+                      >
+                        Set pending
                       </button>
                     )}
                     <button

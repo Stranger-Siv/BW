@@ -357,6 +357,29 @@ export default function AdminPage() {
     [refetch]
   );
 
+  const handleSetPending = useCallback(
+    async (team: AdminTeam) => {
+      if (!isSuperAdmin) return;
+      setActionLoadingId(team._id);
+      setActionError(null);
+      try {
+        const res = await fetch(`/api/admin/team/${team._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "pending" }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to set pending");
+        refetch();
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : "Action failed");
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [isSuperAdmin, refetch]
+  );
+
   const handleReject = useCallback(
     async (team: AdminTeam) => {
       setActionLoadingId(team._id);
@@ -1054,6 +1077,8 @@ export default function AdminPage() {
                         onToggleSelectAll={toggleSelectAllTeams}
                         onApprove={handleApprove}
                         onReject={handleReject}
+                        onSetPending={isSuperAdmin ? handleSetPending : undefined}
+                        isSuperAdmin={isSuperAdmin}
                         onChangeDate={openChangeDate}
                         onDisband={openDisband}
                         actionLoadingId={actionLoadingId}
@@ -1067,6 +1092,8 @@ export default function AdminPage() {
                         onToggleSelect={toggleTeamSelection}
                         onApprove={handleApprove}
                         onReject={handleReject}
+                        onSetPending={isSuperAdmin ? handleSetPending : undefined}
+                        isSuperAdmin={isSuperAdmin}
                         onChangeDate={openChangeDate}
                         onDisband={openDisband}
                         actionLoadingId={actionLoadingId}

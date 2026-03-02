@@ -6,10 +6,10 @@ import Tournament from "@/models/Tournament";
 import TournamentDate from "@/models/TournamentDate";
 import Team, { type IPlayer, type ITeam } from "@/models/Team";
 import { authOptions } from "@/lib/auth";
-import { isAdminOrSuperAdmin } from "@/lib/adminAuth";
+import { isAdminOrSuperAdmin, isSuperAdmin } from "@/lib/adminAuth";
 import { getServerPusher, tournamentChannel, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher";
 
-const STATUS_VALUES = ["approved", "rejected"] as const;
+const STATUS_VALUES = ["pending", "approved", "rejected"] as const;
 type StatusUpdate = (typeof STATUS_VALUES)[number];
 
 type PatchBody = {
@@ -47,7 +47,11 @@ function validatePatchBody(
 
   if (status !== undefined) {
     if (typeof status !== "string" || !STATUS_VALUES.includes(status as StatusUpdate)) {
-      return { ok: false, status: 400, message: "status must be exactly 'approved' or 'rejected'" };
+      return {
+        ok: false,
+        status: 400,
+        message: "status must be exactly 'pending', 'approved' or 'rejected'",
+      };
     }
     updates.status = status as StatusUpdate;
   }
@@ -165,13 +169,27 @@ export async function PATCH(
       );
     }
 
-    const { status: statusUpdate, tournamentDate: newDate, tournamentId: newTournamentId, players: newPlayers, rewardReceiverIGN: newRewardReceiver } = validation.data;
+    const {
+      status: statusUpdate,
+      tournamentDate: newDate,
+      tournamentId: newTournamentId,
+      players: newPlayers,
+      rewardReceiverIGN: newRewardReceiver,
+    } = validation.data;
 
     await connectDB();
 
     const team = await Team.findById(id);
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+
+    // Only super admins can move a team back to pending
+    if (statusUpdate === "pending" && !isSuperAdmin(session)) {
+      return NextResponse.json(
+        { error: "Only super admins can change team status back to pending" },
+        { status: 403 }
+      );
     }
 
     const oldDate = team.tournamentDate;
