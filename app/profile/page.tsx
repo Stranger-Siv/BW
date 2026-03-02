@@ -246,30 +246,6 @@ export default function ProfilePage() {
         </div>
         </FadeInUp>
 
-        {/* Quick links */}
-        <div className="card mb-6">
-          <h2 className="section-title mb-3">Quick links</h2>
-          <ul className="space-y-2">
-            <li>
-              <Link href="/matches" className="text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white">
-                My matches & teams →
-              </Link>
-            </li>
-            <li>
-              <Link href="/tournaments" className="text-slate-200 hover:text-white dark:text-slate-300 dark:hover:text-white">
-                Register for a tournament →
-              </Link>
-            </li>
-            {(profile?.role === "admin" || profile?.role === "super_admin") && (
-              <li>
-                <Link href="/admin" className="text-emerald-400 hover:text-emerald-300">
-                  Admin dashboard →
-                </Link>
-              </li>
-            )}
-          </ul>
-        </div>
-
         {/* Connect Discord */}
         <div className="card mb-6">
           <h2 className="section-title mb-2">Connect your Discord</h2>
