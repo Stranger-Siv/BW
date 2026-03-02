@@ -11,6 +11,8 @@ import { usePusherChannel } from "@/components/providers/PusherProvider";
 type SettingsState = {
   maintenanceMode: boolean;
   hostedByNames: string[];
+  homeTickerEnabled: boolean;
+  homeTickerItems: string[];
   announcement: { message: string; active: boolean };
 };
 
@@ -20,6 +22,8 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SettingsState>({
     maintenanceMode: false,
     hostedByNames: ["BABA TILLU"],
+    homeTickerEnabled: false,
+    homeTickerItems: [],
     announcement: { message: "", active: false },
   });
   const [loading, setLoading] = useState(true);
@@ -53,6 +57,12 @@ export default function AdminSettingsPage() {
       setSettings({
         maintenanceMode: Boolean(data.maintenanceMode),
         hostedByNames: hosts.length ? hosts : ["BABA TILLU"],
+        homeTickerEnabled: Boolean(data.homeTickerEnabled),
+        homeTickerItems: Array.isArray(data.homeTickerItems)
+          ? data.homeTickerItems.map((s: unknown) =>
+              typeof s === "string" ? s.trim() : ""
+            ).filter((s: string) => !!s)
+          : [],
         announcement: {
           message: data.announcement?.message ?? "",
           active: Boolean(data.announcement?.active),
@@ -340,6 +350,113 @@ export default function AdminSettingsPage() {
                 className="admin-touch-btn w-full rounded-full bg-emerald-500/80 text-slate-900 hover:bg-emerald-500 disabled:opacity-60 sm:w-auto"
               >
                 {announcementSaving ? "Saving…" : "Save hosts"}
+              </button>
+            </section>
+
+            <section className="card-glass rounded-xl border border-slate-600/40 bg-slate-800/40 p-4 dark:border-slate-500/30 dark:bg-slate-800/60 sm:p-6">
+              <h2 className="mb-3 text-base font-semibold text-slate-200 sm:text-lg dark:text-slate-200">
+                Homepage ticker
+              </h2>
+              <p className="mb-4 text-sm text-slate-400">
+                A small news-style bar under the hero buttons on the homepage. It scrolls messages
+                like hosts, next tournament date, prize pool, server IP, etc.
+              </p>
+              <label className="mb-3 flex min-h-[40px] items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={settings.homeTickerEnabled}
+                  onChange={(e) =>
+                    setSettings((prev) => ({ ...prev, homeTickerEnabled: e.target.checked }))
+                  }
+                  className="h-5 w-5 rounded border-slate-500 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-slate-200">Enable homepage ticker</span>
+              </label>
+              {settings.homeTickerEnabled && (
+                <div className="mb-3 space-y-2">
+                  {settings.homeTickerItems.map((msg, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={msg}
+                        onChange={(e) =>
+                          setSettings((prev) => {
+                            const copy = [...prev.homeTickerItems];
+                            copy[idx] = e.target.value;
+                            return { ...prev, homeTickerItems: copy };
+                          })
+                        }
+                        placeholder={`Message ${idx + 1}`}
+                        className="flex-1 rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            homeTickerItems: prev.homeTickerItems.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="rounded-full border border-red-400/60 bg-red-500/20 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-500/30"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        homeTickerItems: [...prev.homeTickerItems, ""],
+                      }))
+                    }
+                    className="mt-1 text-xs font-medium text-emerald-400 hover:text-emerald-300"
+                  >
+                    + Add message
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  setAnnouncementSaving(true);
+                  setMessage(null);
+                  try {
+                    const msgs = settings.homeTickerItems
+                      .map((s) => s.trim())
+                      .filter((s) => !!s);
+                    const res = await fetch("/api/super-admin/settings", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        homeTickerEnabled: settings.homeTickerEnabled,
+                        homeTickerItems: msgs,
+                      }),
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                      setMessage(data.error ?? "Failed to update ticker");
+                      setMessageType("error");
+                      return;
+                    }
+                    setMessage("Homepage ticker saved.");
+                    setMessageType("success");
+                    setTimeout(() => {
+                      setMessage(null);
+                      setMessageType(null);
+                    }, 3000);
+                  } catch {
+                    setMessage("Failed to update ticker");
+                    setMessageType("error");
+                  } finally {
+                    setAnnouncementSaving(false);
+                  }
+                }}
+                disabled={announcementSaving}
+                className="admin-touch-btn w-full rounded-full bg-sky-500/80 text-slate-900 hover:bg-sky-500 disabled:opacity-60 sm:w-auto"
+              >
+                {announcementSaving ? "Saving…" : "Save ticker"}
               </button>
             </section>
 

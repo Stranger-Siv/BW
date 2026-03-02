@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
+import { HeroTicker } from "@/components/HeroTicker";
 import { FadeInUp, FadeInUpInView, StaggerChildren, StaggerChildrenInView, StaggerItem } from "@/components/ui/animations";
 
 export default function HomePage() {
@@ -53,6 +54,7 @@ export default function HomePage() {
               </FadeInUp>
             </div>
           </FadeInUp>
+          <HeroTicker />
         </section>
 
         {/* Hosted by Baba Tillu */}

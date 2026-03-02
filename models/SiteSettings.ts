@@ -7,6 +7,8 @@ export interface ISiteSettings {
   maintenanceMode: boolean;
   hostedByName?: string;
   hostedByNames?: string[];
+  homeTickerEnabled?: boolean;
+  homeTickerItems?: string[];
   announcement: {
     message: string;
     active: boolean;
@@ -22,6 +24,8 @@ const siteSettingsSchema = new Schema<ISiteSettings>(
     maintenanceMode: { type: Boolean, default: false },
     hostedByName: { type: String, default: "BABA TILLU" },
     hostedByNames: { type: [String], default: [] },
+    homeTickerEnabled: { type: Boolean, default: false },
+    homeTickerItems: { type: [String], default: [] },
     announcement: {
       message: { type: String, default: "" },
       active: { type: Boolean, default: false },

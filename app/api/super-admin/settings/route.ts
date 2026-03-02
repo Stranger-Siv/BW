@@ -32,6 +32,8 @@ export async function GET() {
       maintenanceMode?: boolean;
       hostedByName?: string;
       hostedByNames?: string[];
+      homeTickerEnabled?: boolean;
+      homeTickerItems?: string[];
       announcement?: { message?: string; active?: boolean };
       updatedAt?: string;
     };
@@ -43,6 +45,10 @@ export async function GET() {
           (Array.isArray(d.hostedByNames) ? d.hostedByNames : [d.hostedByName ?? "BABA TILLU"])
             .map((s) => (s ?? "").toString().trim())
             .filter(Boolean),
+        homeTickerEnabled: Boolean(d.homeTickerEnabled),
+        homeTickerItems: Array.isArray(d.homeTickerItems)
+          ? d.homeTickerItems.map((s) => (s ?? "").toString().trim()).filter(Boolean)
+          : [],
         announcement: d.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: d.updatedAt,
       },
@@ -72,6 +78,14 @@ export async function PATCH(request: NextRequest) {
             .map((s: unknown) => (typeof s === "string" ? s.trim() : ""))
             .filter((s: string) => !!s)
         : undefined;
+    const homeTickerEnabled =
+      typeof body.homeTickerEnabled === "boolean" ? body.homeTickerEnabled : undefined;
+    const homeTickerItems =
+      Array.isArray(body.homeTickerItems) && body.homeTickerItems.length > 0
+        ? body.homeTickerItems
+            .map((s: unknown) => (typeof s === "string" ? s.trim() : ""))
+            .filter((s: string) => !!s)
+        : undefined;
 
     await connectDB();
     let doc = await SiteSettings.findById(SITE_SETTINGS_ID);
@@ -81,6 +95,8 @@ export async function PATCH(request: NextRequest) {
         maintenanceMode: false,
         hostedByName: hostedByName ?? "BABA TILLU",
         hostedByNames: hostedByNames ?? [hostedByName ?? "BABA TILLU"],
+        homeTickerEnabled: homeTickerEnabled ?? false,
+        homeTickerItems: homeTickerItems ?? [],
         announcement: { message: "", active: false, updatedAt: new Date() },
         updatedAt: new Date(),
       });
@@ -120,6 +136,26 @@ export async function PATCH(request: NextRequest) {
         details: { hostedByNames },
       });
     }
+    if (homeTickerEnabled !== undefined) {
+      doc.homeTickerEnabled = homeTickerEnabled;
+      changed = true;
+      await createAuditLog({
+        actorId: actorId!,
+        action: "setting_change",
+        targetType: "settings",
+        details: { homeTickerEnabled },
+      });
+    }
+    if (homeTickerItems !== undefined) {
+      doc.homeTickerItems = homeTickerItems;
+      changed = true;
+      await createAuditLog({
+        actorId: actorId!,
+        action: "setting_change",
+        targetType: "settings",
+        details: { homeTickerItems },
+      });
+    }
     if (changed) {
       doc.updatedAt = new Date();
       await doc.save();
@@ -130,6 +166,8 @@ export async function PATCH(request: NextRequest) {
       maintenanceMode?: boolean;
       hostedByName?: string;
       hostedByNames?: string[];
+      homeTickerEnabled?: boolean;
+      homeTickerItems?: string[];
       announcement?: { message?: string; active?: boolean };
       updatedAt?: string;
     };
@@ -153,6 +191,10 @@ export async function PATCH(request: NextRequest) {
           (Array.isArray(u.hostedByNames) ? u.hostedByNames : [u.hostedByName ?? "BABA TILLU"])
             .map((s) => (s ?? "").toString().trim())
             .filter(Boolean),
+        homeTickerEnabled: Boolean(u.homeTickerEnabled),
+        homeTickerItems: Array.isArray(u.homeTickerItems)
+          ? u.homeTickerItems.map((s) => (s ?? "").toString().trim()).filter(Boolean)
+          : [],
         announcement:
           u.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: u.updatedAt,
