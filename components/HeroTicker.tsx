@@ -14,7 +14,6 @@ type TickerItem = {
 
 export function HeroTicker() {
   const [config, setConfig] = useState<TickerConfig | null>(null);
-  const [hostNames, setHostNames] = useState<string[]>([]);
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
 
   useEffect(() => {
@@ -27,24 +26,6 @@ export function HeroTicker() {
           ? data.items.map((s) => (s ?? "").toString().trim()).filter(Boolean)
           : [];
         setConfig({ enabled: !!data.enabled && items.length > 0, items });
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/settings/site", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: { hostedByNames?: string[] } | null) => {
-        if (!active || !data) return;
-        const list = Array.isArray(data.hostedByNames) ? data.hostedByNames : [];
-        const cleaned = list
-          .map((s) => (s ?? "").toString().trim())
-          .filter((s) => !!s);
-        if (cleaned.length) setHostNames(cleaned);
       })
       .catch(() => {});
     return () => {
@@ -74,9 +55,11 @@ export function HeroTicker() {
 
   const items: TickerItem[] = [];
 
-  const hostsClean = hostNames.map((s) => (s ?? "").toString().trim()).filter(Boolean);
-  if (hostsClean.length) {
-    for (const name of hostsClean) {
+  const hostsFromConfig = Array.isArray(config.items)
+    ? config.items.map((s) => (s ?? "").toString().trim()).filter(Boolean)
+    : [];
+  if (hostsFromConfig.length) {
+    for (const name of hostsFromConfig) {
       items.push({ icon: "🔥", text: name });
     }
   }

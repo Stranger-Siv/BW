@@ -9,7 +9,7 @@ export async function GET() {
     await connectDB();
 
     const result = await Team.aggregate<{ totalPlayers: number }>([
-      { $match: { status: { $ne: "rejected" } } },
+      { $match: { status: "approved" } },
       { $project: { count: { $size: "$players" } } },
       { $group: { _id: null, totalPlayers: { $sum: "$count" } } },
     ]);
