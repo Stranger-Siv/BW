@@ -22,6 +22,7 @@ export async function GET() {
         _id: SITE_SETTINGS_ID,
         maintenanceMode: false,
         hostedByName: "BABA TILLU",
+        hostedByNames: ["BABA TILLU"],
         announcement: { message: "", active: false, updatedAt: new Date() },
         updatedAt: new Date(),
       });
@@ -30,6 +31,7 @@ export async function GET() {
     const d = doc as unknown as {
       maintenanceMode?: boolean;
       hostedByName?: string;
+      hostedByNames?: string[];
       announcement?: { message?: string; active?: boolean };
       updatedAt?: string;
     };
@@ -37,6 +39,10 @@ export async function GET() {
       {
         maintenanceMode: d.maintenanceMode ?? false,
         hostedByName: d.hostedByName ?? "BABA TILLU",
+        hostedByNames:
+          (Array.isArray(d.hostedByNames) ? d.hostedByNames : [d.hostedByName ?? "BABA TILLU"])
+            .map((s) => (s ?? "").toString().trim())
+            .filter(Boolean),
         announcement: d.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: d.updatedAt,
       },
@@ -56,9 +62,16 @@ export async function PATCH(request: NextRequest) {
     }
     const actorId = (session?.user as { id?: string })?.id;
     const body = await request.json().catch(() => ({}));
-    const maintenanceMode = typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : undefined;
+    const maintenanceMode =
+      typeof body.maintenanceMode === "boolean" ? body.maintenanceMode : undefined;
     const hostedByName =
       typeof body.hostedByName === "string" ? body.hostedByName.trim() : undefined;
+    const hostedByNames =
+      Array.isArray(body.hostedByNames) && body.hostedByNames.length > 0
+        ? body.hostedByNames
+            .map((s: unknown) => (typeof s === "string" ? s.trim() : ""))
+            .filter((s: string) => !!s)
+        : undefined;
 
     await connectDB();
     let doc = await SiteSettings.findById(SITE_SETTINGS_ID);
@@ -67,6 +80,7 @@ export async function PATCH(request: NextRequest) {
         _id: SITE_SETTINGS_ID,
         maintenanceMode: false,
         hostedByName: hostedByName ?? "BABA TILLU",
+        hostedByNames: hostedByNames ?? [hostedByName ?? "BABA TILLU"],
         announcement: { message: "", active: false, updatedAt: new Date() },
         updatedAt: new Date(),
       });
@@ -93,6 +107,19 @@ export async function PATCH(request: NextRequest) {
         details: { hostedByName },
       });
     }
+    if (hostedByNames !== undefined) {
+      doc.hostedByNames = hostedByNames;
+      if (!doc.hostedByName && hostedByNames.length > 0) {
+        doc.hostedByName = hostedByNames[0];
+      }
+      changed = true;
+      await createAuditLog({
+        actorId: actorId!,
+        action: "setting_change",
+        targetType: "settings",
+        details: { hostedByNames },
+      });
+    }
     if (changed) {
       doc.updatedAt = new Date();
       await doc.save();
@@ -102,6 +129,7 @@ export async function PATCH(request: NextRequest) {
     const u = updated as unknown as {
       maintenanceMode?: boolean;
       hostedByName?: string;
+      hostedByNames?: string[];
       announcement?: { message?: string; active?: boolean };
       updatedAt?: string;
     };
@@ -121,6 +149,10 @@ export async function PATCH(request: NextRequest) {
       {
         maintenanceMode: u.maintenanceMode ?? false,
         hostedByName: u.hostedByName ?? "BABA TILLU",
+        hostedByNames:
+          (Array.isArray(u.hostedByNames) ? u.hostedByNames : [u.hostedByName ?? "BABA TILLU"])
+            .map((s) => (s ?? "").toString().trim())
+            .filter(Boolean),
         announcement:
           u.announcement ?? { message: "", active: false, updatedAt: new Date().toISOString() },
         updatedAt: u.updatedAt,

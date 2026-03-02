@@ -8,16 +8,19 @@ type Props = {
 };
 
 export function HostedByName({ className }: Props) {
-  const [name, setName] = useState<string>(SITE.hostedBy);
+  const [names, setNames] = useState<string[]>([SITE.hostedBy]);
 
   useEffect(() => {
     let active = true;
     fetch("/api/settings/site", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { hostedByName?: string } | null) => {
+      .then((data: { hostedByNames?: string[] } | null) => {
         if (!active || !data) return;
-        const value = (data.hostedByName ?? "").trim();
-        if (value) setName(value);
+        const list = Array.isArray(data.hostedByNames) ? data.hostedByNames : [];
+        const cleaned = list
+          .map((s) => (s ?? "").toString().trim())
+          .filter((s) => !!s);
+        if (cleaned.length) setNames(cleaned);
       })
       .catch(() => {});
     return () => {
@@ -25,6 +28,6 @@ export function HostedByName({ className }: Props) {
     };
   }, []);
 
-  return <span className={className}>{name}</span>;
+  return <span className={className}>{names.join(", ")}</span>;
 }
 

@@ -10,7 +10,7 @@ import { usePusherChannel } from "@/components/providers/PusherProvider";
 
 type SettingsState = {
   maintenanceMode: boolean;
-  hostedByName: string;
+  hostedByNames: string[];
   announcement: { message: string; active: boolean };
 };
 
@@ -19,7 +19,7 @@ export default function AdminSettingsPage() {
   const isSuperAdmin = (session?.user as { role?: string } | undefined)?.role === "super_admin";
   const [settings, setSettings] = useState<SettingsState>({
     maintenanceMode: false,
-    hostedByName: "BABA TILLU",
+    hostedByNames: ["BABA TILLU"],
     announcement: { message: "", active: false },
   });
   const [loading, setLoading] = useState(true);
@@ -44,9 +44,15 @@ export default function AdminSettingsPage() {
         return;
       }
       const data = await res.json();
+      const rawHosts: string[] = Array.isArray(data.hostedByNames)
+        ? data.hostedByNames
+        : [data.hostedByName ?? "BABA TILLU"];
+      const hosts = rawHosts
+        .map((s) => (s ?? "").toString().trim())
+        .filter((s) => !!s);
       setSettings({
         maintenanceMode: Boolean(data.maintenanceMode),
-        hostedByName: (data.hostedByName ?? "BABA TILLU") as string,
+        hostedByNames: hosts.length ? hosts : ["BABA TILLU"],
         announcement: {
           message: data.announcement?.message ?? "",
           active: Boolean(data.announcement?.active),
@@ -252,28 +258,64 @@ export default function AdminSettingsPage() {
                 Shown as &quot;Sponsored by&quot; across the site. This lets you change the host
                 without redeploying.
               </p>
-              <input
-                type="text"
-                value={settings.hostedByName}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    hostedByName: e.target.value,
-                  }))
-                }
-                placeholder="Host name (e.g. BABA TILLU)"
-                className="mb-3 w-full rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
+              <div className="mb-3 space-y-2">
+                {settings.hostedByNames.map((name, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) =>
+                        setSettings((prev) => {
+                          const copy = [...prev.hostedByNames];
+                          copy[idx] = e.target.value;
+                          return { ...prev, hostedByNames: copy };
+                        })
+                      }
+                      placeholder={`Host ${idx + 1}`}
+                      className="flex-1 rounded-lg border border-slate-500/50 bg-slate-700/50 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    {settings.hostedByNames.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            hostedByNames: prev.hostedByNames.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="rounded-full border border-red-400/60 bg-red-500/20 px-2 py-1 text-xs font-medium text-red-300 hover:bg-red-500/30"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      hostedByNames: [...prev.hostedByNames, ""],
+                    }))
+                  }
+                  className="mt-1 text-xs font-medium text-emerald-400 hover:text-emerald-300"
+                >
+                  + Add host
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={async () => {
                   setAnnouncementSaving(true);
                   setMessage(null);
                   try {
+                    const hosts = settings.hostedByNames
+                      .map((s) => s.trim())
+                      .filter((s) => !!s);
                     const res = await fetch("/api/super-admin/settings", {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ hostedByName: settings.hostedByName }),
+                      body: JSON.stringify({ hostedByNames: hosts }),
                     });
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok) {
@@ -297,7 +339,7 @@ export default function AdminSettingsPage() {
                 disabled={announcementSaving}
                 className="admin-touch-btn w-full rounded-full bg-emerald-500/80 text-slate-900 hover:bg-emerald-500 disabled:opacity-60 sm:w-auto"
               >
-                {announcementSaving ? "Saving…" : "Save host"}
+                {announcementSaving ? "Saving…" : "Save hosts"}
               </button>
             </section>
 
