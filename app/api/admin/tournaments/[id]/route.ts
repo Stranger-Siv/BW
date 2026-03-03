@@ -6,6 +6,7 @@ import Tournament, { type TournamentStatus, type TournamentType } from "@/models
 import Team from "@/models/Team";
 import { authOptions } from "@/lib/auth";
 import { isAdminOrSuperAdmin, isSuperAdmin } from "@/lib/adminAuth";
+import { assignDiscordRolesForCompletedTournament } from "@/lib/discordTournamentRoles";
 
 const STATUS_VALUES: TournamentStatus[] = [
   "draft",
@@ -208,6 +209,28 @@ export async function PATCH(
       { $set: validation.data },
       { new: true, runValidators: true }
     ).lean();
+
+    // Option A: after winner is set and tournament is completed, assign Discord roles automatically.
+    // Best-effort: we do not fail the PATCH if Discord assignment fails.
+    try {
+      const next = updated as unknown as {
+        status?: string;
+        winnerTeamId?: mongoose.Types.ObjectId;
+        discordRolesAssignedAt?: Date;
+      } | null;
+      const prev = existing as unknown as { discordRolesAssignedAt?: Date } | null;
+      if (
+        next &&
+        next.status === "completed" &&
+        !!next.winnerTeamId &&
+        !next.discordRolesAssignedAt &&
+        !prev?.discordRolesAssignedAt
+      ) {
+        await assignDiscordRolesForCompletedTournament(id);
+      }
+    } catch (e) {
+      console.warn("Discord role assignment skipped/failed:", e);
+    }
 
     return NextResponse.json(updated, { status: 200 });
   } catch (err) {

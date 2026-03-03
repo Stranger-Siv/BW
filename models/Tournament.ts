@@ -31,6 +31,8 @@ export interface ITournament {
   serverIP?: string;
   isClosed: boolean;
   winnerTeamId?: mongoose.Types.ObjectId;
+  /** When Discord roles were assigned (S# M# Player/Champion). */
+  discordRolesAssignedAt?: Date;
   /** When set with status "scheduled", registration opens at this time */
   scheduledAt?: Date;
   createdAt: Date;
@@ -62,6 +64,7 @@ const tournamentSchema = new Schema<ITournament>(
     serverIP: { type: String },
     isClosed: { type: Boolean, default: false },
     winnerTeamId: { type: Schema.Types.ObjectId, ref: "Team" },
+    discordRolesAssignedAt: { type: Date },
     scheduledAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
   },

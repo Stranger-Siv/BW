@@ -273,9 +273,25 @@ export default function AdminTournamentRoundsPage() {
 
   const moveTeam = useCallback(
     (teamId: string, fromRoundId: string, toRoundId: string) => {
-      const fromRound = rounds.find((r) => r._id === fromRoundId);
       const toRound = rounds.find((r) => r._id === toRoundId);
-      if (!fromRound || !toRound) return;
+      if (!toRound) return;
+
+      // Special case: dragging from the registered teams pool (no source round yet).
+      if (fromRoundId === "pool") {
+        const maxTeamsNext = (["R2", "R21", "R22", R3_FINAL_NAME] as const).includes(
+          toRound.name as "R2" | "R21" | "R22" | "R3"
+        )
+          ? 4
+          : Infinity;
+        const alreadyIn = toRound.teamIds.includes(teamId);
+        if (!alreadyIn && toRound.teamIds.length >= maxTeamsNext) return;
+        const newToIds = alreadyIn ? toRound.teamIds : [...toRound.teamIds, teamId];
+        updateRoundTeamIds(toRoundId, newToIds);
+        return;
+      }
+
+      const fromRound = rounds.find((r) => r._id === fromRoundId);
+      if (!fromRound) return;
 
       const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(fromRound.name);
       const isToR2 = toRound.name === "R2";
@@ -366,6 +382,12 @@ export default function AdminTournamentRoundsPage() {
     } catch {
       // ignore
     }
+  };
+
+  const handlePoolDragStart = (e: React.DragEvent, teamId: string) => {
+    setDragged({ teamId, roundId: "pool" });
+    e.dataTransfer.setData("text/plain", JSON.stringify({ teamId, roundId: "pool" }));
+    e.dataTransfer.effectAllowed = "move";
   };
 
   const setWinner = useCallback(
@@ -706,7 +728,7 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance with →; in R2/R3 click 🏆 to set winner.
+                Drag a team from here into any round above to place them. 16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance with →; in R2/R3 click 🏆 to set winner.
               </p>
               <div className="mb-3 flex flex-wrap gap-2">
                 <button
@@ -728,13 +750,20 @@ export default function AdminTournamentRoundsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
-                  <Link
+                  <div
                     key={t._id}
-                    href={`/admin/teams/${t._id}`}
-                    className="rounded bg-slate-300/60 px-2 py-1 text-sm font-medium text-slate-800 transition hover:bg-amber-500/30 hover:text-amber-800 dark:bg-slate-700/60 dark:text-slate-200 dark:hover:bg-amber-500/30 dark:hover:text-amber-200"
+                    draggable
+                    onDragStart={(e) => handlePoolDragStart(e, t._id)}
+                    className="cursor-grab rounded bg-slate-300/60 px-2 py-1 text-sm font-medium text-slate-800 transition hover:bg-amber-500/30 hover:text-amber-800 dark:bg-slate-700/60 dark:text-slate-200 dark:hover:bg-amber-500/30 dark:hover:text-amber-200"
                   >
-                    {t.teamName}
-                  </Link>
+                    <Link
+                      href={`/admin/teams/${t._id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="block truncate"
+                    >
+                      {t.teamName}
+                    </Link>
+                  </div>
                 ))}
               </div>
             </div>
