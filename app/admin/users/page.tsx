@@ -14,6 +14,8 @@ type UserRow = {
   displayName?: string | null;
   minecraftIGN?: string | null;
   discordUsername?: string | null;
+  discordConnected?: boolean;
+  pendingTeams?: boolean;
   role: string;
   banned: boolean;
   createdAt: string;
@@ -188,6 +190,22 @@ export default function AdminUsersPage() {
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                       {u.minecraftIGN || "—"} · {u.discordUsername || "—"}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {u.discordConnected ? (
+                        <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-xs text-indigo-300" title="Discord connected">
+                          Discord ✓
+                        </span>
+                      ) : (
+                        <span className="rounded bg-slate-500/20 px-1.5 py-0.5 text-xs text-slate-400" title="Discord not linked">
+                          Discord —
+                        </span>
+                      )}
+                      {u.pendingTeams && (
+                        <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-300" title="Has team(s) pending approval">
+                          Pending
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <select
                         value={u.role}
@@ -241,6 +259,8 @@ export default function AdminUsersPage() {
                   <tr className="border-b border-white/10">
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">User</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">IGN · Discord</th>
+                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Discord</th>
+                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Pending</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Actions</th>
@@ -272,6 +292,26 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                           {u.minecraftIGN || "—"} · {u.discordUsername || "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.discordConnected ? (
+                            <span className="rounded bg-indigo-500/20 px-2 py-0.5 text-xs font-medium text-indigo-300" title="Discord connected">
+                              Connected
+                            </span>
+                          ) : (
+                            <span className="rounded bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400" title="Discord not linked">
+                              —
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.pendingTeams ? (
+                            <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300" title="Has team(s) pending approval">
+                              Pending
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <select
