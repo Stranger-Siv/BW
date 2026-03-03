@@ -99,12 +99,12 @@ async function runPool<T>(
 export async function assignDiscordRolesForCompletedTournament(
   tournamentId: string
 ): Promise<AssignResult> {
-  const botToken = process.env.DISCORD_BOT_TOKEN ?? "";
+  const botToken = process.env.DISCORD_BOT_TOKEN1 ?? "";
   const guildId = process.env.DISCORD_GUILD_ID ?? "";
   if (!botToken || !guildId) {
     return {
       ok: false,
-      reason: "Missing DISCORD_BOT_TOKEN or DISCORD_GUILD_ID",
+      reason: "Missing DISCORD_BOT_TOKEN1 or DISCORD_GUILD_ID",
       assignedPlayerRole: 0,
       assignedChampionRole: 0,
       skippedNoDiscord: 0,
