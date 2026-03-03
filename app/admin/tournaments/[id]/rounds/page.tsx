@@ -398,7 +398,8 @@ export default function AdminTournamentRoundsPage() {
         const res = await fetch(`/api/admin/tournaments/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ winnerTeamId: teamId }),
+          // When a winner is set from the rounds UI, auto-mark the tournament as completed.
+          body: JSON.stringify({ winnerTeamId: teamId, status: "completed" }),
         });
         if (!res.ok) throw new Error("Failed to set winner");
         setWinnerTeamId(teamId);

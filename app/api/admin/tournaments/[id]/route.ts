@@ -204,6 +204,15 @@ export async function PATCH(
       );
     }
 
+    // If a winner is being set and status is not explicitly provided, auto-mark as completed.
+    if (
+      Object.prototype.hasOwnProperty.call(validation.data, "winnerTeamId") &&
+      validation.data.winnerTeamId !== null &&
+      validation.data.status === undefined
+    ) {
+      validation.data.status = "completed";
+    }
+
     const updated = await Tournament.findByIdAndUpdate(
       id,
       { $set: validation.data },
