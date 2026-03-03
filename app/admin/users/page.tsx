@@ -15,7 +15,6 @@ type UserRow = {
   minecraftIGN?: string | null;
   discordUsername?: string | null;
   discordConnected?: boolean;
-  pendingTeams?: boolean;
   role: string;
   banned: boolean;
   createdAt: string;
@@ -200,11 +199,6 @@ export default function AdminUsersPage() {
                           Discord —
                         </span>
                       )}
-                      {u.pendingTeams && (
-                        <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-300" title="Has team(s) pending approval">
-                          Pending
-                        </span>
-                      )}
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <select
@@ -222,12 +216,12 @@ export default function AdminUsersPage() {
                         {u.banned ? "Banned" : "Active"}
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       {!isSelf && (
                         <button
                           type="button"
                           onClick={() => startImpersonate(u._id)}
-                          className="min-h-[44px] rounded-full border border-slate-400/50 bg-slate-500/20 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-500/30"
+                          className="min-h-[44px] w-full rounded-full border border-slate-400/50 bg-slate-500/20 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-500/30 sm:w-auto"
                         >
                           Impersonate
                         </button>
@@ -237,7 +231,7 @@ export default function AdminUsersPage() {
                           type="button"
                           onClick={() => updateUser(u._id, { banned: !u.banned })}
                           disabled={loading}
-                          className={`min-h-[44px] rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${
+                          className={`min-h-[44px] w-full rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-60 sm:w-auto ${
                             u.banned
                               ? "border border-emerald-400/50 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
                               : "border border-red-400/50 bg-red-500/20 text-red-400 hover:bg-red-500/30"
@@ -260,7 +254,6 @@ export default function AdminUsersPage() {
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">User</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">IGN · Discord</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Discord</th>
-                    <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Pending</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Role</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Status</th>
                     <th className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">Actions</th>
@@ -302,15 +295,6 @@ export default function AdminUsersPage() {
                             <span className="rounded bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400" title="Discord not linked">
                               —
                             </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {u.pendingTeams ? (
-                            <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300" title="Has team(s) pending approval">
-                              Pending
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
