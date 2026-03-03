@@ -45,6 +45,8 @@ const STATUS_OPTIONS = [
   { value: "scheduled", label: "Scheduled" },
   { value: "registration_open", label: "Registration open" },
   { value: "registration_closed", label: "Registration closed" },
+  { value: "ongoing", label: "Ongoing" },
+  { value: "completed", label: "Completed" },
 ] as const;
 
 export type TournamentSubmitPayload = {
