@@ -28,6 +28,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [disconnectAllLoading, setDisconnectAllLoading] = useState(false);
+  const [disconnectConfirm, setDisconnectConfirm] = useState(false);
 
   const role = (session?.user as { role?: string } | undefined)?.role;
   const isSuperAdmin = role === "super_admin";
@@ -119,6 +121,32 @@ export default function AdminUsersPage() {
     []
   );
 
+  const disconnectAllDiscord = useCallback(async () => {
+    if (!disconnectConfirm) return;
+    setDisconnectAllLoading(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/super-admin/users/disconnect-discord", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMessage(data.error ?? "Failed to disconnect");
+        return;
+      }
+      const count = typeof data.disconnected === "number" ? data.disconnected : 0;
+      setMessage(`Discord unlinked for ${count} user(s). They can reconnect from Profile.`);
+      setDisconnectConfirm(false);
+      fetchUsers();
+    } catch {
+      setMessage("Request failed");
+    } finally {
+      setDisconnectAllLoading(false);
+    }
+  }, [disconnectConfirm, fetchUsers]);
+
   if (status === "loading" || (isSuperAdmin && loading)) {
     return <AdminUsersSkeleton />;
   }
@@ -159,6 +187,43 @@ export default function AdminUsersPage() {
                 {error}
               </div>
             )}
+
+            {/* Disconnect all Discord */}
+            <div className="card-glass mb-6 rounded-xl border border-amber-400/20 bg-amber-500/5 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
+              <h2 className="section-title mb-2">Discord links</h2>
+              <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                Unlink Discord for all users so everyone can connect again from their Profile (one Discord per account).
+              </p>
+              {!disconnectConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setDisconnectConfirm(true)}
+                  className="rounded-full border border-amber-400/50 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-500/30 dark:border-amber-500/50 dark:text-amber-200"
+                >
+                  Disconnect all Discord links
+                </button>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm text-amber-200">Unlink Discord for every user?</span>
+                  <button
+                    type="button"
+                    onClick={() => disconnectAllDiscord()}
+                    disabled={disconnectAllLoading}
+                    className="rounded-full bg-red-500/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:opacity-60"
+                  >
+                    {disconnectAllLoading ? "Disconnecting…" : "Yes, disconnect all"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDisconnectConfirm(false)}
+                    disabled={disconnectAllLoading}
+                    className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Mobile: card list */}
             <div className="space-y-3 md:hidden">
