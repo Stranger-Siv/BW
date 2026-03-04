@@ -149,10 +149,13 @@ export default function ProfilePage() {
                   </p>
                   {profile?.discordId && (
                     <span
-                      className="inline-flex items-center justify-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-200"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-indigo-900/70 px-2 py-1 text-xs font-medium text-slate-200 dark:bg-indigo-950/80 dark:text-slate-300"
                       title="Discord connected (verified)"
                     >
-                      ✓
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500/90 text-[10px] font-bold text-white">
+                        ✓
+                      </span>
+                      Verified
                     </span>
                   )}
                   {profile?.role === "super_admin" && (
