@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 type ConfirmModalProps = {
   open: boolean;
   title: string;
@@ -10,6 +12,10 @@ type ConfirmModalProps = {
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
+  /** Optional: require typing a specific phrase before enabling confirm */
+  requireTextLabel?: string;
+  requireTextValue?: string;
+  requireTextPlaceholder?: string;
 };
 
 export function ConfirmModal({
@@ -22,10 +28,26 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
   loading = false,
+  requireTextLabel,
+  requireTextValue,
+  requireTextPlaceholder,
 }: ConfirmModalProps) {
+  const [confirmText, setConfirmText] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setConfirmText("");
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const isDanger = variant === "danger";
+  const needsText =
+    typeof requireTextValue === "string" && requireTextValue.trim().length > 0;
+  const hasMatch =
+    !needsText ||
+    confirmText.trim().toLowerCase() === requireTextValue!.trim().toLowerCase();
 
   return (
     <div
@@ -40,10 +62,31 @@ export function ConfirmModal({
         aria-hidden
       />
       <div className="card-glass relative w-full max-w-[calc(100%-2rem)] rounded-t-2xl p-5 shadow-xl sm:max-w-md sm:rounded-2xl sm:p-6">
-        <h2 id="confirm-modal-title" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <h2
+          id="confirm-modal-title"
+          className="text-lg font-semibold text-slate-800 dark:text-slate-100"
+        >
           {title}
         </h2>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{message}</p>
+        <p className="mt-2 whitespace-pre-line text-sm text-slate-600 dark:text-slate-400">
+          {message}
+        </p>
+        {needsText && (
+          <div className="mt-4 space-y-2">
+            {requireTextLabel && (
+              <p className="text-xs text-amber-400 dark:text-amber-300">
+                {requireTextLabel}
+              </p>
+            )}
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={requireTextPlaceholder ?? requireTextValue}
+              className="w-full rounded-lg border border-amber-400/40 bg-white/5 px-3 py-2 text-sm text-slate-200 placeholder:text-amber-300/60 focus:outline-none focus:ring-2 focus:ring-amber-400/60 dark:border-amber-500/40"
+            />
+          </div>
+        )}
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
@@ -56,7 +99,7 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || (needsText && !hasMatch)}
             className={`min-h-[48px] rounded-full px-4 py-3 text-base font-medium transition disabled:opacity-60 sm:min-h-0 sm:py-2 sm:text-sm ${
               isDanger
                 ? "border border-red-400/50 bg-red-500/20 text-red-400 hover:bg-red-500/30 dark:text-red-300"

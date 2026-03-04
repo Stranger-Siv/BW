@@ -353,6 +353,12 @@ export default function AdminTournamentsPage() {
         }
         confirmLabel="Delete"
         variant="danger"
+        requireTextLabel={
+          deleteTournament
+            ? `Type DELETE to confirm deleting "${deleteTournament.name}".`
+            : undefined
+        }
+        requireTextValue="DELETE"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTournament(null)}
         loading={deleteLoading}
