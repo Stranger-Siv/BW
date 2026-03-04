@@ -32,7 +32,6 @@ function OnboardingContent() {
 
   const [displayName, setDisplayName] = useState("");
   const [minecraftIGN, setMinecraftIGN] = useState("");
-  const [discordUsername, setDiscordUsername] = useState("");
 
   const isComplete = Boolean(
     profile?.displayName?.trim() && profile?.minecraftIGN?.trim()
@@ -54,7 +53,6 @@ function OnboardingContent() {
         setProfile(p);
         setDisplayName(p.displayName ?? "");
         setMinecraftIGN(p.minecraftIGN ?? "");
-        setDiscordUsername(p.discordUsername ?? "");
         if (p.displayName?.trim() && p.minecraftIGN?.trim()) {
           router.replace(returnUrl);
           return;
@@ -91,7 +89,6 @@ function OnboardingContent() {
         body: JSON.stringify({
           displayName: d,
           minecraftIGN: m,
-          discordUsername: discordUsername.trim() || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -110,7 +107,7 @@ function OnboardingContent() {
     } finally {
       setSaving(false);
     }
-  }, [displayName, minecraftIGN, discordUsername, router, returnUrl, session?.user]);
+  }, [displayName, minecraftIGN, router, returnUrl, session?.user]);
 
   if (status === "loading" || loading) {
     return (
@@ -125,7 +122,7 @@ function OnboardingContent() {
       <div className="page-inner-form">
         <h1 className="page-title mb-2">Complete your profile</h1>
         <p className="page-subtitle mb-6">
-          Set your in-game name, Discord info, and a username for this platform.
+          Set your in-game name and a username for this platform. You can connect Discord later from your Profile.
         </p>
 
         {error && (
@@ -156,18 +153,6 @@ function OnboardingContent() {
               value={minecraftIGN}
               onChange={(e) => setMinecraftIGN(e.target.value)}
               placeholder="Your Minecraft username"
-              className="input-glass w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-100"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">
-              Discord username
-            </span>
-            <input
-              type="text"
-              value={discordUsername}
-              onChange={(e) => setDiscordUsername(e.target.value)}
-              placeholder="username or username#1234"
               className="input-glass w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-100"
             />
           </label>

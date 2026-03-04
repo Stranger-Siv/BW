@@ -73,7 +73,7 @@ function LoginForm() {
           <ol className="space-y-2 text-sm text-slate-400">
             <li className="flex gap-2">
               <span className="text-emerald-400 font-medium shrink-0">1.</span>
-              <span>You’ll complete a short profile (display name, Minecraft IGN, Discord) so teams can find you.</span>
+              <span>You’ll complete a short profile (display name, Minecraft IGN). You can connect Discord later from your Profile.</span>
             </li>
             <li className="flex gap-2">
               <span className="text-emerald-400 font-medium shrink-0">2.</span>
