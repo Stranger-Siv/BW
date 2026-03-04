@@ -80,23 +80,33 @@ export const authOptions: NextAuthOptions = {
 
           // If user is already logged in (token.id), treat as "connect".
           if (token.id) {
+            const currentUserId = String(token.id);
+
+            // Block if this Discord is already linked to ANY other user (not just "another" - double-check).
             const existingByDiscord = await User.findOne({ discordId }).select("_id").lean();
-            if (existingByDiscord && (existingByDiscord as unknown as { _id: { toString(): string } })._id.toString() !== String(token.id)) {
-              throw new Error("This Discord account is already linked to another user.");
+            const existingId = existingByDiscord
+              ? (existingByDiscord as unknown as { _id: { toString(): string } })._id.toString()
+              : null;
+            if (existingId && existingId !== currentUserId) {
+              throw new Error("This Discord account is already linked to another user. Sign in with that account or use a different Discord.");
             }
 
-            const me = await User.findById(token.id as string).select("email discordId").lean();
+            const me = await User.findById(currentUserId).select("email discordId").lean();
             const meUser = me as unknown as { email?: string; discordId?: string } | null;
-            const myEmail = (meUser?.email ?? "").trim().toLowerCase();
+            if (!meUser) {
+              throw new Error("Account not found. Please sign in again.");
+            }
+            const myEmail = (meUser.email ?? "").trim().toLowerCase();
             if (myEmail && myEmail !== discordEmail) {
               throw new Error("This Discord account email does not match your account email.");
             }
-            if (meUser?.discordId && meUser.discordId !== discordId) {
+            if (meUser.discordId && meUser.discordId !== discordId) {
               throw new Error("Your account is already linked to a different Discord account.");
             }
 
-            const updated = await User.findByIdAndUpdate(
-              token.id as string,
+            // Atomic: only set discordId on this user; ensure no other user has it (race safeguard).
+            const updated = await User.findOneAndUpdate(
+              { _id: currentUserId },
               { $set: { discordId, discordUsername: tag || undefined } },
               { new: true }
             )
@@ -105,6 +115,12 @@ export const authOptions: NextAuthOptions = {
 
             const u = updated as unknown as { _id: { toString(): string }; role?: string; banned?: boolean } | null;
             if (u) {
+              // Final check: ensure we didn't just create a duplicate (e.g. if unique index was missing).
+              const dup = await User.findOne({ discordId, _id: { $ne: currentUserId } }).select("_id").lean();
+              if (dup) {
+                await User.findByIdAndUpdate(currentUserId, { $unset: { discordId: 1, discordUsername: 1 } });
+                throw new Error("This Discord account is already linked to another user.");
+              }
               token.id = u._id.toString();
               token.role = u.role ?? token.role;
               token.banned = u.banned === true;
@@ -127,6 +143,7 @@ export const authOptions: NextAuthOptions = {
               dbUser = created.toObject();
             } else {
               const found = dbUser as unknown as { _id: { toString(): string }; email?: string; discordId?: string };
+              const foundId = found._id.toString();
               const foundEmail = (found.email ?? "").trim().toLowerCase();
               if (foundEmail && foundEmail !== discordEmail) {
                 throw new Error("This Discord account email does not match the existing account email.");
@@ -134,9 +151,13 @@ export const authOptions: NextAuthOptions = {
               if (found.discordId && found.discordId !== discordId) {
                 throw new Error("This email is already linked to a different Discord account.");
               }
-              // Ensure Discord is linked on the found user (email match case).
+              // If we found by email (not by discordId), ensure no OTHER user already has this discordId (race).
+              const otherWithDiscord = await User.findOne({ discordId, _id: { $ne: foundId } }).select("_id").lean();
+              if (otherWithDiscord) {
+                throw new Error("This Discord account is already linked to another user.");
+              }
               await User.findByIdAndUpdate(
-                found._id.toString(),
+                foundId,
                 { $set: { discordId, discordUsername: tag || undefined } },
                 { new: false }
               ).lean();
