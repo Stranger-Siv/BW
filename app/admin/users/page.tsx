@@ -191,12 +191,21 @@ export default function AdminUsersPage() {
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {u.discordConnected ? (
-                        <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-xs text-indigo-300" title="Discord connected">
-                          Discord ✓
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-1.5 py-0.5 text-[11px] text-indigo-200"
+                          title="Discord connected (verified)"
+                        >
+                          <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-500/60 text-[9px] font-semibold text-slate-900">
+                            ✓
+                          </span>
+                          <span>Discord</span>
                         </span>
                       ) : (
-                        <span className="rounded bg-slate-500/20 px-1.5 py-0.5 text-xs text-slate-400" title="Discord not linked">
-                          Discord —
+                        <span
+                          className="rounded-full bg-slate-500/20 px-1.5 py-0.5 text-[11px] text-slate-400"
+                          title="Discord not linked"
+                        >
+                          Discord not linked
                         </span>
                       )}
                     </div>
@@ -288,12 +297,21 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="px-4 py-3">
                           {u.discordConnected ? (
-                            <span className="rounded bg-indigo-500/20 px-2 py-0.5 text-xs font-medium text-indigo-300" title="Discord connected">
-                              Connected
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs font-medium text-indigo-200"
+                              title="Discord connected (verified)"
+                            >
+                              <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-500/60 text-[9px] font-semibold text-slate-900">
+                                ✓
+                              </span>
+                              <span>Verified</span>
                             </span>
                           ) : (
-                            <span className="rounded bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400" title="Discord not linked">
-                              —
+                            <span
+                              className="rounded-full bg-slate-500/20 px-2 py-0.5 text-xs text-slate-400"
+                              title="Discord not linked"
+                            >
+                              Not linked
                             </span>
                           )}
                         </td>

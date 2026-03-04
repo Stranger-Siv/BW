@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import connectDB from "@/lib/mongodb";
 import Round from "@/models/Round";
 import Team from "@/models/Team";
+import User from "@/models/User";
 import Tournament from "@/models/Tournament";
 
 export async function GET(
@@ -39,17 +40,53 @@ export async function GET(
 
     const tournament = await Tournament.findById(id).select("winnerTeamId").lean();
     const winnerTeamId = (tournament as unknown as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
-    let winner: { teamName: string; rewardReceiverIGN: string; players: { minecraftIGN: string; discordUsername: string }[] } | null = null;
+    let winner:
+      | {
+          teamName: string;
+          rewardReceiverIGN: string;
+          players: { minecraftIGN: string; discordUsername: string; discordVerified?: boolean }[];
+        }
+      | null = null;
     if (winnerTeamId) {
-      const winnerTeam = await Team.findById(winnerTeamId)
-        .select("teamName rewardReceiverIGN players")
-        .lean();
+      const winnerTeam = await Team.findById(winnerTeamId).select("teamName rewardReceiverIGN players").lean();
       if (winnerTeam) {
-        const wt = winnerTeam as unknown as { teamName: string; rewardReceiverIGN: string; players: { minecraftIGN: string; discordUsername: string }[] };
+        const wt = winnerTeam as unknown as {
+          teamName: string;
+          rewardReceiverIGN: string;
+          players: { userId?: mongoose.Types.ObjectId; minecraftIGN: string; discordUsername: string }[];
+        };
+        const userIds = Array.from(
+          new Set(
+            (wt.players ?? [])
+              .map((p) => (p.userId ? p.userId.toString() : null))
+              .filter((v): v is string => !!v)
+          )
+        );
+        let discordByUserId = new Map<string, boolean>();
+        if (userIds.length) {
+          const users = await User.find({ _id: { $in: userIds } })
+            .select("_id discordId")
+            .lean();
+          discordByUserId = new Map(
+            (users as unknown as { _id: mongoose.Types.ObjectId; discordId?: string }[]).map((u) => [
+              u._id.toString(),
+              !!(u.discordId && String(u.discordId).trim()),
+            ])
+          );
+        }
         winner = {
           teamName: wt.teamName,
           rewardReceiverIGN: wt.rewardReceiverIGN,
-          players: wt.players ?? [],
+          players:
+            wt.players?.map((p) => {
+              const uid = p.userId ? p.userId.toString() : null;
+              const verified = uid ? discordByUserId.get(uid) === true : false;
+              return {
+                minecraftIGN: p.minecraftIGN,
+                discordUsername: p.discordUsername,
+                discordVerified: verified,
+              };
+            }) ?? [],
         };
       }
     }

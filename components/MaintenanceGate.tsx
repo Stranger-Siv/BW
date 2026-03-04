@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ImpersonationBanner } from "./ImpersonationBanner";
+import { DiscordConnectBanner } from "./DiscordConnectBanner";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
 
@@ -172,6 +173,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ImpersonationBanner />
+      <DiscordConnectBanner />
       <AnnouncementBanner />
       {children}
     </>

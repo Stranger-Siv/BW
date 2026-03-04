@@ -24,7 +24,7 @@ export default function TournamentRoundsPage() {
   const [winner, setWinner] = useState<{
     teamName: string;
     rewardReceiverIGN: string;
-    players: { minecraftIGN: string; discordUsername: string }[];
+    players: { minecraftIGN: string; discordUsername: string; discordVerified?: boolean }[];
   } | null>(null);
   const [tournamentName, setTournamentName] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState<string | null>(null);
@@ -225,7 +225,7 @@ export default function TournamentRoundsPage() {
                 {winner.players.length > 0 && (
                   <ul className="mt-3 list-inside list-disc text-sm text-slate-600 dark:text-slate-400 space-y-1.5">
                     {winner.players.map((p, i) => (
-                      <li key={i} className="break-words">
+                      <li key={i} className="flex flex-wrap items-center gap-1 break-words">
                         <span className="font-medium text-slate-700 dark:text-slate-300 break-all">
                           {p.minecraftIGN}
                         </span>
@@ -233,6 +233,14 @@ export default function TournamentRoundsPage() {
                           {" "}
                           · {p.discordUsername}
                         </span>
+                        {p.discordVerified && (
+                          <span
+                            className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/25 text-[10px] font-semibold text-emerald-100"
+                            title="Discord connected (verified)"
+                          >
+                            ✓
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>

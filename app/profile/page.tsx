@@ -147,6 +147,14 @@ export default function ProfilePage() {
                   <p className="font-semibold text-slate-800 dark:text-slate-100">
                     {profile?.displayName || profile?.name || "—"}
                   </p>
+                  {profile?.discordId && (
+                    <span
+                      className="inline-flex items-center justify-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-200"
+                      title="Discord connected (verified)"
+                    >
+                      ✓
+                    </span>
+                  )}
                   {profile?.role === "super_admin" && (
                     <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400 dark:text-amber-300">
                       Super Admin
@@ -239,7 +247,17 @@ export default function ProfilePage() {
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Discord username</dt>
-                <dd className="mt-0.5 text-slate-800 dark:text-slate-200">{profile?.discordUsername || "—"}</dd>
+                <dd className="mt-0.5 flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span>{profile?.discordUsername || "—"}</span>
+                  {profile?.discordId && (
+                    <span
+                      className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-semibold text-emerald-200"
+                      title="Discord connected (verified)"
+                    >
+                      ✓
+                    </span>
+                  )}
+                </dd>
               </div>
             </dl>
           )}
