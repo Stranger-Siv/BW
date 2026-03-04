@@ -19,7 +19,7 @@ export async function POST() {
     }
     await connectDB();
     const result = await User.updateMany(
-      { discordId: { $exists: true, $ne: null, $ne: "" } },
+      { discordId: { $exists: true, $nin: [null, ""] } },
       { $unset: { discordId: 1, discordUsername: 1 } }
     );
     const disconnected = result.modifiedCount;
