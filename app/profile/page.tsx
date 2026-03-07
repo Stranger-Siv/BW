@@ -41,7 +41,6 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [minecraftIGN, setMinecraftIGN] = useState("");
-  const [discordUsername, setDiscordUsername] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -62,7 +61,6 @@ export default function ProfilePage() {
           setProfile(p);
           setDisplayName(p.displayName ?? "");
           setMinecraftIGN(p.minecraftIGN ?? "");
-          setDiscordUsername(p.discordUsername ?? "");
         }
         if (teamsRes.ok && !cancelled) {
           const list = await teamsRes.json();
@@ -86,7 +84,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName, minecraftIGN, discordUsername }),
+        body: JSON.stringify({ displayName, minecraftIGN }),
         cache: "no-store",
       });
       const data = await res.json().catch(() => ({}));
@@ -101,7 +99,6 @@ export default function ProfilePage() {
       setProfile((prev) => (prev ? { ...prev, ...updated } : updated));
       setDisplayName(updated.displayName ?? "");
       setMinecraftIGN(updated.minecraftIGN ?? "");
-      setDiscordUsername(updated.discordUsername ?? "");
       setEditing(false);
       setMessage("Profile updated.");
     } catch {
@@ -109,7 +106,7 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  }, [displayName, minecraftIGN, discordUsername]);
+  }, [displayName, minecraftIGN]);
 
   const handleConnectDiscord = useCallback(() => {
     setMessage("");
@@ -209,15 +206,6 @@ export default function ProfilePage() {
                     className="input-glass w-full rounded-xl px-4 py-2.5"
                   />
                 </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-400">Discord username</span>
-                  <input
-                    type="text"
-                    value={discordUsername}
-                    onChange={(e) => setDiscordUsername(e.target.value)}
-                    className="input-glass w-full rounded-xl px-4 py-2.5"
-                  />
-                </label>
               </div>
               <div className="mt-4 flex gap-2">
                 <button type="button" onClick={saveProfile} disabled={saving} className="btn-gradient">
@@ -229,7 +217,6 @@ export default function ProfilePage() {
                     setEditing(false);
                     setDisplayName(profile?.displayName ?? "");
                     setMinecraftIGN(profile?.minecraftIGN ?? "");
-                    setDiscordUsername(profile?.discordUsername ?? "");
                   }}
                   disabled={saving}
                   className="btn-secondary"

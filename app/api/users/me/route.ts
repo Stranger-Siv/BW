@@ -40,10 +40,19 @@ export async function PATCH(request: Request) {
     const minecraftIGN = typeof body.minecraftIGN === "string" ? body.minecraftIGN.trim() : undefined;
     const discordUsername = typeof body.discordUsername === "string" ? body.discordUsername.trim() : undefined;
     await connectDB();
+
+    const current = await User.findById(session.user.id).select("discordId").lean();
+    if (!current) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+    const hasDiscordId = Boolean((current as { discordId?: string }).discordId);
+
     const updates: { displayName?: string; minecraftIGN?: string; discordUsername?: string } = {};
     if (displayName !== undefined) updates.displayName = displayName;
     if (minecraftIGN !== undefined) updates.minecraftIGN = minecraftIGN;
-    if (discordUsername !== undefined) updates.discordUsername = discordUsername;
+    // Only allow manual discordUsername changes when account is not linked via Discord OAuth
+    if (!hasDiscordId && discordUsername !== undefined) updates.discordUsername = discordUsername;
+
     const user = await User.findByIdAndUpdate(
       session.user.id,
       { $set: updates },
