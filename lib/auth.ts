@@ -62,12 +62,6 @@ export const authOptions: NextAuthOptions = {
           const discordEmailRaw = (profile as { email?: string }).email ?? "";
           const discordEmail = discordEmailRaw ? discordEmailRaw.trim().toLowerCase() : "";
 
-          // Enforce 1 email <-> 1 Discord account.
-          // We require Discord to provide an email so we can enforce the mapping safely.
-          if (!discordEmail) {
-            throw new Error("Discord sign-in requires a verified email on your Discord account.");
-          }
-
           const baseName =
             (profile as { global_name?: string }).global_name ??
             (profile as { username?: string }).username ??
@@ -91,14 +85,10 @@ export const authOptions: NextAuthOptions = {
               throw new Error("This Discord account is already linked to another user. Sign in with that account or use a different Discord.");
             }
 
-            const me = await User.findById(currentUserId).select("email discordId").lean();
-            const meUser = me as unknown as { email?: string; discordId?: string } | null;
+            const me = await User.findById(currentUserId).select("discordId").lean();
+            const meUser = me as unknown as { discordId?: string } | null;
             if (!meUser) {
               throw new Error("Account not found. Please sign in again.");
-            }
-            const myEmail = (meUser.email ?? "").trim().toLowerCase();
-            if (myEmail && myEmail !== discordEmail) {
-              throw new Error("This Discord account email does not match your account email.");
             }
             if (meUser.discordId && meUser.discordId !== discordId) {
               throw new Error("Your account is already linked to a different Discord account.");
