@@ -23,6 +23,8 @@ type RoundDoc = {
   teamIds: string[];
   isWinnerRound?: boolean;
   slotCount?: number;
+  stageLabel?: string;
+  publicDetails?: string;
 };
 
 type TeamDoc = { _id: string; teamName: string; rewardReceiverIGN?: string };
@@ -40,6 +42,8 @@ export default function AdminTournamentRoundsPage() {
   const [newRoundName, setNewRoundName] = useState("");
   const [newRoundIsWinner, setNewRoundIsWinner] = useState(false);
   const [newRoundSlotCount, setNewRoundSlotCount] = useState<2 | 4>(4);
+  const [newRoundStageLabel, setNewRoundStageLabel] = useState("");
+  const [newRoundPublicDetails, setNewRoundPublicDetails] = useState("");
   const [addRoundLoading, setAddRoundLoading] = useState(false);
   const [dragged, setDragged] = useState<{ teamId: string; roundId: string } | null>(null);
   const [patchLoadingRounds, setPatchLoadingRounds] = useState<string[]>([]);
@@ -100,11 +104,13 @@ export default function AdminTournamentRoundsPage() {
     if (!newRoundName.trim()) return;
     setAddRoundLoading(true);
     try {
-      const body: { name: string; isWinnerRound?: boolean; slotCount?: number } = {
+      const body: { name: string; isWinnerRound?: boolean; slotCount?: number; stageLabel?: string; publicDetails?: string } = {
         name: newRoundName.trim(),
       };
       if (newRoundIsWinner) body.isWinnerRound = true;
       body.slotCount = newRoundSlotCount;
+      if (newRoundStageLabel.trim()) body.stageLabel = newRoundStageLabel.trim();
+      if (newRoundPublicDetails.trim()) body.publicDetails = newRoundPublicDetails.trim();
       const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,13 +119,61 @@ export default function AdminTournamentRoundsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to add round");
       setNewRoundName("");
+      setNewRoundIsWinner(false);
+      setNewRoundSlotCount(4);
+      setNewRoundStageLabel("");
+      setNewRoundPublicDetails("");
       fetchRounds();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
       setAddRoundLoading(false);
     }
-  }, [id, newRoundName, newRoundIsWinner, newRoundSlotCount, fetchRounds]);
+  }, [id, newRoundName, newRoundIsWinner, newRoundSlotCount, newRoundStageLabel, newRoundPublicDetails, fetchRounds]);
+
+  const [metaDraft, setMetaDraft] = useState<Record<string, { stageLabel: string; publicDetails: string }>>({});
+  useEffect(() => {
+    setMetaDraft((prev) => {
+      const next = { ...prev };
+      for (const r of rounds) {
+        if (!next[r._id]) {
+          next[r._id] = {
+            stageLabel: (r.stageLabel ?? "").toString(),
+            publicDetails: (r.publicDetails ?? "").toString(),
+          };
+        }
+      }
+      return next;
+    });
+  }, [rounds]);
+
+  const saveRoundMeta = useCallback(
+    async (roundId: string) => {
+      const draft = metaDraft[roundId];
+      if (!draft) return;
+      setPatchLoadingRounds((prev) => [...prev, roundId]);
+      setError(null);
+      try {
+        const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roundId,
+            stageLabel: draft.stageLabel.trim(),
+            publicDetails: draft.publicDetails.trim(),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Failed to update round details");
+        fetchRounds();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to update round details");
+      } finally {
+        setPatchLoadingRounds((prev) => prev.filter((x) => x !== roundId));
+      }
+    },
+    [id, metaDraft, fetchRounds]
+  );
 
   const deleteRound = useCallback(
     async (roundId: string) => {
@@ -505,6 +559,14 @@ export default function AdminTournamentRoundsPage() {
                 className="min-h-[44px] w-full min-w-0 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-auto"
                 aria-label="New round name"
               />
+              <input
+                type="text"
+                value={newRoundStageLabel}
+                onChange={(e) => setNewRoundStageLabel(e.target.value)}
+                placeholder="Stage label (e.g. Knockout / Quarter-final / Semi-final / Final)"
+                className="min-h-[44px] w-full min-w-0 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-auto"
+                aria-label="Stage label"
+              />
               <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-800">
                 <input
                   type="checkbox"
@@ -525,6 +587,14 @@ export default function AdminTournamentRoundsPage() {
                   <option value={4}>4 (4v4v4v4)</option>
                 </select>
               </label>
+              <textarea
+                value={newRoundPublicDetails}
+                onChange={(e) => setNewRoundPublicDetails(e.target.value)}
+                placeholder="Public details shown to players (optional)"
+                className="min-h-[44px] w-full min-w-0 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-[420px]"
+                aria-label="Public details"
+                rows={2}
+              />
               <button
                 type="button"
                 onClick={addRound}
@@ -655,6 +725,46 @@ export default function AdminTournamentRoundsPage() {
                       </button>
                     </div>
                   )}
+                  <div className="mb-3 space-y-2">
+                    <input
+                      type="text"
+                      value={(metaDraft[round._id]?.stageLabel ?? round.stageLabel ?? "")}
+                      onChange={(e) =>
+                        setMetaDraft((prev) => ({
+                          ...prev,
+                          [round._id]: {
+                            stageLabel: e.target.value,
+                            publicDetails: prev[round._id]?.publicDetails ?? (round.publicDetails ?? ""),
+                          },
+                        }))
+                      }
+                      placeholder="Stage label (shown to players)"
+                      className="w-full rounded border border-slate-400/60 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                    />
+                    <textarea
+                      value={(metaDraft[round._id]?.publicDetails ?? round.publicDetails ?? "")}
+                      onChange={(e) =>
+                        setMetaDraft((prev) => ({
+                          ...prev,
+                          [round._id]: {
+                            stageLabel: prev[round._id]?.stageLabel ?? (round.stageLabel ?? ""),
+                            publicDetails: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Public details shown to players (optional)"
+                      className="w-full rounded border border-slate-400/60 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                      rows={2}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveRoundMeta(round._id)}
+                      disabled={patchLoadingRounds.includes(round._id)}
+                      className="rounded bg-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-400 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 disabled:opacity-50"
+                    >
+                      Save details
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {round.teamIds.length === 0 ? (
                       <p className="rounded bg-slate-300/50 py-4 text-center text-sm text-slate-500 dark:bg-slate-700/50 dark:text-slate-400">

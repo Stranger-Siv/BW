@@ -19,6 +19,10 @@ type RoundPublic = {
   isWinnerRound?: boolean;
   /** Number of team slots: 2 = 4v4, 4 = 4v4v4v4 (default) */
   slotCount?: number;
+  /** Optional label shown to players, e.g. "Final", "Semi-final", "Quarter-final", "Knockout" */
+  stageLabel?: string;
+  /** Optional details shown to players under the round */
+  publicDetails?: string;
 };
 
 export default function TournamentRoundsPage() {
@@ -278,13 +282,25 @@ export default function TournamentRoundsPage() {
                       return (
                         <section key={round._id} className="card-glass p-4 sm:p-5">
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                            <div className="flex items-center gap-2">
+                              <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                              {round.stageLabel?.trim() ? (
+                                <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                                  {round.stageLabel}
+                                </span>
+                              ) : null}
+                            </div>
                             {round.scheduledAt && (
                               <span className="text-xs text-slate-500 dark:text-slate-500">
                                 {formatDateTime(round.scheduledAt)}
                               </span>
                             )}
                           </div>
+                          {round.publicDetails?.trim() ? (
+                            <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                              {round.publicDetails}
+                            </p>
+                          ) : null}
                           <div className="grid grid-cols-2 gap-2">
                             {teams.map((t) => {
                               const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
@@ -344,13 +360,25 @@ export default function TournamentRoundsPage() {
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                <h3 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h3>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h3>
+                                  {round.stageLabel?.trim() ? (
+                                    <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                                      {round.stageLabel}
+                                    </span>
+                                  ) : null}
+                                </div>
                                 {round.scheduledAt && (
                                   <span className="text-xs text-slate-500 dark:text-slate-500">
                                     {formatDateTime(round.scheduledAt)}
                                   </span>
                                 )}
                               </div>
+                              {round.publicDetails?.trim() ? (
+                                <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                                  {round.publicDetails}
+                                </p>
+                              ) : null}
                               <div className="grid grid-cols-2 gap-2">
                                 {teams.map((t) => {
                                   const isFinalist = hasDecision && laterTeams.has(t.id);
@@ -432,13 +460,25 @@ export default function TournamentRoundsPage() {
                             return (
                               <section key={round._id} className="card-glass p-4 sm:p-5">
                                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                  <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                                  <div className="flex items-center gap-2">
+                                    <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                                    {round.stageLabel?.trim() ? (
+                                      <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
+                                        {round.stageLabel}
+                                      </span>
+                                    ) : null}
+                                  </div>
                                   {round.scheduledAt && (
                                     <span className="text-xs text-slate-500 dark:text-slate-500">
                                       {formatDateTime(round.scheduledAt)}
                                     </span>
                                   )}
                                 </div>
+                                {round.publicDetails?.trim() ? (
+                                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                                    {round.publicDetails}
+                                  </p>
+                                ) : null}
                                 <div className={`grid gap-2 ${slots === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
                                   {teams.slice(0, slots).map((t) => {
                                     const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
@@ -491,7 +531,7 @@ export default function TournamentRoundsPage() {
                         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 sm:text-xl">
                           {finalRound.name}
                           <span className="ml-2 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
-                            Final
+                            {finalRound.stageLabel?.trim() ? finalRound.stageLabel : "Final"}
                           </span>
                         </h2>
                         {finalRound.scheduledAt && (
@@ -500,6 +540,11 @@ export default function TournamentRoundsPage() {
                           </span>
                         )}
                       </div>
+                      {finalRound.publicDetails?.trim() ? (
+                        <p className="mb-3 text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                          {finalRound.publicDetails}
+                        </p>
+                      ) : null}
                       {has32Structure ? (
                         <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
                           Top 2 from R21 and top 2 from R22 advance here.

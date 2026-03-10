@@ -35,6 +35,8 @@ export async function GET(
         teamIds: mongoose.Types.ObjectId[];
         isWinnerRound?: boolean;
         slotCount?: number;
+        stageLabel?: string;
+        publicDetails?: string;
       };
       return {
         _id: rDoc._id,
@@ -45,6 +47,8 @@ export async function GET(
         teams: rDoc.teamIds.map((tid) => ({ id: tid.toString(), name: teamMap.get(tid.toString()) ?? "—" })),
         isWinnerRound: rDoc.isWinnerRound === true,
         slotCount: rDoc.slotCount === 2 ? 2 : 4,
+        stageLabel: typeof rDoc.stageLabel === "string" ? rDoc.stageLabel : undefined,
+        publicDetails: typeof rDoc.publicDetails === "string" ? rDoc.publicDetails : undefined,
       };
     });
 

@@ -56,6 +56,8 @@ export async function POST(
       typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
         ? slotCountRaw
         : undefined;
+    const stageLabel = typeof body.stageLabel === "string" ? body.stageLabel.trim() : undefined;
+    const publicDetails = typeof body.publicDetails === "string" ? body.publicDetails.trim() : undefined;
 
     if (!name) {
       return NextResponse.json({ error: "Round name is required" }, { status: 400 });
@@ -91,6 +93,8 @@ export async function POST(
     };
     if (isWinnerRound !== undefined) createPayload.isWinnerRound = isWinnerRound;
     if (slotCount !== undefined) createPayload.slotCount = slotCount;
+    if (stageLabel) createPayload.stageLabel = stageLabel;
+    if (publicDetails) createPayload.publicDetails = publicDetails;
     const round = await Round.create(createPayload);
     if (createPayload.isWinnerRound === true || name === "R2") {
       const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
@@ -132,6 +136,13 @@ export async function PATCH(
       typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
         ? slotCountRaw
         : undefined;
+    const stageLabel = typeof body.stageLabel === "string" ? body.stageLabel.trim() : undefined;
+    const publicDetails =
+      body.publicDetails === null
+        ? null
+        : typeof body.publicDetails === "string"
+          ? body.publicDetails.trim()
+          : undefined;
 
     if (!roundId || !mongoose.Types.ObjectId.isValid(roundId)) {
       return NextResponse.json({ error: "Valid roundId is required" }, { status: 400 });
@@ -149,9 +160,11 @@ export async function PATCH(
     if (scheduledAt !== undefined) updates.scheduledAt = scheduledAt as Date | null;
     if (isWinnerRound !== undefined) updates.isWinnerRound = isWinnerRound;
     if (slotCount !== undefined) updates.slotCount = slotCount;
+    if (stageLabel !== undefined) updates.stageLabel = stageLabel;
+    if (publicDetails !== undefined) updates.publicDetails = publicDetails;
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
-        { error: "Provide at least one of: teamIds, name, scheduledAt, isWinnerRound, slotCount" },
+        { error: "Provide at least one of: teamIds, name, scheduledAt, isWinnerRound, slotCount, stageLabel, publicDetails" },
         { status: 400 }
       );
     }
