@@ -92,6 +92,8 @@ export default function TournamentRoundsPage() {
         origin: { y: 0.65 },
         colors,
         disableForReducedMotion: true,
+        // Avoid using Web Workers so we don't violate strict worker-src CSP.
+        useWorker: false,
       } as const;
 
       const duration = 5000;
