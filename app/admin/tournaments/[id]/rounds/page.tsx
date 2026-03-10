@@ -314,17 +314,9 @@ export default function AdminTournamentRoundsPage() {
       const fromRound = rounds.find((r) => r._id === fromRoundId);
       if (!fromRound) return;
 
-      const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(fromRound.name);
-      const isToR2 = toRound.name === "R2";
-      const isToSemi = (R2_SEMI_NAMES as readonly string[]).includes(toRound.name);
-      const isToFinal = toRound.name === R3_FINAL_NAME;
-      const isFromSemi = (R2_SEMI_NAMES as readonly string[]).includes(fromRound.name);
-      const shouldCopyInsteadOfMove =
-        (isR1Series && (isToR2 || isToSemi)) || (isFromSemi && isToFinal);
-
-      const newFromIds = shouldCopyInsteadOfMove
-        ? fromRound.teamIds
-        : fromRound.teamIds.filter((tid) => tid !== teamId);
+      // Always keep the team in the source round (copy behavior), like the advance-arrow.
+      // Admin can manually remove from a round if needed.
+      const newFromIds = fromRound.teamIds;
       const maxTeamsNext = (["R2", "R21", "R22", R3_FINAL_NAME] as const).includes(toRound.name as "R2" | "R21" | "R22" | "R3")
         ? 4
         : Infinity;
