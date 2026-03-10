@@ -37,6 +37,8 @@ export interface ITournament {
   scheduledAt?: Date;
   /** If true, teams can optionally add one substitute during registration */
   allowSubstitute?: boolean;
+  /** Per-layer public metadata keyed by layer number ("1","2","3",...). */
+  roundLayerMeta?: Record<string, { label?: string; details?: string }>;
   createdAt: Date;
 }
 
@@ -69,6 +71,7 @@ const tournamentSchema = new Schema<ITournament>(
     discordRolesAssignedAt: { type: Date },
     scheduledAt: { type: Date },
     allowSubstitute: { type: Boolean, default: false },
+    roundLayerMeta: { type: Schema.Types.Mixed, default: {} },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

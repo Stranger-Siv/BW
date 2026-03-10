@@ -19,16 +19,13 @@ type RoundPublic = {
   isWinnerRound?: boolean;
   /** Number of team slots: 2 = 4v4, 4 = 4v4v4v4 (default) */
   slotCount?: number;
-  /** Optional label shown to players, e.g. "Final", "Semi-final", "Quarter-final", "Knockout" */
-  stageLabel?: string;
-  /** Optional details shown to players under the round */
-  publicDetails?: string;
 };
 
 export default function TournamentRoundsPage() {
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : "";
   const [rounds, setRounds] = useState<RoundPublic[]>([]);
+  const [roundLayerMeta, setRoundLayerMeta] = useState<Record<string, { label?: string; details?: string }> | null>(null);
   const [winner, setWinner] = useState<{
     teamName: string;
     rewardReceiverIGN: string;
@@ -49,6 +46,7 @@ export default function TournamentRoundsPage() {
     const data = await res.json();
     setRounds(Array.isArray(data) ? data : (data.rounds ?? []));
     setWinner(data.winner ?? null);
+    setRoundLayerMeta((data.roundLayerMeta ?? null) as Record<string, { label?: string; details?: string }> | null);
   }, [id]);
 
   useEffect(() => {
@@ -82,6 +80,11 @@ export default function TournamentRoundsPage() {
   const championName = winner?.teamName ?? null;
 
   const slotCount = (round: RoundPublic) => round.slotCount === 2 ? 2 : 4;
+  const layerKeyFor = (name: string) => {
+    const m = /^R(\d)/.exec(name || "");
+    return m?.[1] ?? null;
+  };
+  const layerMeta = (layerKey: string | null) => (layerKey && roundLayerMeta ? roundLayerMeta[layerKey] : undefined);
 
   const teamPhaseById = useMemo(() => {
     type Phase = "none" | "played" | "advanced";
@@ -267,7 +270,21 @@ export default function TournamentRoundsPage() {
                 </p>
               ) : (
                 <>
-                  {/* Group stage R11–R14 or R11–R18 */}
+                  {/* Group stage R11–R14 or R11–R18 (Layer 1) */}
+                  {(groupRounds.length > 0 && (layerMeta("1")?.label?.trim() || layerMeta("1")?.details?.trim())) ? (
+                    <section className="card-glass p-4 sm:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h2 className="font-semibold text-slate-800 dark:text-slate-200">
+                          {layerMeta("1")?.label?.trim() ? layerMeta("1")!.label : "Group stage"}
+                        </h2>
+                      </div>
+                      {layerMeta("1")?.details?.trim() ? (
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                          {layerMeta("1")!.details}
+                        </p>
+                      ) : null}
+                    </section>
+                  ) : null}
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {groupRounds.map((round) => {
                       const matches = getMatchForRound(round);
@@ -282,25 +299,13 @@ export default function TournamentRoundsPage() {
                       return (
                         <section key={round._id} className="card-glass p-4 sm:p-5">
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
-                              {round.stageLabel?.trim() ? (
-                                <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-                                  {round.stageLabel}
-                                </span>
-                              ) : null}
-                            </div>
+                            <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
                             {round.scheduledAt && (
                               <span className="text-xs text-slate-500 dark:text-slate-500">
                                 {formatDateTime(round.scheduledAt)}
                               </span>
                             )}
                           </div>
-                          {round.publicDetails?.trim() ? (
-                            <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
-                              {round.publicDetails}
-                            </p>
-                          ) : null}
                           <div className="grid grid-cols-2 gap-2">
                             {teams.map((t) => {
                               const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
@@ -341,11 +346,17 @@ export default function TournamentRoundsPage() {
                   {semiRounds.length > 0 && (
                     <section className="space-y-4">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        Semi-finals (top 8)
+                        {layerMeta("2")?.label?.trim() ? layerMeta("2")!.label : "Semi-finals (top 8)"}
                       </h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Winners from R11–R18 advance here (4 to R21, 4 to R22). Top 2 from each semi advance to the final.
-                      </p>
+                      {layerMeta("2")?.details?.trim() ? (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                          {layerMeta("2")!.details}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Winners from R11–R18 advance here (4 to R21, 4 to R22). Top 2 from each semi advance to the final.
+                        </p>
+                      )}
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {semiRounds.map((round) => {
                           const matches = getMatchForRound(round);
@@ -360,25 +371,13 @@ export default function TournamentRoundsPage() {
                           return (
                             <div key={round._id} className="card-glass p-4 sm:p-5">
                               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h3>
-                                  {round.stageLabel?.trim() ? (
-                                    <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-                                      {round.stageLabel}
-                                    </span>
-                                  ) : null}
-                                </div>
+                                <h3 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h3>
                                 {round.scheduledAt && (
                                   <span className="text-xs text-slate-500 dark:text-slate-500">
                                     {formatDateTime(round.scheduledAt)}
                                   </span>
                                 )}
                               </div>
-                              {round.publicDetails?.trim() ? (
-                                <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
-                                  {round.publicDetails}
-                                </p>
-                              ) : null}
                               <div className="grid grid-cols-2 gap-2">
                                 {teams.map((t) => {
                                   const isFinalist = hasDecision && laterTeams.has(t.id);
@@ -442,13 +441,38 @@ export default function TournamentRoundsPage() {
                       )
                       .sort((a, b) => a.roundNumber - b.roundNumber);
                     if (otherRounds.length === 0) return null;
+                    const grouped = new Map<string, RoundPublic[]>();
+                    for (const r of otherRounds) {
+                      const k = layerKeyFor(r.name) ?? "0";
+                      const list = grouped.get(k) ?? [];
+                      list.push(r);
+                      grouped.set(k, list);
+                    }
+                    const keys = Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b));
                     return (
-                      <section className="space-y-4">
+                      <section className="space-y-6">
                         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                           Other rounds
                         </h2>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                          {otherRounds.map((round) => {
+                        {keys.map((k) => {
+                          const list = (grouped.get(k) ?? []).sort((a, b) => a.roundNumber - b.roundNumber);
+                          const meta = layerMeta(k === "0" ? null : k);
+                          return (
+                            <div key={k} className="space-y-3">
+                              {(meta?.label?.trim() || meta?.details?.trim()) ? (
+                                <div className="card-glass p-4 sm:p-5">
+                                  <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                                    {meta?.label?.trim() ? meta.label : `Layer ${k}`}
+                                  </h3>
+                                  {meta?.details?.trim() ? (
+                                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                                      {meta.details}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                {list.map((round) => {
                             const matches = getMatchForRound(round);
                             const teams = matches[0] ?? [];
                             const slots = slotCount(round);
@@ -460,25 +484,13 @@ export default function TournamentRoundsPage() {
                             return (
                               <section key={round._id} className="card-glass p-4 sm:p-5">
                                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
-                                    {round.stageLabel?.trim() ? (
-                                      <span className="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-medium text-slate-300">
-                                        {round.stageLabel}
-                                      </span>
-                                    ) : null}
-                                  </div>
+                                  <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
                                   {round.scheduledAt && (
                                     <span className="text-xs text-slate-500 dark:text-slate-500">
                                       {formatDateTime(round.scheduledAt)}
                                     </span>
                                   )}
                                 </div>
-                                {round.publicDetails?.trim() ? (
-                                  <p className="mb-3 text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
-                                    {round.publicDetails}
-                                  </p>
-                                ) : null}
                                 <div className={`grid gap-2 ${slots === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
                                   {teams.slice(0, slots).map((t) => {
                                     const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
@@ -515,8 +527,11 @@ export default function TournamentRoundsPage() {
                                 </div>
                               </section>
                             );
-                          })}
-                        </div>
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </section>
                     );
                   })()}
@@ -531,7 +546,11 @@ export default function TournamentRoundsPage() {
                         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 sm:text-xl">
                           {finalRound.name}
                           <span className="ml-2 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-400">
-                            {finalRound.stageLabel?.trim() ? finalRound.stageLabel : "Final"}
+                            {(() => {
+                              const lk = layerKeyFor(finalRound.name);
+                              const meta = layerMeta(lk);
+                              return meta?.label?.trim() ? meta.label : "Final";
+                            })()}
                           </span>
                         </h2>
                         {finalRound.scheduledAt && (
@@ -540,11 +559,15 @@ export default function TournamentRoundsPage() {
                           </span>
                         )}
                       </div>
-                      {finalRound.publicDetails?.trim() ? (
-                        <p className="mb-3 text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
-                          {finalRound.publicDetails}
-                        </p>
-                      ) : null}
+                      {(() => {
+                        const lk = layerKeyFor(finalRound.name);
+                        const meta = layerMeta(lk);
+                        return meta?.details?.trim() ? (
+                          <p className="mb-3 text-sm text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                            {meta.details}
+                          </p>
+                        ) : null;
+                      })()}
                       {has32Structure ? (
                         <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
                           Top 2 from R21 and top 2 from R22 advance here.

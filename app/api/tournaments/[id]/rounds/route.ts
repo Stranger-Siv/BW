@@ -52,8 +52,11 @@ export async function GET(
       };
     });
 
-    const tournament = await Tournament.findById(id).select("winnerTeamId").lean();
+    const tournament = await Tournament.findById(id).select("winnerTeamId roundLayerMeta").lean();
     const winnerTeamId = (tournament as unknown as { winnerTeamId?: mongoose.Types.ObjectId } | null)?.winnerTeamId;
+    const roundLayerMeta =
+      (tournament as unknown as { roundLayerMeta?: Record<string, { label?: string; details?: string }> } | null)
+        ?.roundLayerMeta ?? undefined;
     let winner:
       | {
           teamName: string;
@@ -106,7 +109,9 @@ export async function GET(
     }
 
     return NextResponse.json(
-      winner ? { rounds: roundsResult, winner } : { rounds: roundsResult },
+      winner
+        ? { rounds: roundsResult, winner, roundLayerMeta }
+        : { rounds: roundsResult, roundLayerMeta },
       { status: 200 }
     );
   } catch (err) {

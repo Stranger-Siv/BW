@@ -35,6 +35,7 @@ type PatchBody = {
   serverIP?: string;
   winnerTeamId?: string | null;
   allowSubstitute?: boolean;
+  roundLayerMeta?: Record<string, { label?: string; details?: string }>;
 };
 
 function validatePatchBody(
@@ -122,6 +123,24 @@ function validatePatchBody(
   if (b.prize !== undefined) updates.prize = String(b.prize).trim() || undefined;
   if (b.serverIP !== undefined) updates.serverIP = String(b.serverIP).trim() || undefined;
   if (typeof b.allowSubstitute === "boolean") updates.allowSubstitute = b.allowSubstitute;
+  if (b.roundLayerMeta !== undefined) {
+    if (typeof b.roundLayerMeta !== "object" || b.roundLayerMeta === null || Array.isArray(b.roundLayerMeta)) {
+      return { ok: false, status: 400, message: "roundLayerMeta must be an object" };
+    }
+    const cleaned: Record<string, { label?: string; details?: string }> = {};
+    for (const [k, v] of Object.entries(b.roundLayerMeta as Record<string, unknown>)) {
+      const key = String(k).trim();
+      if (!key) continue;
+      const obj = typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {};
+      const label = typeof obj.label === "string" ? obj.label.trim() : "";
+      const details = typeof obj.details === "string" ? obj.details.trim() : "";
+      cleaned[key] = {
+        ...(label ? { label } : {}),
+        ...(details ? { details } : {}),
+      };
+    }
+    updates.roundLayerMeta = cleaned;
+  }
   if (b.winnerTeamId !== undefined) {
     if (b.winnerTeamId === null || b.winnerTeamId === "") {
       updates.winnerTeamId = null;
@@ -137,7 +156,7 @@ function validatePatchBody(
       ok: false,
       status: 400,
       message:
-        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, scheduledAt, isClosed, description, prize, serverIP, allowSubstitute, winnerTeamId",
+        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, scheduledAt, isClosed, description, prize, serverIP, allowSubstitute, roundLayerMeta, winnerTeamId",
     };
   }
 
