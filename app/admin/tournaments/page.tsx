@@ -115,6 +115,7 @@ export default function AdminTournamentsPage() {
               description: data.description,
               prize: data.prize,
               serverIP: data.serverIP,
+              allowSubstitute: data.allowSubstitute,
             }),
           });
           const json = await res.json().catch(() => ({}));
@@ -338,6 +339,7 @@ export default function AdminTournamentsPage() {
           scheduledAt: editTournament.scheduledAt != null
             ? (editTournament.scheduledAt instanceof Date ? editTournament.scheduledAt.toISOString() : editTournament.scheduledAt)
             : undefined,
+          allowSubstitute: (editTournament as { allowSubstitute?: boolean }).allowSubstitute ?? false,
         } : null}
       />
 

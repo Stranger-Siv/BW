@@ -39,6 +39,7 @@ type TournamentOption = {
   description?: string;
   prize?: string;
   serverIP?: string;
+  allowSubstitute?: boolean;
 };
 
 function getInitialPlayers(count: number): IPlayer[] {
@@ -79,6 +80,7 @@ type StoredForm = {
   teamName: string;
   players: { minecraftIGN: string; discordUsername: string }[];
   rewardReceiverIGN: string;
+  substitute?: { minecraftIGN: string; discordUsername: string };
 };
 
 function loadStoredForm(tournamentId: string): StoredForm | null {
@@ -100,7 +102,14 @@ function loadStoredForm(tournamentId: string): StoredForm | null {
         })
       : [];
     const rewardReceiverIGN = typeof p.rewardReceiverIGN === "string" ? p.rewardReceiverIGN : "";
-    return { teamName, players, rewardReceiverIGN };
+    const substitute =
+      typeof p.substitute === "object" && p.substitute !== null && "minecraftIGN" in p.substitute && "discordUsername" in p.substitute
+        ? {
+            minecraftIGN: typeof (p.substitute as { minecraftIGN?: unknown }).minecraftIGN === "string" ? (p.substitute as { minecraftIGN: string }).minecraftIGN : "",
+            discordUsername: typeof (p.substitute as { discordUsername?: unknown }).discordUsername === "string" ? (p.substitute as { discordUsername: string }).discordUsername : "",
+          }
+        : undefined;
+    return { teamName, players, rewardReceiverIGN, substitute };
   } catch {
     return null;
   }
@@ -133,6 +142,7 @@ export default function TournamentsPage() {
   const [selectedTournament, setSelectedTournament] = useState<TournamentOption | null>(null);
   const [teamName, setTeamName] = useState("");
   const [players, setPlayers] = useState<IPlayer[]>([]);
+  const [substitute, setSubstitute] = useState<IPlayer>({ minecraftIGN: "", discordUsername: "" });
   const [rewardReceiverIGN, setRewardReceiverIGN] = useState("");
 
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -215,6 +225,7 @@ export default function TournamentsPage() {
     return phase;
   }, [rounds]);
 
+  const substituteIndex = selectedTournament?.allowSubstitute ? (selectedTournament?.teamSize ?? 4) : -1;
   const duplicateWithinForm = useMemo(() => {
     const seenIgns = new Map<string, number>();
     const seenDiscords = new Map<string, number>();
@@ -241,8 +252,19 @@ export default function TournamentsPage() {
         }
       }
     });
+    if (substituteIndex >= 0 && (substitute.minecraftIGN?.trim() || substitute.discordUsername?.trim())) {
+      const ignKey = (substitute.minecraftIGN || "").trim().toLowerCase();
+      const discordKey = (substitute.discordUsername || "").trim();
+      if (ignKey && seenIgns.has(ignKey)) {
+        err[substituteIndex] = "Substitute cannot be the same as a main player.";
+      } else if (discordKey && seenDiscords.has(discordKey)) {
+        err[substituteIndex] = "Substitute cannot be the same as a main player.";
+      }
+      if (ignKey) seenIgns.set(ignKey, substituteIndex);
+      if (discordKey) seenDiscords.set(discordKey, substituteIndex);
+    }
     return err;
-  }, [players]);
+  }, [players, substitute, substituteIndex]);
 
   const allPlayerErrors = useMemo(() => ({ ...duplicateWithinForm, ...playerErrors }), [duplicateWithinForm, playerErrors]);
 
@@ -410,10 +432,12 @@ export default function TournamentsPage() {
       setTeamName(stored.teamName);
       setPlayers(stored.players);
       setRewardReceiverIGN(stored.rewardReceiverIGN);
+      setSubstitute(stored.substitute ?? { minecraftIGN: "", discordUsername: "" });
     } else {
       setTeamName("");
       setPlayers(getInitialPlayers(teamSize));
       setRewardReceiverIGN("");
+      setSubstitute({ minecraftIGN: "", discordUsername: "" });
     }
     setSubmitError(null);
     setSuccessMessage(null);
@@ -425,14 +449,19 @@ export default function TournamentsPage() {
   // Persist form to localStorage on every change so reload keeps data
   useEffect(() => {
     if (!selectedTournament?._id) return;
-    const hasData = teamName.trim() || players.some((p) => (p.minecraftIGN || "").trim() || (p.discordUsername || "").trim()) || rewardReceiverIGN.trim();
+    const hasData =
+      teamName.trim() ||
+      players.some((p) => (p.minecraftIGN || "").trim() || (p.discordUsername || "").trim()) ||
+      rewardReceiverIGN.trim() ||
+      (selectedTournament?.allowSubstitute && ((substitute.minecraftIGN || "").trim() || (substitute.discordUsername || "").trim()));
     if (!hasData) return;
     saveStoredForm(selectedTournament._id, {
       teamName,
       players,
       rewardReceiverIGN,
+      ...(selectedTournament?.allowSubstitute ? { substitute } : {}),
     });
-  }, [selectedTournament?._id, teamName, players, rewardReceiverIGN]);
+  }, [selectedTournament?._id, selectedTournament?.allowSubstitute, teamName, players, rewardReceiverIGN, substitute]);
 
   useEffect(() => {
     if (!selectedTournament || !teamName.trim()) {
@@ -481,15 +510,21 @@ export default function TournamentsPage() {
       setPlayerErrors({});
       return;
     }
-    const hasAnyFilled = players.some((p) => (p.minecraftIGN || "").trim() && (p.discordUsername || "").trim());
+    const hasAnyFilled =
+      players.some((p) => (p.minecraftIGN || "").trim() && (p.discordUsername || "").trim()) ||
+      (selectedTournament?.allowSubstitute && (substitute.minecraftIGN || "").trim() && (substitute.discordUsername || "").trim());
     if (!hasAnyFilled) {
       setPlayerErrors({});
       return;
     }
     const timer = setTimeout(() => {
       setPlayersCheckLoading(true);
+      const playersToCheck =
+        selectedTournament?.allowSubstitute && ((substitute.minecraftIGN || "").trim() || (substitute.discordUsername || "").trim())
+          ? [...players.map((p) => ({ minecraftIGN: (p.minecraftIGN || "").trim(), discordUsername: (p.discordUsername || "").trim() })), { minecraftIGN: (substitute.minecraftIGN || "").trim(), discordUsername: (substitute.discordUsername || "").trim() }]
+          : players.map((p) => ({ minecraftIGN: (p.minecraftIGN || "").trim(), discordUsername: (p.discordUsername || "").trim() }));
       const body: { players: { minecraftIGN: string; discordUsername: string }[]; teamName?: string; captainId?: string } = {
-        players: players.map((p) => ({ minecraftIGN: (p.minecraftIGN || "").trim(), discordUsername: (p.discordUsername || "").trim() })),
+        players: playersToCheck,
       };
       if (teamName.trim()) body.teamName = teamName.trim();
       if (session?.user?.id) body.captainId = session.user.id;
@@ -512,7 +547,7 @@ export default function TournamentsPage() {
         .finally(() => setPlayersCheckLoading(false));
     }, 500);
     return () => clearTimeout(timer);
-  }, [selectedTournament?._id, players, teamName, session?.user?.id]);
+  }, [selectedTournament?._id, selectedTournament?.allowSubstitute, players, substitute, teamName, session?.user?.id]);
 
   useEffect(() => {
     if (!selectedTournament || selectedTournament.teamSize === 1) {
@@ -552,10 +587,15 @@ export default function TournamentsPage() {
     });
   }, []);
 
+  const updateSubstitute = useCallback((field: "minecraftIGN" | "discordUsername", value: string) => {
+    setSubstitute((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
   const clearSelection = useCallback(() => {
     setSelectedTournament(null);
     setTeamName("");
     setPlayers([]);
+    setSubstitute({ minecraftIGN: "", discordUsername: "" });
     setRewardReceiverIGN("");
     setSubmitError(null);
     setSuccessMessage(null);
@@ -599,6 +639,11 @@ export default function TournamentsPage() {
               discordUsername: p.discordUsername.trim(),
             })),
             rewardReceiverIGN: rewardReceiverIGN.trim(),
+            ...(selectedTournament.allowSubstitute
+              ? (substitute.minecraftIGN?.trim() && substitute.discordUsername?.trim()
+                  ? { substitute: { minecraftIGN: substitute.minecraftIGN.trim(), discordUsername: substitute.discordUsername.trim() } }
+                  : { substitute: null })
+              : {}),
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -611,6 +656,7 @@ export default function TournamentsPage() {
         clearStoredForm(selectedTournament._id);
         setTeamName("");
         setPlayers(getInitialPlayers(selectedTournament.teamSize));
+        setSubstitute({ minecraftIGN: "", discordUsername: "" });
         setRewardReceiverIGN("");
       } catch (e) {
         setSubmitError(e instanceof Error ? e.message : "Request failed");
@@ -618,7 +664,7 @@ export default function TournamentsPage() {
         setSubmitLoading(false);
       }
     },
-    [selectedTournament, teamName, players, rewardReceiverIGN, teamNameAvailable, allPlayerErrors]
+    [selectedTournament, teamName, players, substitute, rewardReceiverIGN, teamNameAvailable, allPlayerErrors]
   );
 
   return (
@@ -1051,6 +1097,21 @@ export default function TournamentsPage() {
                           disabled={rewardReceiverOptions.length === 0 || selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
                         />
                       </div>
+                      {selectedTournament.allowSubstitute && (
+                        <div className="w-full">
+                          <h3 className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-300">Substitute (optional)</h3>
+                          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">You can add one substitute. Leave blank if you don&apos;t want one.</p>
+                          <PlayerRow
+                            index={substituteIndex}
+                            minecraftIGN={substitute.minecraftIGN}
+                            discordUsername={substitute.discordUsername}
+                            onIGNChange={(v) => updateSubstitute("minecraftIGN", v)}
+                            onDiscordChange={(v) => updateSubstitute("discordUsername", v)}
+                            disabled={selectedTournament.status === "scheduled" || ["registration_closed", "ongoing", "completed"].includes(selectedTournament.status ?? "")}
+                            error={allPlayerErrors[substituteIndex]}
+                          />
+                        </div>
+                      )}
                       {submitError && (
                         <div className="w-full rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">{submitError}</div>
                       )}

@@ -18,6 +18,7 @@ type PatchBody = {
   tournamentId?: string;
   players?: { minecraftIGN?: string; discordUsername?: string }[];
   rewardReceiverIGN?: string;
+  substitute?: { minecraftIGN?: string; discordUsername?: string } | null;
 };
 
 function validatePatchBody(
@@ -30,19 +31,21 @@ function validatePatchBody(
     tournamentId?: string;
     players?: IPlayer[];
     rewardReceiverIGN?: string;
+    substitute?: IPlayer | null;
   };
 } | { ok: false; status: number; message: string } {
   if (typeof body !== "object" || body === null) {
     return { ok: false, status: 400, message: "Request body must be a JSON object" };
   }
 
-  const { status, tournamentDate, tournamentId, players, rewardReceiverIGN } = body as PatchBody;
+  const { status, tournamentDate, tournamentId, players, rewardReceiverIGN, substitute: substituteRaw } = body as PatchBody;
   const updates: {
     status?: StatusUpdate;
     tournamentDate?: string;
     tournamentId?: string;
     players?: IPlayer[];
     rewardReceiverIGN?: string;
+    substitute?: IPlayer | null;
   } = {};
 
   if (status !== undefined) {
@@ -97,11 +100,27 @@ function validatePatchBody(
     updates.rewardReceiverIGN = rewardReceiverIGN.trim();
   }
 
+  if (substituteRaw !== undefined) {
+    if (substituteRaw === null) {
+      updates.substitute = null;
+    } else if (typeof substituteRaw === "object" && substituteRaw !== null) {
+      const ign = typeof substituteRaw.minecraftIGN === "string" ? substituteRaw.minecraftIGN.trim() : "";
+      const discord = typeof substituteRaw.discordUsername === "string" ? substituteRaw.discordUsername.trim() : "";
+      if (!ign && !discord) {
+        updates.substitute = undefined;
+      } else if (!ign || !discord) {
+        return { ok: false, status: 400, message: "Substitute must have both minecraftIGN and discordUsername when provided" };
+      } else {
+        updates.substitute = { minecraftIGN: ign, discordUsername: discord };
+      }
+    }
+  }
+
   if (Object.keys(updates).length === 0) {
     return {
       ok: false,
       status: 400,
-      message: "Provide at least one of: status, tournamentDate, tournamentId, players, rewardReceiverIGN",
+      message: "Provide at least one of: status, tournamentDate, tournamentId, players, rewardReceiverIGN, substitute",
     };
   }
 
@@ -254,6 +273,7 @@ export async function PATCH(
       const update: Partial<ITeam> = {};
       if (newPlayers !== undefined) update.players = playersToUse;
       if (newRewardReceiver !== undefined) update.rewardReceiverIGN = rewardToUse;
+      if (validation.data.substitute !== undefined) update.substitute = validation.data.substitute ?? undefined;
       await Team.findByIdAndUpdate(id, { $set: update });
       const updated = await Team.findById(id).lean();
       return NextResponse.json(updated, { status: 200 });

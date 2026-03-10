@@ -15,6 +15,8 @@ export interface ITeam {
   tournamentId?: mongoose.Types.ObjectId;
   captainId?: mongoose.Types.ObjectId;
   players: IPlayer[];
+  /** Optional substitute (when tournament allows it). Not part of main roster. */
+  substitute?: IPlayer;
   rewardReceiverIGN: string;
   status: TeamStatus;
   createdAt: Date;
@@ -44,6 +46,7 @@ const teamSchema = new Schema<ITeam>(
         message: "Players must be 1–4 (solo/duo/squad; 3 allowed when replacing)",
       },
     },
+    substitute: { type: playerSchema, required: false },
     rewardReceiverIGN: { type: String, required: true },
     status: {
       type: String,

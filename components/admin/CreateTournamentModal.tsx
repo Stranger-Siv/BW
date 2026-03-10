@@ -16,6 +16,7 @@ export type TournamentFormData = {
   status: string;
   scheduleForLater: boolean;
   scheduledAt: string;
+  allowSubstitute: boolean;
 };
 
 const INITIAL_FORM: TournamentFormData = {
@@ -32,6 +33,7 @@ const INITIAL_FORM: TournamentFormData = {
   status: "draft",
   scheduleForLater: false,
   scheduledAt: "",
+  allowSubstitute: false,
 };
 
 const TYPE_OPTIONS = [
@@ -62,6 +64,7 @@ export type TournamentSubmitPayload = {
   description?: string;
   status: string;
   scheduledAt?: string | null;
+  allowSubstitute?: boolean;
 };
 
 type CreateTournamentModalProps = {
@@ -70,7 +73,7 @@ type CreateTournamentModalProps = {
   onSubmit: (data: TournamentSubmitPayload) => void;
   loading?: boolean;
   error?: string | null;
-  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string; status?: string; scheduledAt?: string } | null;
+  editData?: Partial<TournamentFormData> & { _id: string; type?: string; date?: string; startTime?: string; registrationDeadline?: string; maxTeams?: number | string; teamSize?: number | string; status?: string; scheduledAt?: string; allowSubstitute?: boolean } | null;
 };
 
 function toDateInput(dateStr: string) {
@@ -126,6 +129,7 @@ export function CreateTournamentModal({
         status: editData.status ?? "draft",
         scheduleForLater: isScheduled,
         scheduledAt: editData.scheduledAt != null ? toDateTimeLocal(String(editData.scheduledAt)) : "",
+        allowSubstitute: editData.allowSubstitute ?? false,
       });
     } else {
       setForm({ ...INITIAL_FORM });
@@ -184,6 +188,7 @@ export function CreateTournamentModal({
         description: form.description.trim() || undefined,
         status,
         scheduledAt: scheduledAtIso,
+        allowSubstitute: form.allowSubstitute,
       };
       onSubmit(payload);
     },
@@ -376,6 +381,21 @@ export function CreateTournamentModal({
               className={inputClass}
               placeholder="e.g. play.example.com"
             />
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 dark:border-white/10 dark:bg-white/5">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={form.allowSubstitute}
+                onChange={(e) => update("allowSubstitute", e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className={labelClass + " mb-0"}>Allow substitute teammate</span>
+            </label>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              If enabled, teams can optionally add one substitute during registration. They can leave the substitute slot empty if they don&apos;t want one.
+            </p>
           </div>
 
           {error && (

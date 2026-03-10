@@ -21,6 +21,8 @@ type RoundDoc = {
   name: string;
   scheduledAt?: string;
   teamIds: string[];
+  isWinnerRound?: boolean;
+  slotCount?: number;
 };
 
 type TeamDoc = { _id: string; teamName: string; rewardReceiverIGN?: string };
@@ -36,6 +38,8 @@ export default function AdminTournamentRoundsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newRoundName, setNewRoundName] = useState("");
+  const [newRoundIsWinner, setNewRoundIsWinner] = useState(false);
+  const [newRoundSlotCount, setNewRoundSlotCount] = useState<2 | 4>(4);
   const [addRoundLoading, setAddRoundLoading] = useState(false);
   const [dragged, setDragged] = useState<{ teamId: string; roundId: string } | null>(null);
   const [patchLoadingRounds, setPatchLoadingRounds] = useState<string[]>([]);
@@ -96,10 +100,15 @@ export default function AdminTournamentRoundsPage() {
     if (!newRoundName.trim()) return;
     setAddRoundLoading(true);
     try {
+      const body: { name: string; isWinnerRound?: boolean; slotCount?: number } = {
+        name: newRoundName.trim(),
+      };
+      if (newRoundIsWinner) body.isWinnerRound = true;
+      body.slotCount = newRoundSlotCount;
       const res = await fetch(`/api/admin/tournaments/${id}/rounds`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newRoundName.trim() }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Failed to add round");
@@ -110,7 +119,7 @@ export default function AdminTournamentRoundsPage() {
     } finally {
       setAddRoundLoading(false);
     }
-  }, [id, newRoundName, fetchRounds]);
+  }, [id, newRoundName, newRoundIsWinner, newRoundSlotCount, fetchRounds]);
 
   const deleteRound = useCallback(
     async (roundId: string) => {
@@ -137,13 +146,25 @@ export default function AdminTournamentRoundsPage() {
 
   const createRoundsWithTeams = useCallback(
     async (
-      roundsToCreate: { name: string; roundNumber: number; teamIds: string[] }[]
+      roundsToCreate: {
+        name: string;
+        roundNumber: number;
+        teamIds: string[];
+        isWinnerRound?: boolean;
+        slotCount?: number;
+      }[]
     ) => {
       for (const r of roundsToCreate) {
+        const postBody: Record<string, unknown> = {
+          name: r.name,
+          roundNumber: r.roundNumber,
+        };
+        if (r.isWinnerRound !== undefined) postBody.isWinnerRound = r.isWinnerRound;
+        if (r.slotCount !== undefined) postBody.slotCount = r.slotCount;
         const postRes = await fetch(`/api/admin/tournaments/${id}/rounds`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: r.name, roundNumber: r.roundNumber }),
+          body: JSON.stringify(postBody),
         });
         const postData = await postRes.json().catch(() => ({}));
         if (!postRes.ok && !String(postData.error ?? "").includes("already exists")) {
@@ -180,7 +201,7 @@ export default function AdminTournamentRoundsPage() {
         { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
         { name: "R13", roundNumber: 3, teamIds: teamIds.slice(8, 12) },
         { name: "R14", roundNumber: 4, teamIds: teamIds.slice(12, 16) },
-        { name: "R2", roundNumber: 5, teamIds: [] },
+        { name: "R2", roundNumber: 5, teamIds: [], isWinnerRound: true, slotCount: 4 },
       ];
       await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
@@ -211,7 +232,7 @@ export default function AdminTournamentRoundsPage() {
         { name: "R18", roundNumber: 8, teamIds: teamIds.slice(28, 32) },
         { name: "R21", roundNumber: 9, teamIds: [] },
         { name: "R22", roundNumber: 10, teamIds: [] },
-        { name: "R3", roundNumber: 11, teamIds: [] },
+        { name: "R3", roundNumber: 11, teamIds: [], isWinnerRound: true, slotCount: 4 },
       ];
       await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
@@ -492,6 +513,26 @@ export default function AdminTournamentRoundsPage() {
                 className="min-h-[44px] w-full min-w-0 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 sm:w-auto"
                 aria-label="New round name"
               />
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-lg border border-slate-400/60 bg-slate-100 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-800">
+                <input
+                  type="checkbox"
+                  checked={newRoundIsWinner}
+                  onChange={(e) => setNewRoundIsWinner(e.target.checked)}
+                  className="rounded border-slate-400"
+                />
+                <span className="text-sm text-slate-800 dark:text-slate-200">Winner round (final)</span>
+              </label>
+              <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-800 dark:text-slate-200">
+                <span>Teams in match:</span>
+                <select
+                  value={newRoundSlotCount}
+                  onChange={(e) => setNewRoundSlotCount(e.target.value === "2" ? 2 : 4)}
+                  className="rounded-lg border border-slate-400/60 bg-slate-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
+                >
+                  <option value={2}>2 (4v4)</option>
+                  <option value={4}>4 (4v4v4v4)</option>
+                </select>
+              </label>
               <button
                 type="button"
                 onClick={addRound}
@@ -538,13 +579,13 @@ export default function AdminTournamentRoundsPage() {
                 </div>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Click the 🏆 button next to a team in the final round (R2 or R3) to set as tournament winner.
+                  Click the 🏆 button next to a team in the round marked as winner (final) to set as tournament winner.
                 </p>
               )}
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              16-team: R11–R14 → R2. 32-team: R11–R14 → R21, R15–R18 → R22; top 2 from R21 & R22 → R3. In the final round (R2 or R3), click 🏆 next to the winning team to set tournament winner.
+              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. You can also add custom rounds (e.g. a 4v4 final with 2 teams). Mark a round as &quot;Winner round&quot; to use 🏆 and show the champion on the public page.
             </p>
 
             {(() => {
@@ -643,7 +684,7 @@ export default function AdminTournamentRoundsPage() {
                             {teamIdToName(tid)}
                           </Link>
                           <div className="flex items-center gap-1">
-                            {round.name === "R2" || round.name === "R3" ? (
+                            {(round.isWinnerRound === true || round.name === "R2" || round.name === "R3") ? (
                               <button
                                 type="button"
                                 onClick={() => setWinner(tid)}

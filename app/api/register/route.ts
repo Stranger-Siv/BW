@@ -15,6 +15,7 @@ type RegisterBody = {
   tournamentId?: string;
   players?: IPlayer[];
   rewardReceiverIGN?: string;
+  substitute?: IPlayer | null;
 };
 
 function isPlayer(obj: unknown): obj is IPlayer {
@@ -96,6 +97,24 @@ function validateBody(body: unknown): {
     if (b.players.length !== 1 && b.players.length !== 2 && b.players.length !== 4) {
       return { ok: false, status: 400, message: "players must contain 1 (solo), 2 (duo), or 4 (squad) entries" };
     }
+    let substitute: IPlayer | null | undefined;
+    if (b.substitute === null) {
+      substitute = null;
+    } else if (b.substitute != null && isPlayer(b.substitute)) {
+      const subIgn = (b.substitute.minecraftIGN ?? "").trim();
+      const subDisc = (b.substitute.discordUsername ?? "").trim();
+      if (subIgn || subDisc) {
+        if (!subIgn || !subDisc) {
+          return { ok: false, status: 400, message: "Substitute must have both Minecraft IGN and Discord username if provided." };
+        }
+        const mainIgns = new Set(b.players.map((p) => (p.minecraftIGN ?? "").trim().toLowerCase()));
+        const mainDiscords = new Set(b.players.map((p) => (p.discordUsername ?? "").trim()));
+        if (mainIgns.has(subIgn.toLowerCase()) || mainDiscords.has(subDisc)) {
+          return { ok: false, status: 400, message: "Substitute cannot be the same as a main roster player." };
+        }
+        substitute = { minecraftIGN: subIgn, discordUsername: subDisc };
+      }
+    }
     return {
       ok: true,
       data: {
@@ -104,6 +123,7 @@ function validateBody(body: unknown): {
         players: b.players,
         rewardReceiverIGN: b.rewardReceiverIGN.trim(),
         mode: "tournament" as const,
+        substitute,
       },
     };
   }
@@ -130,7 +150,8 @@ async function registerWithTournamentId(
   teamName: string,
   players: IPlayer[],
   rewardReceiverIGN: string,
-  captainId: string | null
+  captainId: string | null,
+  substitute?: IPlayer | null
 ) {
   const tournament = await Tournament.findById(tournamentId).lean();
   if (!tournament) {
@@ -142,7 +163,14 @@ async function registerWithTournamentId(
     registeredTeams: number;
     maxTeams: number;
     teamSize: number;
+    allowSubstitute?: boolean;
   };
+  if (substitute && !t.allowSubstitute) {
+    return NextResponse.json(
+      { error: "This tournament does not allow substitute players." },
+      { status: 400 }
+    );
+  }
   if (t.status !== "registration_open") {
     return NextResponse.json(
       { error: "Registration is not open for this tournament" },
@@ -172,15 +200,21 @@ async function registerWithTournamentId(
     existing.captainId?.toString() === captainId;
 
   if (existing && isUpdateOwn) {
-    // Same captain re-registering same team name: update players/reward, allow same IGNs (their own)
+    // Same captain re-registering same team name: update players/reward/substitute, allow same IGNs (their own)
     const otherTeams = await Team.find(
       { tournamentId: tournamentIdObj, _id: { $ne: existing._id } },
-      { "players.minecraftIGN": 1, "players.discordUsername": 1 }
-    );
+      { "players.minecraftIGN": 1, "players.discordUsername": 1, substitute: 1 }
+    ).lean();
     const usedPlayerKeys = new Set<string>();
-    for (const t of otherTeams) {
-      for (const p of t.players) {
+    for (const ot of otherTeams) {
+      const teamDoc = ot as { players?: IPlayer[]; substitute?: IPlayer };
+      for (const p of teamDoc.players ?? []) {
         usedPlayerKeys.add(`${(p.minecraftIGN || "").trim().toLowerCase()}|${(p.discordUsername || "").trim()}`);
+      }
+      if (teamDoc.substitute?.minecraftIGN?.trim() && teamDoc.substitute?.discordUsername?.trim()) {
+        usedPlayerKeys.add(
+          `${(teamDoc.substitute.minecraftIGN || "").trim().toLowerCase()}|${(teamDoc.substitute.discordUsername || "").trim()}`
+        );
       }
     }
     const duplicate = players.find(
@@ -192,9 +226,24 @@ async function registerWithTournamentId(
         { status: 409 }
       );
     }
+    if (substitute) {
+      const subKey = `${(substitute.minecraftIGN || "").trim().toLowerCase()}|${(substitute.discordUsername || "").trim()}`;
+      if (usedPlayerKeys.has(subKey)) {
+        return NextResponse.json(
+          { error: "Substitute IGN or Discord is already registered on another team for this tournament." },
+          { status: 409 }
+        );
+      }
+    }
     await Team.updateOne(
       { _id: existing._id },
-      { $set: { players, rewardReceiverIGN } }
+      {
+        $set: {
+          players,
+          rewardReceiverIGN,
+          ...(substitute !== undefined ? { substitute: substitute ?? null } : {}),
+        },
+      }
     );
     const pusherUpdate = getServerPusher();
     if (pusherUpdate) {
@@ -235,19 +284,24 @@ async function registerWithTournamentId(
     }
   }
 
-  // Block if either Minecraft IGN or Discord username is already used in this tournament.
+  // Block if either Minecraft IGN or Discord username is already used in this tournament (players + substitute).
   const existingTeams = await Team.find(
     { tournamentId: tournamentIdObj },
-    { "players.minecraftIGN": 1, "players.discordUsername": 1 }
-  );
+    { "players.minecraftIGN": 1, "players.discordUsername": 1, substitute: 1 }
+  ).lean();
   const usedIgns = new Set<string>();
   const usedDiscords = new Set<string>();
-  for (const t of existingTeams) {
-    for (const p of t.players) {
+  for (const ot of existingTeams) {
+    const teamDoc = ot as { players?: IPlayer[]; substitute?: IPlayer };
+    for (const p of teamDoc.players ?? []) {
       const ignKey = (p.minecraftIGN || "").trim().toLowerCase();
       const discordKey = (p.discordUsername || "").trim();
       if (ignKey) usedIgns.add(ignKey);
       if (discordKey) usedDiscords.add(discordKey);
+    }
+    if (teamDoc.substitute?.minecraftIGN?.trim() && teamDoc.substitute?.discordUsername?.trim()) {
+      usedIgns.add((teamDoc.substitute.minecraftIGN || "").trim().toLowerCase());
+      usedDiscords.add((teamDoc.substitute.discordUsername || "").trim());
     }
   }
   const duplicate = players.find((p) => {
@@ -268,6 +322,16 @@ async function registerWithTournamentId(
           : `A player with Discord "${duplicate.discordUsername}" is already registered for this tournament.`;
     return NextResponse.json({ error: reason }, { status: 409 });
   }
+  if (substitute) {
+    const subIgn = (substitute.minecraftIGN || "").trim().toLowerCase();
+    const subDisc = (substitute.discordUsername || "").trim();
+    if ((subIgn && usedIgns.has(subIgn)) || (subDisc && usedDiscords.has(subDisc))) {
+      return NextResponse.json(
+        { error: "Substitute IGN or Discord is already registered for this tournament." },
+        { status: 409 }
+      );
+    }
+  }
 
   const session = await Team.startSession();
   session.startTransaction();
@@ -279,6 +343,7 @@ async function registerWithTournamentId(
           tournamentId: new mongoose.Types.ObjectId(tournamentId),
           ...(captainId ? { captainId: new mongoose.Types.ObjectId(captainId) } : {}),
           players,
+          ...(substitute ? { substitute } : {}),
           rewardReceiverIGN,
           status: "pending",
         },
@@ -478,7 +543,8 @@ export async function POST(request: NextRequest) {
         validation.data.teamName!,
         validation.data.players!,
         validation.data.rewardReceiverIGN!,
-        session.user.id
+        session.user.id,
+        validation.data.substitute
       );
     }
     return await registerWithTournamentDate(

@@ -50,6 +50,12 @@ export async function POST(
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const roundNumber = typeof body.roundNumber === "number" ? body.roundNumber : undefined;
     const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : undefined;
+    const isWinnerRound = typeof body.isWinnerRound === "boolean" ? body.isWinnerRound : undefined;
+    const slotCountRaw = body.slotCount;
+    const slotCount =
+      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
+        ? slotCountRaw
+        : undefined;
 
     if (!name) {
       return NextResponse.json({ error: "Round name is required" }, { status: 400 });
@@ -76,14 +82,17 @@ export async function POST(
       );
     }
 
-    const round = await Round.create({
+    const createPayload: Record<string, unknown> = {
       tournamentId: id,
       roundNumber: num,
       name,
       scheduledAt: scheduledAt ?? undefined,
       teamIds: [],
-    });
-    if (name === "R2") {
+    };
+    if (isWinnerRound !== undefined) createPayload.isWinnerRound = isWinnerRound;
+    if (slotCount !== undefined) createPayload.slotCount = slotCount;
+    const round = await Round.create(createPayload);
+    if (createPayload.isWinnerRound === true || name === "R2") {
       const tournamentName = (tournament as { name?: string }).name ?? "Tournament";
       notifyBracketLive({ tournamentId: id, tournamentName }).catch(() => {});
     }
@@ -117,6 +126,12 @@ export async function PATCH(
         : body.scheduledAt != null
           ? new Date(body.scheduledAt)
           : undefined;
+    const isWinnerRound = typeof body.isWinnerRound === "boolean" ? body.isWinnerRound : undefined;
+    const slotCountRaw = body.slotCount;
+    const slotCount =
+      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
+        ? slotCountRaw
+        : undefined;
 
     if (!roundId || !mongoose.Types.ObjectId.isValid(roundId)) {
       return NextResponse.json({ error: "Valid roundId is required" }, { status: 400 });
@@ -132,8 +147,13 @@ export async function PATCH(
     }
     if (name !== undefined) updates.name = name;
     if (scheduledAt !== undefined) updates.scheduledAt = scheduledAt as Date | null;
+    if (isWinnerRound !== undefined) updates.isWinnerRound = isWinnerRound;
+    if (slotCount !== undefined) updates.slotCount = slotCount;
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: "Provide at least one of: teamIds, name, scheduledAt" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Provide at least one of: teamIds, name, scheduledAt, isWinnerRound, slotCount" },
+        { status: 400 }
+      );
     }
 
     const round = await Round.findOneAndUpdate(

@@ -34,6 +34,7 @@ type PatchBody = {
   prize?: string;
   serverIP?: string;
   winnerTeamId?: string | null;
+  allowSubstitute?: boolean;
 };
 
 function validatePatchBody(
@@ -120,6 +121,7 @@ function validatePatchBody(
   if (b.description !== undefined) updates.description = String(b.description).trim() || undefined;
   if (b.prize !== undefined) updates.prize = String(b.prize).trim() || undefined;
   if (b.serverIP !== undefined) updates.serverIP = String(b.serverIP).trim() || undefined;
+  if (typeof b.allowSubstitute === "boolean") updates.allowSubstitute = b.allowSubstitute;
   if (b.winnerTeamId !== undefined) {
     if (b.winnerTeamId === null || b.winnerTeamId === "") {
       updates.winnerTeamId = null;
@@ -135,7 +137,7 @@ function validatePatchBody(
       ok: false,
       status: 400,
       message:
-        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, scheduledAt, isClosed, description, prize, serverIP, winnerTeamId",
+        "Provide at least one of: name, type, date, startTime, registrationDeadline, maxTeams, teamSize, status, scheduledAt, isClosed, description, prize, serverIP, allowSubstitute, winnerTeamId",
     };
   }
 

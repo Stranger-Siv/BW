@@ -32,6 +32,7 @@ type AdminTeamDetail = {
   tournamentDate?: string;
   tournamentId?: TournamentPopulated | string | null;
   players: { minecraftIGN: string; discordUsername: string }[];
+  substitute?: { minecraftIGN: string; discordUsername: string } | null;
 };
 
 function formatDate(iso: string) {
@@ -70,6 +71,7 @@ export default function AdminTeamDetailPage() {
   const [disbandLoading, setDisbandLoading] = useState(false);
 
   const [editPlayers, setEditPlayers] = useState<{ minecraftIGN: string; discordUsername: string }[]>([]);
+  const [editSubstitute, setEditSubstitute] = useState<{ minecraftIGN: string; discordUsername: string } | null>(null);
   const [editRewardReceiver, setEditRewardReceiver] = useState("");
   const [editSaveLoading, setEditSaveLoading] = useState(false);
   const [editSaveError, setEditSaveError] = useState<string | null>(null);
@@ -96,6 +98,12 @@ export default function AdminTeamDetailPage() {
       .then((data) => {
         setTeam(data);
         setEditPlayers((data?.players ?? []).map((p: { minecraftIGN?: string; discordUsername?: string }) => ({ minecraftIGN: p.minecraftIGN ?? "", discordUsername: p.discordUsername ?? "" })));
+        const sub = data?.substitute;
+        setEditSubstitute(
+          sub && (sub.minecraftIGN?.trim() || sub.discordUsername?.trim())
+            ? { minecraftIGN: sub.minecraftIGN ?? "", discordUsername: sub.discordUsername ?? "" }
+            : null
+        );
         setEditRewardReceiver(data?.rewardReceiverIGN ?? "");
       })
       .catch((e) => setError(e.message || "Failed to load"))
@@ -105,6 +113,12 @@ export default function AdminTeamDetailPage() {
   useEffect(() => {
     if (team) {
       setEditPlayers((team.players ?? []).map((p) => ({ minecraftIGN: p.minecraftIGN ?? "", discordUsername: p.discordUsername ?? "" })));
+      const sub = team.substitute;
+      setEditSubstitute(
+        sub && (sub.minecraftIGN?.trim() || sub.discordUsername?.trim())
+          ? { minecraftIGN: sub.minecraftIGN ?? "", discordUsername: sub.discordUsername ?? "" }
+          : null
+      );
       setEditRewardReceiver(team.rewardReceiverIGN ?? "");
     }
   }, [team]);
@@ -263,6 +277,10 @@ export default function AdminTeamDetailPage() {
         body: JSON.stringify({
           players: editPlayers.map((p) => ({ minecraftIGN: p.minecraftIGN.trim(), discordUsername: p.discordUsername.trim() })),
           rewardReceiverIGN: editRewardReceiver.trim(),
+          substitute:
+            editSubstitute?.minecraftIGN?.trim() && editSubstitute?.discordUsername?.trim()
+              ? { minecraftIGN: editSubstitute.minecraftIGN.trim(), discordUsername: editSubstitute.discordUsername.trim() }
+              : null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -274,7 +292,7 @@ export default function AdminTeamDetailPage() {
     } finally {
       setEditSaveLoading(false);
     }
-  }, [team, editPlayers, editRewardReceiver]);
+  }, [team, editPlayers, editSubstitute, editRewardReceiver]);
 
   if (loading) {
     return <AdminTeamDetailSkeleton />;
@@ -509,6 +527,25 @@ export default function AdminTeamDetailPage() {
                   disabled={editPlayers.every((p) => !p.minecraftIGN.trim())}
                 />
               </div>
+              <div>
+                <p className="mb-2 text-sm font-medium text-slate-600 dark:text-slate-400">Substitute (optional)</p>
+                <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">Leave both blank to remove substitute.</p>
+                <PlayerRow
+                  index={editPlayers.length}
+                  minecraftIGN={editSubstitute?.minecraftIGN ?? ""}
+                  discordUsername={editSubstitute?.discordUsername ?? ""}
+                  onIGNChange={(v) =>
+                    setEditSubstitute((prev) =>
+                      prev ? { ...prev, minecraftIGN: v } : { minecraftIGN: v, discordUsername: "" }
+                    )
+                  }
+                  onDiscordChange={(v) =>
+                    setEditSubstitute((prev) =>
+                      prev ? { ...prev, discordUsername: v } : { minecraftIGN: "", discordUsername: v }
+                    )
+                  }
+                />
+              </div>
               {editSaveError && (
                 <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 dark:border-red-500/30 dark:bg-red-500/10">
                   {editSaveError}
@@ -548,6 +585,19 @@ export default function AdminTeamDetailPage() {
                   </li>
                 );
               })}
+              {team.substitute?.minecraftIGN?.trim() || team.substitute?.discordUsername?.trim() ? (
+                <li className="flex flex-col gap-2 rounded-xl border border-dashed border-white/20 bg-white/5 p-4 dark:border-white/20 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-slate-800 dark:text-slate-200">{team.substitute.minecraftIGN || "—"}</p>
+                      <span className="rounded bg-slate-500/25 px-1.5 py-0.5 text-xs font-medium text-slate-300">Substitute</span>
+                    </div>
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                      Discord: {team.substitute.discordUsername || "—"}
+                    </p>
+                  </div>
+                </li>
+              ) : null}
             </ul>
           )}
         </section>

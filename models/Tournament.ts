@@ -35,6 +35,8 @@ export interface ITournament {
   discordRolesAssignedAt?: Date;
   /** When set with status "scheduled", registration opens at this time */
   scheduledAt?: Date;
+  /** If true, teams can optionally add one substitute during registration */
+  allowSubstitute?: boolean;
   createdAt: Date;
 }
 
@@ -66,6 +68,7 @@ const tournamentSchema = new Schema<ITournament>(
     winnerTeamId: { type: Schema.Types.ObjectId, ref: "Team" },
     discordRolesAssignedAt: { type: Date },
     scheduledAt: { type: Date },
+    allowSubstitute: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

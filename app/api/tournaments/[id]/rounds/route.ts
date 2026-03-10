@@ -27,7 +27,15 @@ export async function GET(
       (teams as unknown as { _id: { toString(): string }; teamName: string }[]).map((t) => [t._id.toString(), t.teamName])
     );
     const roundsResult = rounds.map((r) => {
-      const rDoc = r as unknown as { _id: unknown; roundNumber: number; name: string; scheduledAt?: Date; teamIds: mongoose.Types.ObjectId[] };
+      const rDoc = r as unknown as {
+        _id: unknown;
+        roundNumber: number;
+        name: string;
+        scheduledAt?: Date;
+        teamIds: mongoose.Types.ObjectId[];
+        isWinnerRound?: boolean;
+        slotCount?: number;
+      };
       return {
         _id: rDoc._id,
         roundNumber: rDoc.roundNumber,
@@ -35,6 +43,8 @@ export async function GET(
         scheduledAt: rDoc.scheduledAt,
         teamIds: rDoc.teamIds.map((tid) => tid.toString()),
         teams: rDoc.teamIds.map((tid) => ({ id: tid.toString(), name: teamMap.get(tid.toString()) ?? "—" })),
+        isWinnerRound: rDoc.isWinnerRound === true,
+        slotCount: rDoc.slotCount === 2 ? 2 : 4,
       };
     });
 

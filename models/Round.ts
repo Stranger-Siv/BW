@@ -6,6 +6,10 @@ export interface IRound {
   name: string;
   scheduledAt?: Date;
   teamIds: mongoose.Types.ObjectId[];
+  /** True if this round is the final (winner round); used for champion display and 🏆 in admin */
+  isWinnerRound?: boolean;
+  /** Number of team slots in this round: 2 = 4v4 (one match), 4 = 4v4v4v4 (default) */
+  slotCount?: number;
   createdAt: Date;
 }
 
@@ -16,6 +20,8 @@ const roundSchema = new Schema<IRound>(
     name: { type: String, required: true, trim: true },
     scheduledAt: { type: Date },
     teamIds: [{ type: Schema.Types.ObjectId, ref: "Team", default: [] }],
+    isWinnerRound: { type: Boolean, default: false },
+    slotCount: { type: Number, default: 4 },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: false }

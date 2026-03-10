@@ -48,7 +48,7 @@ export async function POST(
     const tournamentIdObj = new mongoose.Types.ObjectId(id);
     let teams = await Team.find(
       { tournamentId: tournamentIdObj },
-      { teamName: 1, captainId: 1, "players.minecraftIGN": 1, "players.discordUsername": 1 }
+      { teamName: 1, captainId: 1, "players.minecraftIGN": 1, "players.discordUsername": 1, substitute: 1 }
     ).lean();
 
     if (teamName && captainId) {
@@ -62,10 +62,21 @@ export async function POST(
     const usedIgns = new Set<string>();
     const usedDiscords = new Set<string>();
     for (const t of teams) {
-      const players = (t as { players?: { minecraftIGN?: string; discordUsername?: string }[] }).players ?? [];
+      const teamDoc = t as {
+        players?: { minecraftIGN?: string; discordUsername?: string }[];
+        substitute?: { minecraftIGN?: string; discordUsername?: string };
+      };
+      const players = teamDoc.players ?? [];
       for (const p of players) {
         const ignKey = (p.minecraftIGN ?? "").trim().toLowerCase();
         const discordKey = (p.discordUsername ?? "").trim();
+        if (ignKey) usedIgns.add(ignKey);
+        if (discordKey) usedDiscords.add(discordKey);
+      }
+      const sub = teamDoc.substitute;
+      if (sub?.minecraftIGN?.trim() || sub?.discordUsername?.trim()) {
+        const ignKey = (sub.minecraftIGN ?? "").trim().toLowerCase();
+        const discordKey = (sub.discordUsername ?? "").trim();
         if (ignKey) usedIgns.add(ignKey);
         if (discordKey) usedDiscords.add(discordKey);
       }

@@ -34,6 +34,7 @@ type CreateBody = {
   description?: string;
   prize?: string;
   serverIP?: string;
+  allowSubstitute?: boolean;
 };
 
 function validateCreateBody(
@@ -95,9 +96,11 @@ function validateCreateBody(
   const desc = typeof b.description === "string" ? b.description.trim() : "";
   const prize = typeof b.prize === "string" ? b.prize.trim() : "";
   const serverIP = typeof b.serverIP === "string" ? b.serverIP.trim() : "";
+  const allowSubstitute = typeof b.allowSubstitute === "boolean" ? b.allowSubstitute : false;
   if (desc) data.description = desc;
   if (prize) data.prize = prize;
   if (serverIP) data.serverIP = serverIP;
+  data.allowSubstitute = allowSubstitute;
 
   return { ok: true, data };
 }

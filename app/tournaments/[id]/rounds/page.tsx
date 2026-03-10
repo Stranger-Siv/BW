@@ -15,6 +15,10 @@ type RoundPublic = {
   scheduledAt?: string;
   teamIds: string[];
   teams: { id: string; name: string }[];
+  /** True if this round is the final (winner round) for champion display */
+  isWinnerRound?: boolean;
+  /** Number of team slots: 2 = 4v4, 4 = 4v4v4v4 (default) */
+  slotCount?: number;
 };
 
 export default function TournamentRoundsPage() {
@@ -68,8 +72,12 @@ export default function TournamentRoundsPage() {
 
   const r1GroupNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
   const has32Structure = rounds.some((r) => r.name === "R21" || r.name === "R22" || r.name === "R3");
-  const finalRound = rounds.find((r) => r.name === (has32Structure ? "R3" : "R2"));
+  const finalRound =
+    rounds.find((r) => r.isWinnerRound === true) ??
+    rounds.find((r) => r.name === "R2" || r.name === "R3");
   const championName = winner?.teamName ?? null;
+
+  const slotCount = (round: RoundPublic) => round.slotCount === 2 ? 2 : 4;
 
   const teamPhaseById = useMemo(() => {
     type Phase = "none" | "played" | "advanced";
@@ -259,7 +267,9 @@ export default function TournamentRoundsPage() {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {groupRounds.map((round) => {
                       const matches = getMatchForRound(round);
-                      const teams = matches[0] ?? [];
+                      const allTeams = matches[0] ?? [];
+                      const slots = slotCount(round);
+                      const teams = allTeams.slice(0, slots);
                       const laterTeams = new Set<string>();
                       rounds
                         .filter((r) => r.roundNumber > round.roundNumber)
@@ -297,7 +307,7 @@ export default function TournamentRoundsPage() {
                                 </Link>
                               );
                             })}
-                            {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
+                            {Array.from({ length: Math.max(0, slotCount(round) - teams.length) }).map((_, i) => (
                               <div
                                 key={`empty-${i}`}
                                 className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
@@ -323,7 +333,9 @@ export default function TournamentRoundsPage() {
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {semiRounds.map((round) => {
                           const matches = getMatchForRound(round);
-                          const teams = matches[0] ?? [];
+                          const allTeams = matches[0] ?? [];
+                          const slots = slotCount(round);
+                          const teams = allTeams.slice(0, slots);
                           const laterTeams = new Set<string>();
                           rounds
                             .filter((r) => r.roundNumber > round.roundNumber)
@@ -371,7 +383,7 @@ export default function TournamentRoundsPage() {
                                     </Link>
                                   );
                                 })}
-                                {Array.from({ length: Math.max(0, 4 - teams.length) }).map((_, i) => (
+                                {Array.from({ length: Math.max(0, slotCount(round) - teams.length) }).map((_, i) => (
                                   <div
                                     key={`empty-${i}`}
                                     className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
@@ -386,7 +398,90 @@ export default function TournamentRoundsPage() {
                       </div>
                     </section>
                   )}
-                  {/* Final: R3 (32-team) or R2 (16-team) */}
+
+                  {/* Other rounds (custom names not in group/semi/final) */}
+                  {(() => {
+                    const winnerRoundIds = new Set(
+                      rounds.filter((r) => r.isWinnerRound === true || r.name === "R2" || r.name === "R3").map((r) => r._id)
+                    );
+                    const otherRounds = rounds
+                      .filter(
+                        (r) =>
+                          !r1GroupNames.includes(r.name) &&
+                          r.name !== "R21" &&
+                          r.name !== "R22" &&
+                          !winnerRoundIds.has(r._id)
+                      )
+                      .sort((a, b) => a.roundNumber - b.roundNumber);
+                    if (otherRounds.length === 0) return null;
+                    return (
+                      <section className="space-y-4">
+                        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                          Other rounds
+                        </h2>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                          {otherRounds.map((round) => {
+                            const matches = getMatchForRound(round);
+                            const teams = matches[0] ?? [];
+                            const slots = slotCount(round);
+                            const laterTeams = new Set<string>();
+                            rounds
+                              .filter((r) => r.roundNumber > round.roundNumber)
+                              .forEach((r) => r.teamIds.forEach((tid) => laterTeams.add(tid)));
+                            const hasDecision = round.teamIds.some((tid) => laterTeams.has(tid));
+                            return (
+                              <section key={round._id} className="card-glass p-4 sm:p-5">
+                                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                  <h2 className="font-semibold text-slate-800 dark:text-slate-200">{round.name}</h2>
+                                  {round.scheduledAt && (
+                                    <span className="text-xs text-slate-500 dark:text-slate-500">
+                                      {formatDateTime(round.scheduledAt)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={`grid gap-2 ${slots === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
+                                  {teams.slice(0, slots).map((t) => {
+                                    const isWinnerFromThisRound = hasDecision && laterTeams.has(t.id);
+                                    const isLoserFromThisRound =
+                                      hasDecision && !laterTeams.has(t.id) && round.teamIds.includes(t.id);
+                                    const baseClass = isWinnerFromThisRound
+                                      ? "border border-emerald-400/70 bg-emerald-500/20 text-emerald-100"
+                                      : isLoserFromThisRound
+                                        ? "border border-red-400/70 bg-red-500/15 text-red-100"
+                                        : "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200";
+                                    return (
+                                      <Link
+                                        key={t.id}
+                                        href={`/tournaments/${id}/teams/${t.id}`}
+                                        className={`flex min-h-[2.25rem] items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-medium transition hover:ring-2 hover:ring-emerald-400/60 hover:ring-offset-2 hover:ring-offset-slate-950 ${baseClass}`}
+                                        title={t.name || "—"}
+                                      >
+                                        <span
+                                          className={`min-w-0 flex-1 truncate whitespace-nowrap ${isWinnerFromThisRound ? "text-emerald-50" : isLoserFromThisRound ? "text-red-100" : "text-slate-200"}`}
+                                        >
+                                          {t.name || "—"}
+                                        </span>
+                                      </Link>
+                                    );
+                                  })}
+                                  {Array.from({ length: Math.max(0, slots - teams.length) }).map((_, i) => (
+                                    <div
+                                      key={`empty-${i}`}
+                                      className="rounded-lg border border-dashed border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-slate-500 dark:text-slate-500"
+                                    >
+                                      TBD
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })()}
+
+                  {/* Final: winner round (R3/R2 or custom) */}
                   {finalRound && (
                     <section
                       key={finalRound._id}
@@ -414,8 +509,12 @@ export default function TournamentRoundsPage() {
                           Winners from R11–R14 advance here.
                         </p>
                       )}
-                      <div className="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-                        {(getMatchForRound(finalRound)[0] ?? []).map((t) => {
+                      <div
+                        className={`grid max-w-2xl gap-3 ${
+                          slotCount(finalRound) === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"
+                        }`}
+                      >
+                        {(getMatchForRound(finalRound)[0] ?? []).slice(0, slotCount(finalRound)).map((t) => {
                           const isChampion = championName && t.name === championName;
                           const baseClass = !championName
                             ? "border border-white/10 bg-white/5 text-slate-800 dark:text-slate-200"
@@ -440,7 +539,9 @@ export default function TournamentRoundsPage() {
                             </Link>
                           );
                         })}
-                        {Array.from({ length: Math.max(0, 4 - (getMatchForRound(finalRound)[0] ?? []).length) }).map((_, i) => (
+                        {Array.from({
+                          length: Math.max(0, slotCount(finalRound) - (getMatchForRound(finalRound)[0] ?? []).length),
+                        }).map((_, i) => (
                           <div
                             key={`empty-${i}`}
                             className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-slate-500 dark:text-slate-500"

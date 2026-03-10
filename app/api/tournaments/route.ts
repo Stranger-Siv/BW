@@ -23,7 +23,7 @@ export async function GET() {
       status: { $in: ["scheduled", "registration_open", "registration_closed", "ongoing", "completed"] },
     })
       .sort({ date: 1, startTime: 1 })
-      .select("name type date startTime registrationDeadline maxTeams teamSize registeredTeams status scheduledAt description prize serverIP")
+      .select("name type date startTime registrationDeadline maxTeams teamSize registeredTeams status scheduledAt description prize serverIP allowSubstitute")
       .lean();
     return NextResponse.json(list, { status: 200 });
   } catch (err) {
