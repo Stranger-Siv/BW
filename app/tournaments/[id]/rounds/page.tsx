@@ -31,10 +31,14 @@ export default function TournamentRoundsPage() {
     rewardReceiverIGN: string;
     players: { minecraftIGN: string; discordUsername: string; discordVerified?: boolean }[];
   } | null>(null);
+  const [celebrateArmed, setCelebrateArmed] = useState(false);
   const [tournamentName, setTournamentName] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setCelebrateArmed(true);
+  }, []);
 
   const fetchRounds = useCallback(async () => {
     if (!id) return;
@@ -78,6 +82,52 @@ export default function TournamentRoundsPage() {
     rounds.find((r) => r.isWinnerRound === true) ??
     rounds.find((r) => r.name === "R2" || r.name === "R3");
   const championName = winner?.teamName ?? null;
+
+  const celebrate = useCallback(async () => {
+    try {
+      const mod = await import("canvas-confetti");
+      const confetti = mod.default;
+      const colors = ["#f59e0b", "#10b981", "#22c55e", "#38bdf8", "#a78bfa", "#fb7185"];
+      const base = {
+        origin: { y: 0.65 },
+        colors,
+        disableForReducedMotion: true,
+      } as const;
+
+      const duration = 5000;
+      const steps = 10;
+      for (let i = 0; i < steps; i++) {
+        const delay = Math.round((duration / steps) * i);
+        setTimeout(() => {
+          const intensity = 1 - i / steps;
+          confetti({
+            ...base,
+            particleCount: 80 + Math.round(40 * intensity),
+            spread: 70 + 40 * intensity,
+            startVelocity: 35 + 15 * intensity,
+            scalar: 0.9 + 0.2 * intensity,
+          });
+        }, delay);
+      }
+    } catch {
+      // ignore (confetti is purely cosmetic)
+    }
+  }, []);
+
+  // One-time "cracker burst" when winner exists.
+  useEffect(() => {
+    if (!id) return;
+    if (!winner?.teamName) return;
+    if (!celebrateArmed) return;
+    try {
+      const key = `bw-winner-burst:${id}:${winner.teamName}`;
+      if (localStorage.getItem(key) === "1") return;
+      localStorage.setItem(key, "1");
+      celebrate();
+    } catch {
+      celebrate();
+    }
+  }, [id, winner?.teamName, celebrateArmed, celebrate]);
 
   const slotCount = (round: RoundPublic) => round.slotCount === 2 ? 2 : 4;
   const layerKeyFor = (name: string) => {
@@ -227,12 +277,24 @@ export default function TournamentRoundsPage() {
           <>
             {winner && (
               <div className="card-glass mb-6 border-emerald-400/30 bg-emerald-500/10 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                  Tournament winner
-                </h2>
-                <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                  {winner.teamName}
-                </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                      Tournament winner
+                    </h2>
+                    <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
+                      {winner.teamName}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => celebrate()}
+                    className="rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/25"
+                    title="Celebrate again"
+                  >
+                    Celebrate
+                  </button>
+                </div>
                 <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   Reward receiver:{" "}
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">{winner.rewardReceiverIGN}</span>
