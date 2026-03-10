@@ -15,7 +15,7 @@ const nextConfig = {
             value: (() => {
               // Next.js dev (HMR) and some tooling use eval; allow it so the app runs under CSP.
               const scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
-              const workerSrc = "worker-src 'self' 'unsafe-inline' 'unsafe-eval'";
+              const workerSrc = "worker-src 'self' blob: 'unsafe-inline' 'unsafe-eval'";
               return [
                 "default-src 'self'",
                 scriptSrc,
