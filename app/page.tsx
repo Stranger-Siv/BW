@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
+import { ServerIpChip } from "@/components/ServerIpChip";
 import { HeroTicker } from "@/components/HeroTicker";
 import { FadeInUp, FadeInUpInView, StaggerChildren, StaggerChildrenInView, StaggerItem } from "@/components/ui/animations";
 
@@ -113,7 +114,7 @@ export default function HomePage() {
               </h2>
               <p className="text-slate-400">
                 Tournaments are hosted on <strong className="text-slate-200">{SITE.serverName}</strong> at{" "}
-                <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>.
+                <ServerIpChip />.
                 Version and match details are posted on the tournaments page and in Discord before each event.
               </p>
             </div>
@@ -278,7 +279,7 @@ export default function HomePage() {
               <li>Team must have the required size (Solo 1, Duo 2, Squad 4)</li>
               <li>All players must join the official Discord: <a href={SITE.discordUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-emerald-400 hover:text-emerald-300">Join here</a></li>
               <li>Subscribe to {SITE.hostedBy} on YouTube</li>
-              <li>Matches are hosted on {SITE.serverName} — <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code></li>
+              <li>Matches are hosted on {SITE.serverName} — <ServerIpChip /></li>
               <li>Minecraft Java Edition and a valid in-game name (IGN)</li>
               <li>Google account to sign in and register on this site</li>
               <li>For Duo/Squad: the captain fills in all players’ Minecraft IGN and Discord</li>

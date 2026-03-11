@@ -7,6 +7,7 @@ import { formatDateTime } from "@/lib/formatDate";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
+import { ServerIpChip } from "@/components/ServerIpChip";
 
 type RoundPublic = {
   _id: string;
@@ -221,9 +222,7 @@ export default function TournamentRoundsPage() {
             <div>
               <p className="text-sm font-medium text-slate-200">
                 All matches on <strong>{SITE.serverName}</strong> ·{" "}
-                <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">
-                  {SITE.serverIp}
-                </code>
+                <ServerIpChip />
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 Sponsored by{" "}

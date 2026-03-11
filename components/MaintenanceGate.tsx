@@ -10,6 +10,7 @@ import { ImpersonationBanner } from "./ImpersonationBanner";
 import { DiscordConnectBanner } from "./DiscordConnectBanner";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
+import { ServerIpChip } from "@/components/ServerIpChip";
 
 type Maintenance = { maintenanceMode: boolean };
 
@@ -124,7 +125,7 @@ export function MaintenanceGate({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center justify-between gap-4 text-slate-300">
                 <span className="text-slate-500">Address</span>
-                <span className="font-mono text-slate-200">{SITE.serverIp}</span>
+                <ServerIpChip />
               </div>
               {SITE.hostedBy && (
                 <div className="flex items-center justify-between gap-4 text-slate-300">

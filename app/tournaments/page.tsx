@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePusherChannel } from "@/components/providers/PusherProvider";
 import { SITE } from "@/lib/site";
 import { HostedByName } from "@/components/HostedByName";
+import { ServerIpChip } from "@/components/ServerIpChip";
 import { PlayerRow } from "@/components/registration/PlayerRow";
 import { RewardReceiverSelect } from "@/components/registration/RewardReceiverSelect";
 import { formatDateLabel, formatDateTime } from "@/lib/formatDate";
@@ -683,7 +684,8 @@ export default function TournamentsPage() {
             />
             <div>
               <p className="text-sm font-medium text-slate-200">
-                All matches on <strong>{SITE.serverName}</strong> · <code className="rounded bg-white/10 px-1.5 py-0.5 text-emerald-400">{SITE.serverIp}</code>
+                All matches on <strong>{SITE.serverName}</strong> ·{" "}
+                <ServerIpChip />
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 Sponsored by{" "}
