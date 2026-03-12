@@ -17,6 +17,7 @@ type TeamDetail = {
   createdAt: string;
   captainId?: UserPopulated;
   players: PlayerEntry[];
+  substitute?: { minecraftIGN: string; discordUsername: string } | null;
   tournamentId?: TournamentPopulated;
 };
 
@@ -386,7 +387,7 @@ export default function TeamDetailPage() {
         {/* Roster */}
         <section className="card animate-fade-in mt-4 sm:mt-6">
           <h2 className="section-title mb-4">
-            Roster ({players.length})
+            Roster ({players.length}{team.substitute ? " + substitute" : ""})
           </h2>
           <ul className="space-y-3">
             {players.map((p, idx) => {
@@ -444,6 +445,30 @@ export default function TeamDetailPage() {
                 </li>
               );
             })}
+            {team.substitute ? (
+              <li className="flex flex-col gap-3 rounded-xl border border-dashed border-white/20 bg-white/5 p-4 dark:border-white/20 dark:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-slate-600/40 text-sm font-semibold text-slate-400">
+                    S
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {team.substitute.minecraftIGN || "—"}
+                      </p>
+                      <span className="rounded bg-slate-500/25 px-1.5 py-0.5 text-xs font-medium text-slate-400">
+                        Substitute
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                      <span className="font-medium text-slate-400">IGN</span> {team.substitute.minecraftIGN || "—"}
+                      <span className="mx-2 text-slate-600">·</span>
+                      <span className="font-medium text-slate-400">Discord</span> {team.substitute.discordUsername || "—"}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ) : null}
           </ul>
           {isCaptain && registrationOpen && players.length > 1 && (
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">

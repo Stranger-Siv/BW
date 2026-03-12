@@ -152,7 +152,7 @@ export default function TournamentTeamPublicPage() {
 
           <section className="card animate-fade-in lg:col-span-1">
             <h2 className="section-title mb-4">Players</h2>
-            {team.players.length === 0 && !(team.substitute?.minecraftIGN?.trim() || team.substitute?.discordUsername?.trim()) ? (
+            {team.players.length === 0 && !team.substitute ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 No players found for this team.
               </p>
@@ -171,7 +171,7 @@ export default function TournamentTeamPublicPage() {
                     </p>
                   </li>
                 ))}
-                {team.substitute?.minecraftIGN?.trim() || team.substitute?.discordUsername?.trim() ? (
+                {team.substitute ? (
                   <li className="rounded-xl border border-dashed border-white/20 bg-white/5 px-4 py-3 dark:border-white/20 dark:bg-white/5">
                     <p className="font-medium text-slate-800 dark:text-slate-100 break-all">
                       {team.substitute.minecraftIGN || "—"}
