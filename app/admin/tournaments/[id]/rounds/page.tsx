@@ -50,6 +50,7 @@ export default function AdminTournamentRoundsPage() {
   const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
   const [scheduleValue, setScheduleValue] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const fetchRounds = useCallback(async () => {
     if (!id) return;
@@ -80,6 +81,23 @@ export default function AdminTournamentRoundsPage() {
     setWinnerTeamId(t?.winnerTeamId ?? null);
     setRoundLayerMeta((t?.roundLayerMeta ?? {}) as Record<string, { label?: string; details?: string }>);
   }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/users/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { role?: string } | null) => {
+        if (!cancelled && data?.role === "super_admin") {
+          setIsSuperAdmin(true);
+        }
+      })
+      .catch(() => {
+        // ignore – UI still works without role info
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -283,6 +301,63 @@ export default function AdminTournamentRoundsPage() {
         { name: "R22", roundNumber: 10, teamIds: [] },
         { name: "R3", roundNumber: 11, teamIds: [], isWinnerRound: true, slotCount: 4 },
       ];
+      await createRoundsWithTeams(roundsToCreate);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setAddRoundLoading(false);
+    }
+  }, [teams, createRoundsWithTeams]);
+
+  /**
+   * Creates a 64-team first layer for super admins:
+   * - R1-1…R1-16 (16 groups of 4 teams each, 64 teams total)
+   * - R2-1 (empty, 4-team knockout)
+   * - R3 (final, winner round, 4 teams)
+   *
+   * Super admin can manually move winners forward using the advance arrows.
+   */
+  const createAll64TeamRounds = useCallback(async () => {
+    if (teams.length < 64) {
+      setError("Need at least 64 registered teams. You have " + teams.length + ".");
+      return;
+    }
+    setAddRoundLoading(true);
+    setError(null);
+    try {
+      const teamIds = teams.slice(0, 64).map((t) => t._id);
+      const roundsToCreate: {
+        name: string;
+        roundNumber: number;
+        teamIds: string[];
+        isWinnerRound?: boolean;
+        slotCount?: number;
+      }[] = [];
+
+      for (let i = 0; i < 16; i += 1) {
+        const index = i + 1;
+        roundsToCreate.push({
+          name: `R1-${index}`,
+          roundNumber: index,
+          teamIds: teamIds.slice(i * 4, i * 4 + 4),
+        });
+      }
+
+      roundsToCreate.push({
+        name: "R2-1",
+        roundNumber: 17,
+        teamIds: [],
+        slotCount: 4,
+      });
+
+      roundsToCreate.push({
+        name: "R3",
+        roundNumber: 18,
+        teamIds: [],
+        isWinnerRound: true,
+        slotCount: 4,
+      });
+
       await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -682,7 +757,7 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. You can also add custom rounds (e.g. a 4v4 final with 2 teams). Mark a round as &quot;Winner round&quot; to use 🏆 and show the champion on the public page.
+              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. For 64-team brackets, a super admin can auto-create a first layer (R1-1–R1-16) plus R2-1 and R3 below, then advance winners manually. You can also add custom rounds (e.g. a 4v4 final with 2 teams). Mark a round as &quot;Winner round&quot; to use 🏆 and show the champion on the public page.
             </p>
 
             {(() => {
@@ -886,6 +961,18 @@ export default function AdminTournamentRoundsPage() {
                 >
                   {addRoundLoading ? "Creating…" : "Create 32-team rounds (R11–R18, R21, R22, R3)"}
                 </button>
+                {isSuperAdmin && (
+                  <button
+                    type="button"
+                    onClick={createAll64TeamRounds}
+                    disabled={addRoundLoading || teams.length < 64}
+                    className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-slate-50 hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    {addRoundLoading
+                      ? "Creating…"
+                      : "Create 64-team rounds (R1-1–R1-16, R2-1, R3)"}
+                  </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {teams.map((t) => (
