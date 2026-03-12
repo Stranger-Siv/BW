@@ -23,7 +23,7 @@ export async function GET(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
     const team = await Team.findOne({ _id: teamId, tournamentId: id })
-      .select("teamName createdAt players rewardReceiverIGN")
+      .select("teamName createdAt players rewardReceiverIGN substitute")
       .lean();
     if (!team) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
@@ -45,6 +45,7 @@ export async function GET(
       createdAt: Date;
       players: { minecraftIGN: string; discordUsername: string }[];
       rewardReceiverIGN: string;
+      substitute?: { minecraftIGN: string; discordUsername: string };
     };
     return NextResponse.json(
       {
@@ -52,6 +53,7 @@ export async function GET(
         createdAt: t.createdAt,
         players: t.players ?? [],
         rewardReceiverIGN: t.rewardReceiverIGN ?? "",
+        substitute: t.substitute ?? null,
         roundInfo,
         isWinner: !!isWinner,
       },

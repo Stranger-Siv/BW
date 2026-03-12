@@ -12,6 +12,7 @@ type TeamPublicDetail = {
   createdAt: string;
   players: Player[];
   rewardReceiverIGN: string;
+  substitute?: Player | null;
   roundInfo: { roundNumber: number; name: string } | null;
   isWinner: boolean;
 };
@@ -151,7 +152,7 @@ export default function TournamentTeamPublicPage() {
 
           <section className="card animate-fade-in lg:col-span-1">
             <h2 className="section-title mb-4">Players</h2>
-            {team.players.length === 0 ? (
+            {team.players.length === 0 && !(team.substitute?.minecraftIGN?.trim() || team.substitute?.discordUsername?.trim()) ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 No players found for this team.
               </p>
@@ -170,6 +171,17 @@ export default function TournamentTeamPublicPage() {
                     </p>
                   </li>
                 ))}
+                {team.substitute?.minecraftIGN?.trim() || team.substitute?.discordUsername?.trim() ? (
+                  <li className="rounded-xl border border-dashed border-white/20 bg-white/5 px-4 py-3 dark:border-white/20 dark:bg-white/5">
+                    <p className="font-medium text-slate-800 dark:text-slate-100 break-all">
+                      {team.substitute.minecraftIGN || "—"}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 break-all">
+                      {team.substitute.discordUsername || "—"}
+                      <span className="ml-1.5 text-slate-500/80">(Substitute)</span>
+                    </p>
+                  </li>
+                ) : null}
               </ul>
             )}
           </section>

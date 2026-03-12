@@ -18,6 +18,7 @@ type TeamDetail = {
   createdAt: string;
   players: { minecraftIGN: string; discordUsername: string }[];
   rewardReceiverIGN: string;
+  substitute?: { minecraftIGN: string; discordUsername: string } | null;
   roundInfo: { roundNumber: number; name: string } | null;
   isWinner: boolean;
 };
@@ -1340,6 +1341,15 @@ export default function TournamentsPage() {
                                   <span className="text-slate-500">{p.discordUsername}</span>
                                 </li>
                               ))}
+                              {teamDetail.substitute?.minecraftIGN?.trim() || teamDetail.substitute?.discordUsername?.trim() ? (
+                                <li className="flex justify-between gap-3 text-xs text-slate-200 border-t border-white/10 pt-1.5 mt-1.5">
+                                  <span className="font-medium">{teamDetail.substitute.minecraftIGN || "—"}</span>
+                                  <span className="text-slate-500">
+                                    {teamDetail.substitute.discordUsername || "—"}
+                                    <span className="ml-1.5 text-slate-500/80">(Substitute)</span>
+                                  </span>
+                                </li>
+                              ) : null}
                             </ul>
                           </div>
                           <div>
