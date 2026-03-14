@@ -53,7 +53,7 @@ export async function POST(
     const isWinnerRound = typeof body.isWinnerRound === "boolean" ? body.isWinnerRound : undefined;
     const slotCountRaw = body.slotCount;
     const slotCount =
-      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
+      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 3 || slotCountRaw === 4)
         ? slotCountRaw
         : undefined;
     const stageLabel = typeof body.stageLabel === "string" ? body.stageLabel.trim() : undefined;
@@ -133,7 +133,7 @@ export async function PATCH(
     const isWinnerRound = typeof body.isWinnerRound === "boolean" ? body.isWinnerRound : undefined;
     const slotCountRaw = body.slotCount;
     const slotCount =
-      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 4)
+      typeof slotCountRaw === "number" && (slotCountRaw === 2 || slotCountRaw === 3 || slotCountRaw === 4)
         ? slotCountRaw
         : undefined;
     const stageLabel = typeof body.stageLabel === "string" ? body.stageLabel.trim() : undefined;

@@ -132,7 +132,8 @@ export default function TournamentRoundsPage() {
     }
   }, [id, winner?.teamName, celebrateArmed, celebrate]);
 
-  const slotCount = (round: RoundPublic) => round.slotCount === 2 ? 2 : 4;
+  const slotCount = (round: RoundPublic) =>
+    round.slotCount === 2 ? 2 : round.slotCount === 3 ? 3 : 4;
   const layerKeyFor = (name: string) => {
     const m = /^R(\d)/.exec(name || "");
     return m?.[1] ?? null;
@@ -642,7 +643,11 @@ export default function TournamentRoundsPage() {
                       )}
                       <div
                         className={`grid max-w-2xl gap-3 ${
-                          slotCount(finalRound) === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"
+                          slotCount(finalRound) === 2
+                            ? "grid-cols-2"
+                            : slotCount(finalRound) === 3
+                              ? "grid-cols-3"
+                              : "grid-cols-2 sm:grid-cols-4"
                         }`}
                       >
                         {(getMatchForRound(finalRound)[0] ?? []).slice(0, slotCount(finalRound)).map((t) => {

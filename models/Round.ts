@@ -8,7 +8,7 @@ export interface IRound {
   teamIds: mongoose.Types.ObjectId[];
   /** True if this round is the final (winner round); used for champion display and 🏆 in admin */
   isWinnerRound?: boolean;
-  /** Number of team slots in this round: 2 = 4v4 (one match), 4 = 4v4v4v4 (default) */
+  /** Number of team slots in this round: 2 = 4v4, 3 = 4v4v4, 4 = 4v4v4v4 (default) */
   slotCount?: number;
   /** Optional label shown to players, e.g. "Final", "Semi-final", "Quarter-final", "Knockout" */
   stageLabel?: string;

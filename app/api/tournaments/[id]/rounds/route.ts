@@ -46,7 +46,7 @@ export async function GET(
         teamIds: rDoc.teamIds.map((tid) => tid.toString()),
         teams: rDoc.teamIds.map((tid) => ({ id: tid.toString(), name: teamMap.get(tid.toString()) ?? "—" })),
         isWinnerRound: rDoc.isWinnerRound === true,
-        slotCount: rDoc.slotCount === 2 ? 2 : 4,
+        slotCount: (rDoc.slotCount === 2 || rDoc.slotCount === 3) ? rDoc.slotCount : 4,
         stageLabel: typeof rDoc.stageLabel === "string" ? rDoc.stageLabel : undefined,
         publicDetails: typeof rDoc.publicDetails === "string" ? rDoc.publicDetails : undefined,
       };
