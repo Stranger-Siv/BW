@@ -60,6 +60,7 @@ export default function AdminTournamentRoundsPage() {
   const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
   const [scheduleValue, setScheduleValue] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [deleteAllRoundsLoading, setDeleteAllRoundsLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const fetchRounds = useCallback(async () => {
@@ -216,6 +217,24 @@ export default function AdminTournamentRoundsPage() {
     },
     [id, fetchRounds]
   );
+
+  const deleteAllRounds = useCallback(async () => {
+    if (!confirm("Delete ALL rounds for this tournament? Teams are not removed; you can add a new format and place them again. Tournament winner will be cleared.")) return;
+    setDeleteAllRoundsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/tournaments/${id}/rounds`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete rounds");
+      setWinnerTeamId(null);
+      fetchRounds();
+      fetchTournament();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete all rounds");
+    } finally {
+      setDeleteAllRoundsLoading(false);
+    }
+  }, [id, fetchRounds, fetchTournament]);
 
   const R1_SERIES_NAMES = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"] as const;
   const R2_SEMI_NAMES = ["R21", "R22"] as const;
@@ -732,6 +751,23 @@ export default function AdminTournamentRoundsPage() {
         {error && (
           <div className="mb-4 rounded-lg border border-red-300 bg-red-100/80 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200">
             {error}
+          </div>
+        )}
+
+        {rounds.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={deleteAllRounds}
+              disabled={deleteAllRoundsLoading || deleteLoading !== null}
+              className="rounded-lg border border-red-400/60 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-500/20 disabled:opacity-60 dark:border-red-400/50 dark:text-red-300 dark:hover:bg-red-500/20"
+              title="Remove all rounds to set up a new format. Teams stay registered."
+            >
+              {deleteAllRoundsLoading ? "Deleting…" : "Delete all rounds"}
+            </button>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Clear current format so you can add a new one. Teams are not removed.
+            </span>
           </div>
         )}
 

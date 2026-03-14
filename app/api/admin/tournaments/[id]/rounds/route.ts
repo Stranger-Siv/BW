@@ -183,3 +183,34 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update round" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/admin/tournaments/[id]/rounds
+ * Delete all rounds for this tournament. Teams are not deleted; tournament winner is cleared.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id?: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!isAdminOrSuperAdmin(session)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const id = params?.id;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid tournament ID" }, { status: 400 });
+    }
+    await connectDB();
+    const tournamentId = new mongoose.Types.ObjectId(id);
+    const result = await Round.deleteMany({ tournamentId });
+    await Tournament.findByIdAndUpdate(id, { $unset: { winnerTeamId: 1 } });
+    return NextResponse.json(
+      { success: true, deletedCount: result.deletedCount },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.error("DELETE all rounds error:", err);
+    return NextResponse.json({ error: "Failed to delete rounds" }, { status: 500 });
+  }
+}
