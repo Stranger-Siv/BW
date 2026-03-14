@@ -27,6 +27,16 @@ type RoundDoc = {
 
 type TeamDoc = { _id: string; teamName: string; rewardReceiverIGN?: string };
 
+/** Fisher–Yates shuffle; returns a new array so teams are randomly assigned to rounds. */
+function shuffleTeams<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export default function AdminTournamentRoundsPage() {
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : "";
@@ -262,7 +272,7 @@ export default function AdminTournamentRoundsPage() {
     setAddRoundLoading(true);
     setError(null);
     try {
-      const teamIds = teams.slice(0, 16).map((t) => t._id);
+      const teamIds = shuffleTeams(teams.slice(0, 16)).map((t) => t._id);
       const roundsToCreate = [
         { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
         { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
@@ -287,7 +297,7 @@ export default function AdminTournamentRoundsPage() {
     setAddRoundLoading(true);
     setError(null);
     try {
-      const teamIds = teams.slice(0, 32).map((t) => t._id);
+      const teamIds = shuffleTeams(teams.slice(0, 32)).map((t) => t._id);
       const roundsToCreate = [
         { name: "R11", roundNumber: 1, teamIds: teamIds.slice(0, 4) },
         { name: "R12", roundNumber: 2, teamIds: teamIds.slice(4, 8) },
@@ -301,6 +311,61 @@ export default function AdminTournamentRoundsPage() {
         { name: "R22", roundNumber: 10, teamIds: [] },
         { name: "R3", roundNumber: 11, teamIds: [], isWinnerRound: true, slotCount: 4 },
       ];
+      await createRoundsWithTeams(roundsToCreate);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setAddRoundLoading(false);
+    }
+  }, [teams, createRoundsWithTeams]);
+
+  /**
+   * Creates 44-team bracket (same structure as 16/32): 11 groups of 4 → 4 semi rounds → final.
+   * R1-1…R1-11 (44 teams), R2-1…R2-4 (4 semi), R3 (winner round).
+   */
+  const createAll44TeamRounds = useCallback(async () => {
+    if (teams.length < 44) {
+      setError("Need at least 44 registered teams. You have " + teams.length + ".");
+      return;
+    }
+    setAddRoundLoading(true);
+    setError(null);
+    try {
+      const teamIds = shuffleTeams(teams.slice(0, 44)).map((t) => t._id);
+      const roundsToCreate: {
+        name: string;
+        roundNumber: number;
+        teamIds: string[];
+        isWinnerRound?: boolean;
+        slotCount?: number;
+      }[] = [];
+
+      for (let i = 0; i < 11; i += 1) {
+        const index = i + 1;
+        roundsToCreate.push({
+          name: `R1-${index}`,
+          roundNumber: index,
+          teamIds: teamIds.slice(i * 4, i * 4 + 4),
+        });
+      }
+
+      for (let i = 1; i <= 4; i += 1) {
+        roundsToCreate.push({
+          name: `R2-${i}`,
+          roundNumber: 11 + i,
+          teamIds: [],
+          slotCount: 4,
+        });
+      }
+
+      roundsToCreate.push({
+        name: "R3",
+        roundNumber: 16,
+        teamIds: [],
+        isWinnerRound: true,
+        slotCount: 4,
+      });
+
       await createRoundsWithTeams(roundsToCreate);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
@@ -325,7 +390,7 @@ export default function AdminTournamentRoundsPage() {
     setAddRoundLoading(true);
     setError(null);
     try {
-      const teamIds = teams.slice(0, 64).map((t) => t._id);
+      const teamIds = shuffleTeams(teams.slice(0, 64)).map((t) => t._id);
       const roundsToCreate: {
         name: string;
         roundNumber: number;
@@ -423,11 +488,11 @@ export default function AdminTournamentRoundsPage() {
 
       // Special case: dragging from the registered teams pool (no source round yet).
       if (fromRoundId === "pool") {
-        const maxTeamsNext = (["R2", "R21", "R22", R3_FINAL_NAME] as const).includes(
-          toRound.name as "R2" | "R21" | "R22" | "R3"
-        )
-          ? 4
-          : Infinity;
+        const semiOrFinal =
+          ["R2", "R21", "R22", R3_FINAL_NAME].includes(toRound.name) ||
+          /^R2-\d+$/.test(toRound.name) ||
+          toRound.slotCount === 4;
+        const maxTeamsNext = semiOrFinal ? 4 : Infinity;
         const alreadyIn = toRound.teamIds.includes(teamId);
         if (!alreadyIn && toRound.teamIds.length >= maxTeamsNext) return;
         const newToIds = alreadyIn ? toRound.teamIds : [...toRound.teamIds, teamId];
@@ -439,11 +504,12 @@ export default function AdminTournamentRoundsPage() {
       if (!fromRound) return;
 
       // Always keep the team in the source round (copy behavior), like the advance-arrow.
-      // Admin can manually remove from a round if needed.
       const newFromIds = fromRound.teamIds;
-      const maxTeamsNext = (["R2", "R21", "R22", R3_FINAL_NAME] as const).includes(toRound.name as "R2" | "R21" | "R22" | "R3")
-        ? 4
-        : Infinity;
+      const semiOrFinal =
+        ["R2", "R21", "R22", R3_FINAL_NAME].includes(toRound.name) ||
+        /^R2-\d+$/.test(toRound.name) ||
+        toRound.slotCount === 4;
+      const maxTeamsNext = semiOrFinal ? 4 : Infinity;
       const wouldAdd = !toRound.teamIds.includes(teamId);
       if (wouldAdd && toRound.teamIds.length >= maxTeamsNext) return;
       const newToIds = toRound.teamIds.includes(teamId)
@@ -757,15 +823,17 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. For 64-team brackets, a super admin can auto-create a first layer (R1-1–R1-16) plus R2-1 and R3 below, then advance winners manually. You can also add custom rounds (e.g. a 4v4 final with 2 teams). Mark a round as &quot;Winner round&quot; to use 🏆 and show the champion on the public page.
+              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. 44-team: R1-1–R1-11 → R2-1–R2-4 → R3. For 64-team brackets, a super admin can auto-create R1-1–R1-16, R2-1, R3. You can also add custom rounds. Mark a round as &quot;Winner round&quot; to use 🏆 and show the champion on the public page.
             </p>
 
             {(() => {
               const groupRoundNames = ["R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18"];
               const semiNames = ["R21", "R22"];
-              const groupRounds = rounds.filter((r) => groupRoundNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
-              const semiRounds = rounds.filter((r) => semiNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
-              const otherRounds = rounds.filter((r) => !groupRoundNames.includes(r.name) && !semiNames.includes(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+              const isGroupRound = (name: string) => groupRoundNames.includes(name) || /^R1-\d+$/.test(name);
+              const isSemiRound = (name: string) => semiNames.includes(name) || /^R2-\d+$/.test(name);
+              const groupRounds = rounds.filter((r) => isGroupRound(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+              const semiRounds = rounds.filter((r) => isSemiRound(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
+              const otherRounds = rounds.filter((r) => !isGroupRound(r.name) && !isSemiRound(r.name)).sort((a, b) => a.roundNumber - b.roundNumber);
 
               const renderRoundCard = (round: RoundDoc) => (
                 <div
@@ -869,7 +937,9 @@ export default function AdminTournamentRoundsPage() {
                             ) : (
                               (() => {
                                 const isR1Series = (R1_SERIES_NAMES as readonly string[]).includes(round.name);
+                                const isR1Dash = /^R1-\d+$/.test(round.name);
                                 const isSemi = (R2_SEMI_NAMES as readonly string[]).includes(round.name);
+                                const isR2Dash = /^R2-\d+$/.test(round.name);
                                 const r21 = rounds.find((r) => r.name === "R21");
                                 const r22 = rounds.find((r) => r.name === "R22");
                                 const r3 = rounds.find((r) => r.name === "R3");
@@ -879,7 +949,13 @@ export default function AdminTournamentRoundsPage() {
                                   if (["R11", "R12", "R13", "R14"].includes(round.name) && r21) advanceTo = r21;
                                   else if (["R11", "R12", "R13", "R14"].includes(round.name) && r2) advanceTo = r2;
                                   else if (["R15", "R16", "R17", "R18"].includes(round.name) && r22) advanceTo = r22;
-                                } else if (isSemi && r3) advanceTo = r3;
+                                } else if (isR1Dash) {
+                                  const n = parseInt(round.name.replace("R1-", ""), 10);
+                                  if (n <= 3) advanceTo = rounds.find((r) => r.name === "R2-1");
+                                  else if (n <= 6) advanceTo = rounds.find((r) => r.name === "R2-2");
+                                  else if (n <= 9) advanceTo = rounds.find((r) => r.name === "R2-3");
+                                  else advanceTo = rounds.find((r) => r.name === "R2-4");
+                                } else if ((isSemi || isR2Dash) && r3) advanceTo = r3;
                                 else advanceTo = rounds[rounds.findIndex((r) => r._id === round._id) + 1];
                                 const title = advanceTo ? `Advance to ${advanceTo.name}` : undefined;
                                 return advanceTo ? (
@@ -942,7 +1018,7 @@ export default function AdminTournamentRoundsPage() {
                 Registered teams ({teams.length})
               </h3>
               <p className="mb-3 text-xs text-slate-500 dark:text-slate-500">
-                Drag a team from here into any round above to place them. 16 teams: R11–R14 + R2. 32 teams: R11–R18 + R21/R22 (semi) + R3 (final). Advance with →; in R2/R3 click 🏆 to set winner.
+                Drag a team from here into any round above. 16: R11–R14 + R2. 32: R11–R18 + R21/R22 + R3. 44: R1-1–R1-11 + R2-1–R2-4 + R3. Advance with →; in the final round click 🏆 to set winner.
               </p>
               <div className="mb-3 flex flex-wrap gap-2">
                 <button
@@ -960,6 +1036,14 @@ export default function AdminTournamentRoundsPage() {
                   className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
                 >
                   {addRoundLoading ? "Creating…" : "Create 32-team rounds (R11–R18, R21, R22, R3)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={createAll44TeamRounds}
+                  disabled={addRoundLoading || teams.length < 44}
+                  className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
+                >
+                  {addRoundLoading ? "Creating…" : "Create 44-team rounds (R1-1–R1-11, R2-1–R2-4, R3)"}
                 </button>
                 {isSuperAdmin && (
                   <button
