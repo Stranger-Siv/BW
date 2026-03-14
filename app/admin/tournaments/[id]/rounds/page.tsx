@@ -375,8 +375,7 @@ export default function AdminTournamentRoundsPage() {
   }, [teams, createRoundsWithTeams]);
 
   /**
-   * 44-team RBW format: R1 mix of 4v4v4v4 (8 matches) + 4v4v4 (4 matches) → quarters 4v4v4 → semis 4v4+4v4 → final 4v4.
-   * R1-1…R1-8 (4 each), R1-9…R1-12 (3 each) = 44. R2-1…R2-4 (4v4v4). R3-1, R3-2 (4v4). R4 (4v4, winner).
+   * 44-team RBW: R1 all 4v4v4v4 (11 matches). R2: 11 winners → 2+3+3+3 (R2-1 4v4, R2-2..R2-4 4v4v4). R3 semis 4v4, R4 final 4v4.
    */
   const createAll44TeamRBWRounds = useCallback(async () => {
     if (teams.length < 44) {
@@ -394,8 +393,8 @@ export default function AdminTournamentRoundsPage() {
         isWinnerRound?: boolean;
         slotCount?: number;
       }[] = [];
-      // R1: 8×4 + 4×3 = 44
-      for (let i = 0; i < 8; i += 1) {
+      // R1: all 11 rounds 4v4v4v4 (44 teams)
+      for (let i = 0; i < 11; i += 1) {
         roundsToCreate.push({
           name: `R1-${i + 1}`,
           roundNumber: i + 1,
@@ -403,25 +402,18 @@ export default function AdminTournamentRoundsPage() {
           slotCount: 4,
         });
       }
-      for (let i = 0; i < 4; i += 1) {
-        roundsToCreate.push({
-          name: `R1-${i + 9}`,
-          roundNumber: i + 9,
-          teamIds: teamIds.slice(32 + i * 3, 32 + i * 3 + 3),
-          slotCount: 3,
-        });
-      }
-      // R2 quarters: 4× 4v4v4
-      for (let i = 1; i <= 4; i += 1) {
-        roundsToCreate.push({ name: `R2-${i}`, roundNumber: 12 + i, teamIds: [], slotCount: 3 });
-      }
+      // R2: 11 winners → R2-1 (4v4, 2 slots), R2-2..R2-4 (4v4v4, 3 slots each)
+      roundsToCreate.push({ name: "R2-1", roundNumber: 12, teamIds: [], slotCount: 2 });
+      roundsToCreate.push({ name: "R2-2", roundNumber: 13, teamIds: [], slotCount: 3 });
+      roundsToCreate.push({ name: "R2-3", roundNumber: 14, teamIds: [], slotCount: 3 });
+      roundsToCreate.push({ name: "R2-4", roundNumber: 15, teamIds: [], slotCount: 3 });
       // R3 semis: 2× 4v4
-      roundsToCreate.push({ name: "R3-1", roundNumber: 17, teamIds: [], slotCount: 2 });
-      roundsToCreate.push({ name: "R3-2", roundNumber: 18, teamIds: [], slotCount: 2 });
+      roundsToCreate.push({ name: "R3-1", roundNumber: 16, teamIds: [], slotCount: 2 });
+      roundsToCreate.push({ name: "R3-2", roundNumber: 17, teamIds: [], slotCount: 2 });
       // R4 final: 4v4
       roundsToCreate.push({
         name: "R4",
-        roundNumber: 19,
+        roundNumber: 18,
         teamIds: [],
         isWinnerRound: true,
         slotCount: 2,
@@ -885,7 +877,7 @@ export default function AdminTournamentRoundsPage() {
             </div>
 
             <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. 44-team: R1-1–R1-11 → R2-1–R2-4 → R3 (all 4v4v4v4). 44-team RBW: R1 mix 4v4v4v4+4v4v4 → R2 quarters 4v4v4 → R3-1/R3-2 semis 4v4 → R4 final 4v4. Use &quot;Teams in match&quot;: 2 (4v4), 3 (4v4v4), or 4 (4v4v4v4). Mark a round as &quot;Winner round&quot; to use 🏆.
+              16-team: R11–R14 → R2. 32-team: R11–R18 → R21/R22 → R3. 44-team: R1-1–R1-11 → R2-1–R2-4 → R3 (all 4v4v4v4). 44-team RBW: R1 all 4v4v4v4 (11 matches); R2 2+3+3+3 (remaining); R3-1/R3-2 semis 4v4 → R4 final 4v4. Use &quot;Teams in match&quot;: 2 (4v4), 3 (4v4v4), or 4 (4v4v4v4). Mark a round as &quot;Winner round&quot; to use 🏆.
             </p>
 
             {(() => {
@@ -1013,10 +1005,20 @@ export default function AdminTournamentRoundsPage() {
                                   else if (["R15", "R16", "R17", "R18"].includes(round.name) && r22) advanceTo = r22;
                                 } else if (isR1Dash) {
                                   const n = parseInt(round.name.replace("R1-", ""), 10);
-                                  if (n <= 3) advanceTo = rounds.find((r) => r.name === "R2-1");
-                                  else if (n <= 6) advanceTo = rounds.find((r) => r.name === "R2-2");
-                                  else if (n <= 9) advanceTo = rounds.find((r) => r.name === "R2-3");
-                                  else advanceTo = rounds.find((r) => r.name === "R2-4");
+                                  const r2_1 = rounds.find((r) => r.name === "R2-1");
+                                  const r2_1Slots = r2_1?.slotCount ?? 4;
+                                  // RBW (R2-1 has 2 slots): R1-1,2→R2-1; R1-3,4,5→R2-2; R1-6,7,8→R2-3; R1-9,10,11→R2-4
+                                  if (r2_1Slots === 2) {
+                                    if (n <= 2) advanceTo = r2_1;
+                                    else if (n <= 5) advanceTo = rounds.find((r) => r.name === "R2-2");
+                                    else if (n <= 8) advanceTo = rounds.find((r) => r.name === "R2-3");
+                                    else advanceTo = rounds.find((r) => r.name === "R2-4");
+                                  } else {
+                                    if (n <= 3) advanceTo = r2_1;
+                                    else if (n <= 6) advanceTo = rounds.find((r) => r.name === "R2-2");
+                                    else if (n <= 9) advanceTo = rounds.find((r) => r.name === "R2-3");
+                                    else advanceTo = rounds.find((r) => r.name === "R2-4");
+                                  }
                                 } else if (round.name === "R2-1" || round.name === "R2-2") {
                                   advanceTo = rounds.find((r) => r.name === "R3-1");
                                 } else if (round.name === "R2-3" || round.name === "R2-4") {
@@ -1118,9 +1120,9 @@ export default function AdminTournamentRoundsPage() {
                   onClick={createAll44TeamRBWRounds}
                   disabled={addRoundLoading || teams.length < 44}
                   className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-amber-500 disabled:opacity-60"
-                  title="R1: 8×4v4v4v4 + 4×4v4v4 → R2 quarters 4v4v4 → R3-1/R3-2 semis 4v4 → R4 final 4v4"
+                  title="R1: 11×4v4v4v4 → R2 (2+3+3+3) → R3-1/R3-2 4v4 → R4 final 4v4"
                 >
-                  {addRoundLoading ? "Creating…" : "Create 44-team RBW (4v4v4 + 4v4 semis/final)"}
+                  {addRoundLoading ? "Creating…" : "Create 44-team RBW (R1 all 4v4v4v4, remainder in R2)"}
                 </button>
                 {isSuperAdmin && (
                   <button
